@@ -1,9 +1,9 @@
-# Bkper Bot Template
+# Stock Bot
 
-Use this Bkper Bot Template to create automations that react to events from your Books. 
+> WARNING: Bot under active development
 
-A Bkper Bot can, for example, and calculate taxes on transaction posting, convert currencies on transaction checked or post a message to Slack on comment created.
+Keep stock quantities book in sync with financial book upon buying and seling instruments.
 
-![Bkper Bots](https://bkper.com/images/bots/bkper-tax-bot/bkper-tax-bot.gif)
+It can be used to keep track of products or Shares quantities while working in a separate financial book.
 
-See the [documentation](https://bkper.com/docs/#bots) to learn more.
+
