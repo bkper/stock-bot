@@ -10,5 +10,7 @@ function onTransactionPosted(event) {
   let transaction = operation.transaction;
   
   var book = BkperApp.getBook(bookId);
+
+  return 'Stock Bot called :-)'
 }
 
