@@ -25,8 +25,9 @@ triggers: >
 
 # The properties scheme used by the App/Bot. The scheme is used to set properties autocomplete and simplify the setup.
 transactionProperties: > 
-    stock_code
-    stock_quantity        
+    quantity        
+accountProperties: > 
+    stock_account
 
 # The version of Bkper API in which the payload will be formatted
 apiVersion: v3
