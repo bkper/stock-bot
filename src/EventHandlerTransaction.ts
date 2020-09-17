@@ -17,6 +17,14 @@ abstract class EventHandlerTransaction extends EventHandler {
       return this.connectedTransactionNotFound(baseBook, connectedBook, transaction)
     }
   }
+  
+  protected getQuantity(transaction: bkper.Transaction): number {
+    let quantityStr = transaction.properties['quantity'];
+    if (quantityStr == null || quantityStr.trim() == '') {
+      return null;
+    }
+    return new Number(quantityStr).valueOf();
+  }
 
   protected abstract getTransactionQuery(transaction: bkper.Transaction): string;
 

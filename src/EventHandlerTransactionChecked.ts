@@ -16,14 +16,10 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
     let baseDebitAccount = baseBook.getAccount(transaction.debitAccount.id);
     let connectedBookAnchor = super.buildBookAnchor(connectedBook);
 
-    let quantityStr = transaction.properties['quantity'];
-    let quantity: number;
-    if (quantityStr == null || quantityStr.trim() == '') {
+    let quantity = this.getQuantity(transaction);
+    if (quantity == null) {
       return null;
     }
-
-    quantity = new Number(quantityStr).valueOf();
-
     let sell = false;
     let connectedCreditAccountName = baseCreditAccount.getProperty('stock_account');
     if (connectedCreditAccountName != null) {
