@@ -18,7 +18,10 @@ scopes: >
 
 # The Google Apps Script trigger functions
 triggers: >
-    onTransactionPosted
+    onTransactionChecked
+    onTransactionUpdated
+    onTransactionDeleted
+    onTransactionRestored
 
 # The properties scheme used by the App/Bot. The scheme is used to set properties autocomplete and simplify the setup.
 transactionProperties: > 
