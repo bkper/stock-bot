@@ -65,23 +65,26 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
     
     if (selling || buying) {
 
-        let newTransaction = connectedBook.newTransaction()
-        .setDate(transaction.date)
-        .setAmount(quantity)
-        .setCreditAccount(connectedCreditAccount)
-        .setDebitAccount(connectedDebitAccount)
-        .setDescription(transaction.description)
-        .addRemoteId(transaction.id);
+      let price = new Number(transaction.amount).valueOf() / quantity;
 
-        if (this.isReadyToPost(newTransaction)) {
-          newTransaction.post();
-        } else {
-          newTransaction.setDescription(`${newTransaction.getCreditAccount() == null ? baseCreditAccount.getName() : ''} ${newTransaction.getDebitAccount() == null ? baseDebitAccount.getName() : ''} ${newTransaction.getDescription()}`.trim())
-          newTransaction.create();
-        }
+      let newTransaction = connectedBook.newTransaction()
+      .setDate(transaction.date)
+      .setAmount(quantity)
+      .setCreditAccount(connectedCreditAccount)
+      .setDebitAccount(connectedDebitAccount)
+      .setDescription(transaction.description)
+      .addRemoteId(transaction.id)
+      .setProperty('price', price.toFixed(baseBook.getFractionDigits()));
 
-        let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${baseCreditAccount.getName()} ${baseDebitAccount.getName()} ${newTransaction.getDescription()}`;
-        return `${connectedBookAnchor}: ${record}`;
+      if (this.isReadyToPost(newTransaction)) {
+        newTransaction.post();
+      } else {
+        newTransaction.setDescription(`${newTransaction.getCreditAccount() == null ? baseCreditAccount.getName() : ''} ${newTransaction.getDebitAccount() == null ? baseDebitAccount.getName() : ''} ${newTransaction.getDescription()}`.trim())
+        newTransaction.create();
+      }
+
+      let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${baseCreditAccount.getName()} ${baseDebitAccount.getName()} ${newTransaction.getDescription()}`;
+      return `${connectedBookAnchor}: ${record}`;
     }
 
   }
