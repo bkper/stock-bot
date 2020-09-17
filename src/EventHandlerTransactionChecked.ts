@@ -1,6 +1,9 @@
 
 class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
+  STOCK_ACCOUNT_PROP = 'stock_account';
+  ACCOUNT_NAME_VAR = '${account.name}';
+
   protected getTransactionQuery(transaction: bkper.Transaction): string {
     return `remoteId:${transaction.id}`;
   }
@@ -21,9 +24,9 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       return null;
     }
     let sell = false;
-    let connectedCreditAccountName = baseCreditAccount.getProperty('stock_account');
+    let connectedCreditAccountName = baseCreditAccount.getProperty(this.STOCK_ACCOUNT_PROP);
     if (connectedCreditAccountName != null) {
-      connectedCreditAccountName = connectedCreditAccountName.replace('${account.name}', baseCreditAccount.getName())
+      connectedCreditAccountName = connectedCreditAccountName.replace(this.ACCOUNT_NAME_VAR, baseCreditAccount.getName())
       sell = true;
     } else {
       connectedCreditAccountName = 'Buy';
@@ -31,17 +34,13 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
     let connectedCreditAccount = connectedBook.getAccount(connectedCreditAccountName);
     if (connectedCreditAccount == null) {
-      // try {
         connectedCreditAccount = connectedBook.newAccount().setName(connectedCreditAccountName).setType(sell ? BkperApp.AccountType.ASSET : BkperApp.AccountType.INCOMING).create();
-      // } catch (err) {
-      //   //OK
-      // }
     }
 
     let buy = false;
-    let connectedDebitAccountName = baseDebitAccount.getProperty('stock_account');
+    let connectedDebitAccountName = baseDebitAccount.getProperty(this.STOCK_ACCOUNT_PROP);
     if (connectedDebitAccountName != null) {
-      connectedDebitAccountName = connectedDebitAccountName.replace('${account.name}', baseDebitAccount.getName())
+      connectedDebitAccountName = connectedDebitAccountName.replace(this.ACCOUNT_NAME_VAR, baseDebitAccount.getName())
       buy = true;
     } else {
       connectedDebitAccountName = 'Sell';
@@ -49,11 +48,7 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
     let connectedDebitAccount = connectedBook.getAccount(connectedDebitAccountName);
     if (connectedDebitAccount == null) {
-      // try {
         connectedDebitAccount = connectedBook.newAccount().setName(connectedDebitAccountName).setType(buy ? BkperApp.AccountType.ASSET : BkperApp.AccountType.OUTGOING).create();
-      // } catch (err) {
-      //   //OK
-      // }
     }
 
     let selling = sell && !buy;
