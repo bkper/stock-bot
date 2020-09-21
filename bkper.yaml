@@ -29,6 +29,13 @@ transactionProperties: >
 accountProperties: > 
     stock_account
 
+properties: 
+    transaction:
+      keys: quantity
+    account:
+      keys: stock_account
+      values: ${account.name} 
+
 # The version of Bkper API in which the payload will be formatted
 apiVersion: v3
 
