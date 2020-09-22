@@ -22,19 +22,20 @@ triggers: >
     onTransactionUpdated
     onTransactionDeleted
     onTransactionRestored
+    onAccountCreated
+    onAccountUpdated
+    onAccountDeleted    
+    onGroupCreated
+    onGroupUpdated
+    onGroupDeleted
 
 # The properties scheme used by the App/Bot. The scheme is used to set properties autocomplete and simplify the setup.
-transactionProperties: > 
-    quantity        
-accountProperties: > 
-    stock_account
 
 properties: 
     transaction:
       keys: quantity
-    account:
-      keys: stock_account
-      values: ${account.name} 
+    group:
+      keys: stock_exc_code
 
 # The version of Bkper API in which the payload will be formatted
 apiVersion: v3

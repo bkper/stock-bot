@@ -16,6 +16,30 @@ function onTransactionRestored(event: bkper.Event) {
   return new EventHandlerTransactionRestored().handleEvent(event);
 }
 
+function onAccountCreated(event: bkper.Event) {
+  return new EventHandlerAccountCreatedOrUpdated().handleEvent(event);
+}
+
+function onAccountUpdated(event: bkper.Event) {
+  return new EventHandlerAccountCreatedOrUpdated().handleEvent(event);
+}
+
+function onAccountDeleted(event: bkper.Event) {
+  return new EventHandlerAccountDeleted().handleEvent(event);
+}
+
+function onGroupCreated(event: bkper.Event) {
+  return new EventHandlerGroupCreatedOrUpdated().handleEvent(event);
+}
+
+function onGroupUpdated(event: bkper.Event) {
+  return new EventHandlerGroupCreatedOrUpdated().handleEvent(event);
+}
+
+function onGroupDeleted(event: bkper.Event) {
+  return new EventHandlerGroupDeleted().handleEvent(event);
+}
+
 
 
 

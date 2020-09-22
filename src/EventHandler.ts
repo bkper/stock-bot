@@ -1,5 +1,7 @@
 abstract class EventHandler {
 
+  protected STOCK_EXC_CODE_PROP = 'stock_exc_code';
+
   protected abstract processObject(baseBook: Bkper.Book, connectedBook: Bkper.Book, event: bkper.Event): string;
 
   handleEvent(event: bkper.Event): string[] | string {
@@ -28,6 +30,41 @@ abstract class EventHandler {
     return responses;
   }
 
+  protected getBaseCode(book: Bkper.Book): string {
+    return book.getProperty('exc_code', 'exchange_code');
+  }
+
+  protected getStockExchangeCode(baseAccount: Bkper.Account): string {
+    let groups = baseAccount.getGroups();
+    if (groups != null) {
+      for (const group of groups) {
+        let stockExchange = group.getProperty(this.STOCK_EXC_CODE_PROP);
+        if (stockExchange != null && stockExchange.trim() != '') {
+          return stockExchange;
+        }
+      }
+    }
+    return null;
+  }
+
+  protected getConnectedStockAccountName(baseAccount: Bkper.Account) {
+    let stockExchangeCode = this.getStockExchangeCode(baseAccount);
+    if (stockExchangeCode != null) {
+      return baseAccount.getName();
+    }
+    return null;
+  }
+
+  protected matchStockExchange(stockExcCode: string, connectedCode: string): boolean {
+    if (stockExcCode == null || stockExcCode.trim() == '') {
+      return false;
+    }
+    stockExcCode = stockExcCode.trim();
+    if (connectedCode != null && stockExcCode != connectedCode) {
+      return false;
+    }
+    return true;
+  }  
 
   protected buildBookAnchor(book: Bkper.Book) {
     return `<a href='https://app.bkper.com/b/#transactions:bookId=${book.getId()}'>${book.getName()}</a>`;

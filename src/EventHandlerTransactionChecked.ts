@@ -1,9 +1,6 @@
 
 class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
-  STOCK_ACCOUNT_PROP = 'stock_account';
-  ACCOUNT_NAME_VAR = '${account.name}';
-
   protected getTransactionQuery(transaction: bkper.Transaction): string {
     return `remoteId:${transaction.id}`;
   }
@@ -24,9 +21,8 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       return null;
     }
     let sell = false;
-    let connectedCreditAccountName = baseCreditAccount.getProperty(this.STOCK_ACCOUNT_PROP);
+    let connectedCreditAccountName = this.getConnectedStockAccountName(baseCreditAccount);
     if (connectedCreditAccountName != null) {
-      connectedCreditAccountName = connectedCreditAccountName.replace(this.ACCOUNT_NAME_VAR, baseCreditAccount.getName())
       sell = true;
     } else {
       connectedCreditAccountName = 'Buy';
@@ -38,9 +34,8 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
     }
 
     let buy = false;
-    let connectedDebitAccountName = baseDebitAccount.getProperty(this.STOCK_ACCOUNT_PROP);
+    let connectedDebitAccountName = this.getConnectedStockAccountName(baseDebitAccount);
     if (connectedDebitAccountName != null) {
-      connectedDebitAccountName = connectedDebitAccountName.replace(this.ACCOUNT_NAME_VAR, baseDebitAccount.getName())
       buy = true;
     } else {
       connectedDebitAccountName = 'Sell';
@@ -56,6 +51,10 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
     
     if (selling || buying) {
 
+      let stockExcCode = sell ? this.getStockExchangeCode(baseCreditAccount) : this.getStockExchangeCode(baseDebitAccount)
+
+      let priceProp = `price_${stockExcCode}`
+
       let price = new Number(transaction.amount).valueOf() / quantity;
 
       let newTransaction = connectedBook.newTransaction()
@@ -65,7 +64,7 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setDebitAccount(connectedDebitAccount)
       .setDescription(transaction.description)
       .addRemoteId(transaction.id)
-      .setProperty('price', price.toFixed(baseBook.getFractionDigits()));
+      .setProperty(priceProp, price.toFixed(baseBook.getFractionDigits()));
 
       if (this.isReadyToPost(newTransaction)) {
         newTransaction.post();
