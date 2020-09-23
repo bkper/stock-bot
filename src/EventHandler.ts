@@ -30,7 +30,7 @@ abstract class EventHandler {
     return responses;
   }
 
-  protected getBaseCode(book: Bkper.Book): string {
+  protected getExcCode(book: Bkper.Book): string {
     return book.getProperty('exc_code', 'exchange_code');
   }
 
@@ -55,12 +55,12 @@ abstract class EventHandler {
     return null;
   }
 
-  protected matchStockExchange(stockExcCode: string, connectedCode: string): boolean {
+  protected matchStockExchange(stockExcCode: string, excCode: string): boolean {
     if (stockExcCode == null || stockExcCode.trim() == '') {
       return false;
     }
     stockExcCode = stockExcCode.trim();
-    if (connectedCode != null && stockExcCode != connectedCode) {
+    if (excCode != null && stockExcCode != excCode) {
       return false;
     }
     return true;

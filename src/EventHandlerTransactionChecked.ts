@@ -5,13 +5,13 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
     return `remoteId:${transaction.id}`;
   }
 
-  protected connectedTransactionFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, connectedTransaction: Bkper.Transaction): string {
+  protected connectedTransactionFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, connectedTransaction: Bkper.Transaction, stockExcCode: string): string {
     let bookAnchor = super.buildBookAnchor(connectedBook);
     let record = `${connectedTransaction.getDate()} ${connectedTransaction.getAmount()} ${connectedTransaction.getCreditAccountName()} ${connectedTransaction.getDebitAccountName()} ${connectedTransaction.getDescription()}`;
-    return `${bookAnchor}: ${record}`;
+    return `FOUND: ${bookAnchor}: ${record}`;
   }
 
-  protected connectedTransactionNotFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction): string {
+  protected connectedTransactionNotFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, stockExcCode: string): string {
     let baseCreditAccount = baseBook.getAccount(transaction.creditAccount.id);
     let baseDebitAccount = baseBook.getAccount(transaction.debitAccount.id);
     let connectedBookAnchor = super.buildBookAnchor(connectedBook);
@@ -51,10 +51,6 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
     
     if (selling || buying) {
 
-      let stockExcCode = sell ? this.getStockExchangeCode(baseCreditAccount) : this.getStockExchangeCode(baseDebitAccount)
-
-      let priceProp = `price_${stockExcCode}`
-
       let price = new Number(transaction.amount).valueOf() / quantity;
 
       let newTransaction = connectedBook.newTransaction()
@@ -64,17 +60,20 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setDebitAccount(connectedDebitAccount)
       .setDescription(transaction.description)
       .addRemoteId(transaction.id)
-      .setProperty(priceProp, price.toFixed(baseBook.getFractionDigits()));
+      .setProperty('price', price.toFixed(baseBook.getFractionDigits()))
+      .setProperty('code', stockExcCode)
+      ;
 
+      let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${baseCreditAccount.getName()} ${baseDebitAccount.getName()} ${newTransaction.getDescription()}`;
       if (this.isReadyToPost(newTransaction)) {
         newTransaction.post();
+        return `POSTED: ${connectedBookAnchor}: ${record}`;
       } else {
         newTransaction.setDescription(`${newTransaction.getCreditAccount() == null ? baseCreditAccount.getName() : ''} ${newTransaction.getDebitAccount() == null ? baseDebitAccount.getName() : ''} ${newTransaction.getDescription()}`.trim())
         newTransaction.create();
+        return `CREATED: ${connectedBookAnchor}: ${record}`;
       }
 
-      let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${baseCreditAccount.getName()} ${baseDebitAccount.getName()} ${newTransaction.getDescription()}`;
-      return `${connectedBookAnchor}: ${record}`;
     }
 
   }

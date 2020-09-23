@@ -1,13 +1,13 @@
 abstract class EventHandlerAccount extends EventHandler {
 
   protected processObject(baseBook: Bkper.Book, connectedBook: Bkper.Book, event: bkper.Event): string {
-    let connectedCode = this.getBaseCode(connectedBook);
+    let excCode = this.getExcCode(baseBook);
     let account = event.data.object as bkper.Account;
 
     let baseAccount = baseBook.getAccount(account.id);
     let stockExcCode = this.getStockExchangeCode(baseAccount);
 
-    if (!this.matchStockExchange(stockExcCode, connectedCode)) {
+    if (!this.matchStockExchange(stockExcCode, excCode)) {
       return null;
     }
 

@@ -4,10 +4,10 @@ class EventHandlerTransactionDeleted extends EventHandlerTransaction {
     return `remoteId:${transaction.id}`;
   }
 
-  protected connectedTransactionNotFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction): string {
+  protected connectedTransactionNotFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, stockExcCode: string): string {
     return null;
   }
-  protected connectedTransactionFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, connectedTransaction: Bkper.Transaction): string {
+  protected connectedTransactionFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, connectedTransaction: Bkper.Transaction, stockExcCode: string): string {
     let bookAnchor = super.buildBookAnchor(connectedBook);
 
     if (connectedTransaction.isChecked()) {
