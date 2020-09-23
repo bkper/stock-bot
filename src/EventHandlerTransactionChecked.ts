@@ -64,23 +64,95 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setProperty('code', stockExcCode)
       ;
 
-      let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${baseCreditAccount.getName()} ${baseDebitAccount.getName()} ${newTransaction.getDescription()}`;
-      if (this.isReadyToPost(newTransaction)) {
-        newTransaction.post();
-        return `POSTED: ${connectedBookAnchor}: ${record}`;
-      } else {
-        newTransaction.setDescription(`${newTransaction.getCreditAccount() == null ? baseCreditAccount.getName() : ''} ${newTransaction.getDebitAccount() == null ? baseDebitAccount.getName() : ''} ${newTransaction.getDescription()}`.trim())
-        newTransaction.create();
-        return `CREATED: ${connectedBookAnchor}: ${record}`;
+      let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${connectedCreditAccount.getName()} ${connectedDebitAccount.getName()} ${newTransaction.getDescription()}`;
+      newTransaction.post();
+      if (selling) {
+        this.sell(baseBook, connectedBook, newTransaction);
       }
 
+      return `POSTED: ${connectedBookAnchor}: ${record}`;
     }
 
   }
 
-
   private isReadyToPost(newTransaction: Bkper.Transaction) {
     return newTransaction.getCreditAccount() != null && newTransaction.getDebitAccount() != null && newTransaction.getAmount() != null;
+  }
+
+  private sell(baseBook: Bkper.Book, connectedBook: Bkper.Book, sellTransaction: Bkper.Transaction): void {
+
+    let iterator = connectedBook.getTransactions(`account:'${sellTransaction.getCreditAccountName()}' is:unchecked`);
+    let buyTransactions: Bkper.Transaction[] = [];
+    while (iterator.hasNext()) {
+      let tx = iterator.next();
+      //Make sure get buy only
+      if (tx.getDebitAccountName() == sellTransaction.getCreditAccountName()) {
+        buyTransactions.push(tx);
+      }
+    }
+
+    //FIFO
+    buyTransactions = buyTransactions.reverse();
+
+    let sellPrice: number = +sellTransaction.getProperty('price');
+
+    let gainTotal = 0;
+    let soldQuantity = sellTransaction.getAmount();
+
+    for (const buyTransaction of buyTransactions) {
+      
+      let buyPrice: number = +buyTransaction.getProperty('price');
+      let buyQuantity = buyTransaction.getAmount();
+      
+      if (soldQuantity >= buyQuantity ) {
+        let gain = (sellPrice * buyQuantity) - (buyPrice * buyQuantity); 
+        buyTransaction
+        .setProperty('sold_for', sellPrice.toFixed(baseBook.getFractionDigits()))
+        .addRemoteId(sellTransaction.getId())
+        .update().check();
+        gainTotal += gain;
+        soldQuantity -= buyQuantity;
+      } else {
+        let remainingBuyQuantity = buyQuantity - soldQuantity;
+        buyTransaction
+        .setAmount(remainingBuyQuantity)
+        .update();
+
+        let partialBuyQuantity = buyQuantity - remainingBuyQuantity;
+
+        console.log(`partialBuyQuantity: ${partialBuyQuantity}`)
+
+        let gain = (sellPrice * partialBuyQuantity) - (buyPrice * partialBuyQuantity); 
+
+        let newTransaction = connectedBook.newTransaction()
+        .setDate(buyTransaction.getDate())
+        .setAmount(partialBuyQuantity)
+        .setCreditAccount(buyTransaction.getCreditAccount())
+        .setDebitAccount(buyTransaction.getDebitAccount())
+        .setDescription(buyTransaction.getDescription())
+        .setProperty('price', buyTransaction.getProperty('price'))
+        .setProperty('code', buyTransaction.getProperty('code'))
+        .setProperty('sold_for', sellPrice.toFixed(baseBook.getFractionDigits()))
+        .post()
+        .check()
+        soldQuantity -= partialBuyQuantity;
+        gainTotal += gain;
+
+      }
+
+      if (soldQuantity == 0) {
+        break;
+      }
+
+    }
+
+    if (gainTotal > 0) {
+      baseBook.record(`#stock_gain ${baseBook.formatValue(gainTotal)}`)
+    } else if (gainTotal < 0) {
+      baseBook.record(`#stock_loss ${baseBook.formatValue(gainTotal * -1)}`)
+    }
+
+    sellTransaction.check();
   }
 
 

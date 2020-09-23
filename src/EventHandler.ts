@@ -35,6 +35,9 @@ abstract class EventHandler {
   }
 
   protected getStockExchangeCode(baseAccount: Bkper.Account): string {
+    if (baseAccount == null) {
+      return null;
+    }
     let groups = baseAccount.getGroups();
     if (groups != null) {
       for (const group of groups) {

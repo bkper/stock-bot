@@ -34,8 +34,9 @@ abstract class EventHandlerTransaction extends EventHandler {
   }
 
   private getStockExcCodeFromTransaction(baseBook: Bkper.Book, transaction: bkper.Transaction) {
-    let baseCreditAccount = baseBook.getAccount(transaction.creditAccount.id);
-    let baseDebitAccount = baseBook.getAccount(transaction.debitAccount.id);
+
+    let baseCreditAccount = transaction.creditAccount != null ? baseBook.getAccount(transaction.creditAccount.id) : null;
+    let baseDebitAccount = transaction.debitAccount != null ? baseBook.getAccount(transaction.debitAccount.id) : null;
 
     let stockExcCode = this.getStockExchangeCode(baseCreditAccount);
     if (stockExcCode == null) {
