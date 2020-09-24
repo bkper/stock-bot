@@ -1,6 +1,8 @@
-Keep stocks/bonds Quantities Book in sync with Financial Book upon buying and seling instruments.
+Keep stocks/bonds Instruments Book in sync with Financial Book upon buying and seling instruments.
 
-It works by monitoring Financial Books and tracking quantities of instruments bought or sold in a separate Quantities Book.
+![Stock Bot](https://docs.google.com/drawings/d/e/2PACX-1vQSjFxT6jVtwaiuDOEaDOaruFHWDp8YtT91lNUCw4BruKm3ZED__g1D4-5iAoi-J23j4v55Tk6ETg9R/pub?w=949&h=436)
+
+It works by monitoring Financial Books and tracking quantities of instruments bought or sold in a separate Instruments Book.
 
 The process of seling the stock/bond follows the FIFO (first in / first out) method.
 
@@ -9,9 +11,9 @@ Orders partially sold are splitted and the price tracked into a ```sold_for``` t
 
 ## Configuration
 
-Financial and Quantities Books **should be in same [Collection](https://help.bkper.com/en/articles/4208937-collections)**.
+Financial and Instruments Books **should be in same [Collection](https://help.bkper.com/en/articles/4208937-collections)**.
 
-The Quantities Book is identified by a single book in the Collection with the **decimal places set to 0 (zero)**.
+The Instruments Book is identified by a single book in the Collection with the **decimal places set to 0 (zero)**.
 
 The Stock Bot should be **installed in the Financial Book(s) only**.
 
@@ -23,7 +25,7 @@ The bot interact with the following properties:
 
 ### Transaction Properties 
 
-- ```quantity```: The quantity of the stocks/bonds to track.
+- ```quantity```: The quantity of the instruments to track.
 
 The Bot also add the following properties to the generated transaction in the Quantities Book:
 
