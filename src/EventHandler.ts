@@ -4,7 +4,7 @@ abstract class EventHandler {
 
   protected abstract processObject(baseBook: Bkper.Book, connectedBook: Bkper.Book, event: bkper.Event): string;
 
-  handleEvent(event: bkper.Event): string[] | string {
+  handleEvent(event: bkper.Event): string[] | string | boolean {
     let bookId = event.bookId;
     let baseBook = BkperApp.getBook(bookId);
 
@@ -25,6 +25,10 @@ abstract class EventHandler {
 
     if (!foundStockBook) {
       return 'No book with 0 decimal places found in the collection'
+    }
+
+    if (responses.length == 0) {
+      return false;
     }
 
     return responses;
