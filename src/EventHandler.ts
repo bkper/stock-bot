@@ -9,21 +9,14 @@ abstract class EventHandler {
     let baseBook = BkperApp.getBook(bookId);
 
     let responses: string[] = [];
-    let connectedBooks = baseBook.getCollection().getBooks();
-    let foundStockBook = false;
-    connectedBooks.forEach(connectedBook => {
-      let fractionDigits = connectedBook.getFractionDigits();
-      if (fractionDigits != null && fractionDigits == 0) {
-        foundStockBook = true;
-        let response = this.processObject(baseBook, connectedBook, event);
-        if (response) {
-          responses.push(response);
-        }
+    let stockBook = BotService.getStockBook(baseBook);
+
+    if (stockBook) {
+      let response = this.processObject(baseBook, stockBook, event);
+      if (response) {
+        responses.push(response);
       }
-
-    })
-
-    if (!foundStockBook) {
+    } else {
       return 'No book with 0 decimal places found in the collection'
     }
 

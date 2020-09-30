@@ -5,15 +5,15 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   let bookId = e.parameter.bookId;
   //@ts-ignore
   let accountId = e.parameter.accountId;
-  return BotViewService_.getBotViewTemplate(bookId, accountId);
+  return BotService.getBotViewTemplate(bookId, accountId);
 }
 
 function gainLossIncremental(bookId: string, accountId: string): void {
-  BotViewService_.gainLossIncremental(bookId, accountId);
+  BotService.gainLossIncremental(bookId, accountId);
 }
 
 function gainLossRebuild(bookId: string, accountId: string): void {
-  BotViewService_.gainLossRebuild(bookId, accountId);
+  BotService.gainLossRebuild(bookId, accountId);
 }
 
 function onTransactionChecked(event: bkper.Event) {
