@@ -7,6 +7,10 @@
       "version": "63"
     }]
   },
+  "webapp": {
+    "access": "ANYONE",
+    "executeAs": "USER_ACCESSING"
+  },
   "exceptionLogging": "STACKDRIVER",
   "executionApi": {
     "access": "ANYONE"
