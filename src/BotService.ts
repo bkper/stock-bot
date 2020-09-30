@@ -42,7 +42,8 @@ namespace BotService {
       name: stockBook.getName(),
     }
     template.account = {
-      id: stockAccount.getId()
+      id: stockAccount.getId(),
+      name: stockAccount.getName()
     }
 
     return template.evaluate().setTitle('Stock Bot');
@@ -106,7 +107,7 @@ namespace BotService {
     //FIFO
     buyTransactions = buyTransactions.reverse();
 
-    let sellPrice: number = +saleTransaction.getProperty('price');
+    let salePrice: number = +saleTransaction.getProperty('price');
 
     let gainTotal = 0;
     let soldQuantity = saleTransaction.getAmount();
@@ -117,9 +118,9 @@ namespace BotService {
       let buyQuantity = buyTransaction.getAmount();
       
       if (soldQuantity >= buyQuantity ) {
-        let gain = (sellPrice * buyQuantity) - (buyPrice * buyQuantity); 
+        let gain = (salePrice * buyQuantity) - (buyPrice * buyQuantity); 
         buyTransaction
-        .setProperty('sale_price', sellPrice.toFixed(financialBook.getFractionDigits()))
+        .setProperty('sale_price', salePrice.toFixed(financialBook.getFractionDigits()))
         .setProperty('sale_date', saleTransaction.getDate())
         .addRemoteId(saleTransaction.getId())
         .update().check();
@@ -135,7 +136,7 @@ namespace BotService {
 
         console.log(`partialBuyQuantity: ${partialBuyQuantity}`)
 
-        let gain = (sellPrice * partialBuyQuantity) - (buyPrice * partialBuyQuantity); 
+        let gain = (salePrice * partialBuyQuantity) - (buyPrice * partialBuyQuantity); 
 
         let newTransaction = stockBook.newTransaction()
         .setDate(buyTransaction.getDate())
@@ -145,7 +146,7 @@ namespace BotService {
         .setDescription(buyTransaction.getDescription())
         .setProperty('price', buyTransaction.getProperty('price'))
         .setProperty('code', buyTransaction.getProperty('code'))
-        .setProperty('sale_price', sellPrice.toFixed(financialBook.getFractionDigits()))
+        .setProperty('sale_price', salePrice.toFixed(financialBook.getFractionDigits()))
         .setProperty('sale_date', saleTransaction.getDate())
         .post()
         .check()
