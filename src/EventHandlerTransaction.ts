@@ -6,7 +6,7 @@ interface AmountDescription {
 abstract class EventHandlerTransaction extends EventHandler {
 
   processObject(baseBook: Bkper.Book, connectedBook: Bkper.Book, event: bkper.Event): string {
-    let excCode = this.getExcCode(baseBook);
+    let excCode = BotService.getExcCode(baseBook);
     let operation = event.data.object as bkper.TransactionOperation;
     let transaction = operation.transaction;
     let iterator = connectedBook.getTransactions(this.getTransactionQuery(transaction));
@@ -38,9 +38,9 @@ abstract class EventHandlerTransaction extends EventHandler {
     let baseCreditAccount = transaction.creditAccount != null ? baseBook.getAccount(transaction.creditAccount.id) : null;
     let baseDebitAccount = transaction.debitAccount != null ? baseBook.getAccount(transaction.debitAccount.id) : null;
 
-    let stockExcCode = this.getStockExchangeCode(baseCreditAccount);
+    let stockExcCode = BotService.getStockExchangeCode(baseCreditAccount);
     if (stockExcCode == null) {
-      stockExcCode = this.getStockExchangeCode(baseDebitAccount);
+      stockExcCode = BotService.getStockExchangeCode(baseDebitAccount);
     }
     return stockExcCode;
   }

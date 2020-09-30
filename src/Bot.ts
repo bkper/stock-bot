@@ -1,5 +1,7 @@
 BkperApp.setApiKey(PropertiesService.getScriptProperties().getProperty('API_KEY'));
 
+let STOCK_EXC_CODE_PROP = 'stock_exc_code';
+
 function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   //@ts-ignore
   let bookId = e.parameter.bookId;
@@ -8,12 +10,8 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   return BotService.getBotViewTemplate(bookId, accountId);
 }
 
-function gainLossIncremental(bookId: string, accountId: string): void {
-  BotService.gainLossIncremental(bookId, accountId);
-}
-
-function gainLossRebuild(bookId: string, accountId: string): void {
-  BotService.gainLossRebuild(bookId, accountId);
+function calculateRealizedResults(bookId: string, accountId: string): void {
+  BotService.calculateRealizedResults(bookId, accountId);
 }
 
 function onTransactionChecked(event: bkper.Event) {

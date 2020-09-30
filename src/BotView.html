@@ -47,20 +47,19 @@
   <body>
 
     <div class='header'>
-      Stock Gain/Loss Update
+      Stocks
     </div>
 
     <div class='body'>
       <div id='sub-header'>
-        FIFO Calculation
+        Realized Results in FIFO
       </div>
     </div>
     <div id='waiting-panel'>
       <img src='https://storage.googleapis.com/bkper-public/addons/loading_3dots.gif'/>
     </div>  
     <div class="footer" id='footer-panel'>
-      <button class="action" id="incremental-button" onclick="gainLossIncremental()">Incremental</button>
-      <button id="rebuild-button" onclick="gainLossRebuild()">Rebuild</button>
+      <button class="action" id="incremental-button" onclick="calculateRealizedResults()">Calculate</button>
     </div>
 
   </body>
@@ -70,14 +69,9 @@
 
 <script>
 
-  function gainLossIncremental() {
+  function calculateRealizedResults() {
     showWaiting(true);
-    google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).gainLossIncremental('<?!= book.id ?>', '<?!= account.id ?>')
-  }
-
-  function gainLossRebuild() {
-    showWaiting(true);
-    google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).gainLossRebuild('<?!= book.id ?>', '<?!= account.id ?>')
+    google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).calculateRealizedResults('<?!= book.id ?>', '<?!= account.id ?>')
   }
 
   function showWaiting(show) {

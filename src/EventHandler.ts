@@ -1,7 +1,5 @@
 abstract class EventHandler {
 
-  protected STOCK_EXC_CODE_PROP = 'stock_exc_code';
-
   protected abstract processObject(baseBook: Bkper.Book, connectedBook: Bkper.Book, event: bkper.Event): string;
 
   handleEvent(event: bkper.Event): string[] | string | boolean {
@@ -27,33 +25,7 @@ abstract class EventHandler {
     return responses;
   }
 
-  protected getExcCode(book: Bkper.Book): string {
-    return book.getProperty('exc_code', 'exchange_code');
-  }
 
-  protected getStockExchangeCode(baseAccount: Bkper.Account): string {
-    if (baseAccount == null) {
-      return null;
-    }
-    let groups = baseAccount.getGroups();
-    if (groups != null) {
-      for (const group of groups) {
-        let stockExchange = group.getProperty(this.STOCK_EXC_CODE_PROP);
-        if (stockExchange != null && stockExchange.trim() != '') {
-          return stockExchange;
-        }
-      }
-    }
-    return null;
-  }
-
-  protected getConnectedStockAccountName(baseAccount: Bkper.Account) {
-    let stockExchangeCode = this.getStockExchangeCode(baseAccount);
-    if (stockExchangeCode != null) {
-      return baseAccount.getName();
-    }
-    return null;
-  }
 
   protected matchStockExchange(stockExcCode: string, excCode: string): boolean {
     if (stockExcCode == null || stockExcCode.trim() == '') {

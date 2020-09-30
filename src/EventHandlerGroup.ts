@@ -1,10 +1,10 @@
 abstract class EventHandlerGroup extends EventHandler {
 
   protected processObject(baseBook: Bkper.Book, connectedBook: Bkper.Book, event: bkper.Event): string {
-    let excCode = this.getExcCode(baseBook);
+    let excCode = BotService.getExcCode(baseBook);
     let group = event.data.object as bkper.Group;
 
-    let stockExcCode = group.properties[this.STOCK_EXC_CODE_PROP];
+    let stockExcCode = group.properties[STOCK_EXC_CODE_PROP];
 
     if (!this.matchStockExchange(stockExcCode, excCode)) {
       return null;

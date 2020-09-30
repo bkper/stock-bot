@@ -27,7 +27,7 @@ class EventHandlerAccountCreatedOrUpdated extends EventHandlerAccount {
         let baseGroup = baseBook.getGroup(baseGroupId);
         if (baseGroup) {
           let connectedGroup = connectedBook.getGroup(baseGroup.getName());
-          let stockExcCode = baseGroup.getProperty(this.STOCK_EXC_CODE_PROP);
+          let stockExcCode = baseGroup.getProperty(STOCK_EXC_CODE_PROP);
           if (connectedGroup == null && stockExcCode != null && stockExcCode.trim() != '') {
             connectedGroup = connectedBook.newGroup()
               .setHidden(baseGroup.isHidden())

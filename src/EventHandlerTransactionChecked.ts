@@ -78,4 +78,12 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
   }
 
+  private getConnectedStockAccountName(baseAccount: Bkper.Account) {
+    let stockExchangeCode = BotService.getStockExchangeCode(baseAccount);
+    if (stockExchangeCode != null) {
+      return baseAccount.getName();
+    }
+    return null;
+  }
+
 }
