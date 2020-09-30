@@ -12,8 +12,11 @@
     "patch": "yarn version --patch",
     "minor": "yarn version --minor",
     "major": "yarn version --major",
+    "deploy": "run-s deploy:*",
+    "deploy:api": "clasp deploy --description $npm_package_version --deploymentId AKfycbwtsLZgfLUKpXPSQzDjjGMgJEkvwXN5CklmeCHtpEPpXDK66g",
+    "deploy:web": "clasp deploy --description $npm_package_version --deploymentId AKfycbwPOy2a-8rclTaY3MHLQp1P3Nk75Ot8hJ86zANML91mCOVMfA",
     "preversion": "yarn push",
-    "postversion": "clasp deploy --description $npm_package_version --deploymentId AKfycbwtsLZgfLUKpXPSQzDjjGMgJEkvwXN5CklmeCHtpEPpXDK66g  && git push && git push --tags && echo \"Successfully released version $npm_package_version!\""
+    "postversion": "yarn deploy && git push && git push --tags && echo \"Successfully released version $npm_package_version!\""
   },
   "devDependencies": {
     "@bkper/bkper-api-types": "^3.6.1",

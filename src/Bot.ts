@@ -1,5 +1,21 @@
 BkperApp.setApiKey(PropertiesService.getScriptProperties().getProperty('API_KEY'));
 
+function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
+  //@ts-ignore
+  let bookId = e.parameter.bookId;
+  //@ts-ignore
+  let accountId = e.parameter.accountId;
+  return BotViewService_.getBotViewTemplate(bookId, accountId);
+}
+
+function gainLossIncremental(bookId: string, accountId: string): void {
+  BotViewService_.gainLossIncremental(bookId, accountId);
+}
+
+function gainLossFull(bookId: string, accountId: string): void {
+  BotViewService_.gainLossFull(bookId, accountId);
+}
+
 function onTransactionChecked(event: bkper.Event) {
   return new EventHandlerTransactionChecked().handleEvent(event);
 }

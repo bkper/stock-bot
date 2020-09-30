@@ -61,22 +61,21 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setDescription(transaction.description)
       .addRemoteId(transaction.id)
       .setProperty('price', price.toFixed(baseBook.getFractionDigits()))
-      .setProperty('code', stockExcCode)
-      ;
+      .setProperty('code', stockExcCode);
+
+      if (buy) {
+        newTransaction.setProperty('original_quantity', quantity.toFixed(0));
+      }
 
       let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${connectedCreditAccount.getName()} ${connectedDebitAccount.getName()} ${newTransaction.getDescription()}`;
       newTransaction.post();
-      if (selling) {
-        this.sell(baseBook, connectedBook, newTransaction);
-      }
+      // if (selling) {
+      //   this.sell(baseBook, connectedBook, newTransaction);
+      // }
 
       return `POSTED: ${connectedBookAnchor}: ${record}`;
     }
 
-  }
-
-  private isReadyToPost(newTransaction: Bkper.Transaction) {
-    return newTransaction.getCreditAccount() != null && newTransaction.getDebitAccount() != null && newTransaction.getAmount() != null;
   }
 
   private sell(baseBook: Bkper.Book, connectedBook: Bkper.Book, sellTransaction: Bkper.Transaction): void {
@@ -107,7 +106,8 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       if (soldQuantity >= buyQuantity ) {
         let gain = (sellPrice * buyQuantity) - (buyPrice * buyQuantity); 
         buyTransaction
-        .setProperty('sold_for', sellPrice.toFixed(baseBook.getFractionDigits()))
+        .setProperty('sell_price', sellPrice.toFixed(baseBook.getFractionDigits()))
+        .setProperty('sell_date', sellTransaction.getDate())
         .addRemoteId(sellTransaction.getId())
         .update().check();
         gainTotal += gain;
@@ -132,7 +132,8 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
         .setDescription(buyTransaction.getDescription())
         .setProperty('price', buyTransaction.getProperty('price'))
         .setProperty('code', buyTransaction.getProperty('code'))
-        .setProperty('sold_for', sellPrice.toFixed(baseBook.getFractionDigits()))
+        .setProperty('sell_price', sellPrice.toFixed(baseBook.getFractionDigits()))
+        .setProperty('sell_date', sellTransaction.getDate())
         .post()
         .check()
         soldQuantity -= partialBuyQuantity;

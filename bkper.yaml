@@ -1,22 +1,15 @@
-# You can override the name from the repository
-# name: New Bkper App
-
-# Set your logo url from public host. Best fit 200x200 px. Use https:// 
 logo: https://static.thenounproject.com/png/2318530-200.png
-#Icon created by Iconchease from Non Project. Please use with right licensing.
-
-# The Client ID from GCP project Web Application OAuth Credential
 clientId: 783262894504-rk14vg9ogq4fpsusf87lsubc8c644bni.apps.googleusercontent.com
-
-# The Google Apps Script ID
 scriptId: 14dxucr5SCH4th01ndHLdN4HA0civDnVqk4HR9lAfsWaPCr4mOnOZFa_c
-
-# The OAuth scopes used by the Google Apps Script - found at File > Project Properties > Scopes
+# menuUrl: https://script.google.com/macros/s/AKfycbwPOy2a-8rclTaY3MHLQp1P3Nk75Ot8hJ86zANML91mCOVMfA/exec?bookId=${book.id}&accountId=${account.id}
+menuUrl: https://script.google.com/a/bkper.com/macros/s/AKfycbywpzjsUP7qAeDoAt-Jgs-Jc_pRRmxQnPnx1wgWKg/dev?bookId=${book.id}&accountId=${account.id}
+menuText: Stock Gain/Loss update
+menuPopupWidth: 500
+menuPopupHeight: 500
 scopes: >
     https://www.googleapis.com/auth/userinfo.email
     https://www.googleapis.com/auth/script.external_request
 
-# The Google Apps Script trigger functions
 triggers: >
     onTransactionChecked
     onTransactionUpdated
@@ -29,22 +22,14 @@ triggers: >
     onGroupUpdated
     onGroupDeleted
 
-# The properties scheme used by the App/Bot. The scheme is used to set properties autocomplete and simplify the setup.
-
 properties: 
     transaction:
       keys: quantity
     group:
       keys: stock_exc_code
 
-# The version of Bkper API in which the payload will be formatted
 apiVersion: v3
-
-# The Google Apps Script API Deployment ID
 deploymentId: AKfycbwtsLZgfLUKpXPSQzDjjGMgJEkvwXN5CklmeCHtpEPpXDK66g
-
-# By default the App will be available to your user, or all users of your G Suite domain.
-# Additionally you can yhitelist users you want this app to show up:
 whitelist: >
     maelcaldas@gmail.com
     dgonzalez@ppv.com.uy
