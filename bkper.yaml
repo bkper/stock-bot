@@ -5,7 +5,7 @@ scriptId: 14dxucr5SCH4th01ndHLdN4HA0civDnVqk4HR9lAfsWaPCr4mOnOZFa_c
 menuUrl: https://script.google.com/a/bkper.com/macros/s/AKfycbywpzjsUP7qAeDoAt-Jgs-Jc_pRRmxQnPnx1wgWKg/dev?bookId=${book.id}&accountId=${account.id}
 menuText: Stock Gain/Loss update
 menuPopupWidth: 500
-menuPopupHeight: 500
+menuPopupHeight: 300
 scopes: >
     https://www.googleapis.com/auth/userinfo.email
     https://www.googleapis.com/auth/script.external_request

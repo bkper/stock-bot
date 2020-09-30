@@ -12,8 +12,8 @@ function gainLossIncremental(bookId: string, accountId: string): void {
   BotViewService_.gainLossIncremental(bookId, accountId);
 }
 
-function gainLossFull(bookId: string, accountId: string): void {
-  BotViewService_.gainLossFull(bookId, accountId);
+function gainLossRebuild(bookId: string, accountId: string): void {
+  BotViewService_.gainLossRebuild(bookId, accountId);
 }
 
 function onTransactionChecked(event: bkper.Event) {

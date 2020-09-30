@@ -17,35 +17,26 @@
         background-color: #f5f5f5;
         text-align: center;
       }
-      .body #waiting-panel, .body #update-date-panel {
+      .body #sub-header {
+        display: flex;
         height: 40px;
         align-items: center;
-      }
-      .body #update-date-panel {
-        display: flex;
-      }
-      .body .rate {
-        margin-top: 5px;
-        display: flex;
-        align-items: center;
-      }
-      .body #waiting-panel img {
-        height: 25px;
-      }
-      .body #waiting-panel {
-        display: flex;
         justify-content: center;
       }
-      .body #rates-panel {
-        display: none;
+
+      #waiting-panel img {
+        height: 25px;
       }
 
-      .body label {
-        width: 60px;
+      #waiting-panel {
+        display: none;
       }
 
       .footer {
         display: flex;
+      }
+
+      #waiting-panel, .footer {
         justify-content: center;
       }
 
@@ -60,14 +51,16 @@
     </div>
 
     <div class='body'>
-      <div id='update-date-panel'>
-        <label for="update-date">Date: </label>
+      <div id='sub-header'>
+        FIFO Calculation
       </div>
     </div>
-
-    <div class="footer">
-      <button class="action" id="update-button" onclick="updateGainLoss()">Incremental</button>
-      <button class="action" id="update-button" onclick="updateGainLoss()">Rebuild</button>
+    <div id='waiting-panel'>
+      <img src='https://storage.googleapis.com/bkper-public/addons/loading_3dots.gif'/>
+    </div>  
+    <div class="footer" id='footer-panel'>
+      <button class="action" id="incremental-button" onclick="gainLossIncremental()">Incremental</button>
+      <button class="action" id="rebuild-button" onclick="gainLossRebuild()">Rebuild</button>
     </div>
 
   </body>
@@ -77,10 +70,24 @@
 
 <script>
 
-  function updateGainLoss() {
-    var date = document.getElementById("update-date").value;
+  function gainLossIncremental() {
     showWaiting(true);
-    google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).processSalesIncremental('<?!= book.id ?>', date, getExchangeRates())
+    google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).gainLossIncremental('<?!= book.id ?>', '<?!= account.id ?>')
+  }
+
+  function gainLossRebuild() {
+    showWaiting(true);
+    google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).gainLossRebuild('<?!= book.id ?>', '<?!= account.id ?>')
+  }
+
+  function showWaiting(show) {
+    if (show) {
+      document.getElementById('waiting-panel').style.display = 'flex';
+      document.getElementById('footer-panel').style.display = 'none';
+    } else {
+      document.getElementById('waiting-panel').style.display = 'none';
+      document.getElementById('footer-panel').style.display = 'flex';
+    }
   }
 
   function showError(error) {

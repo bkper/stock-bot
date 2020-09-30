@@ -22,7 +22,7 @@ namespace BotViewService_ {
 
   }
 
-  export function gainLossFull(bookId: string, accountId: string): void {
+  export function gainLossRebuild(bookId: string, accountId: string): void {
   }
 
 }
