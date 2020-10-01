@@ -75,7 +75,38 @@ namespace BotService {
   }
 
   export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account) {
+    let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}'`);
+    while (iterator.hasNext()) {
+      let tx = iterator.next();
+      //Make sure get sales only
 
+      if (tx.isChecked()) {
+        tx.uncheck();
+      }
+
+      if (isSale(tx)) {
+        let stockExcCode = getStockExchangeCode(stockAccount);
+        let financialBook = getFinancialBook(stockBook, stockExcCode)
+        let iterator = financialBook.getTransactions(`remoteId:${tx.getId()}`)
+        while (iterator.hasNext()) {
+          iterator.next().remove();
+        }
+      }
+
+      if (isPurchase(tx)) {
+        if (tx.getProperty(ORIGINAL_QUANTITY) == null) {
+          tx.remove()
+        } else {
+          tx
+          .deleteProperty(SALE_DATE_PROP)
+          .deleteProperty(SALE_PRICE_PROP)
+          .setAmount(+tx.getProperty(ORIGINAL_QUANTITY))
+          .update()
+        }
+      }
+    }
+
+    stockAccount.deleteProperty(NEEDS_REBUILD_PROP).update();
   }
 
   export function flagAccountForRebuildIfNeeded(baseBook: Bkper.Book, event: bkper.Event): string {
@@ -155,21 +186,21 @@ namespace BotService {
 
   function processSale(financialBook: Bkper.Book, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[]): void {
 
-    let salePrice: number = +saleTransaction.getProperty('price');
+    let salePrice: number = +saleTransaction.getProperty(PRICE_PROP);
 
     let gainTotal = 0;
     let soldQuantity = saleTransaction.getAmount();
 
     for (const buyTransaction of purchaseTransactions) {
       
-      let buyPrice: number = +buyTransaction.getProperty('price');
+      let buyPrice: number = +buyTransaction.getProperty(PRICE_PROP);
       let buyQuantity = buyTransaction.getAmount();
       
       if (soldQuantity >= buyQuantity ) {
         let gain = (salePrice * buyQuantity) - (buyPrice * buyQuantity); 
         buyTransaction
-        .setProperty('sale_price', salePrice.toFixed(financialBook.getFractionDigits()))
-        .setProperty('sale_date', saleTransaction.getDate())
+        .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
+        .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
         .addRemoteId(saleTransaction.getId())
         .update().check();
         gainTotal += gain;
@@ -182,8 +213,6 @@ namespace BotService {
 
         let partialBuyQuantity = buyQuantity - remainingBuyQuantity;
 
-        console.log(`partialBuyQuantity: ${partialBuyQuantity}`)
-
         let gain = (salePrice * partialBuyQuantity) - (buyPrice * partialBuyQuantity); 
 
         let newTransaction = stockBook.newTransaction()
@@ -192,9 +221,9 @@ namespace BotService {
         .setCreditAccount(buyTransaction.getCreditAccount())
         .setDebitAccount(buyTransaction.getDebitAccount())
         .setDescription(buyTransaction.getDescription())
-        .setProperty('price', buyTransaction.getProperty('price'))
-        .setProperty('sale_price', salePrice.toFixed(financialBook.getFractionDigits()))
-        .setProperty('sale_date', saleTransaction.getDate())
+        .setProperty(PRICE_PROP, buyTransaction.getProperty(PRICE_PROP))
+        .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
+        .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
         .post()
         .check()
         soldQuantity -= partialBuyQuantity;
@@ -266,7 +295,7 @@ namespace BotService {
   }
 
   export function getExcCode(book: Bkper.Book): string {
-    return book.getProperty('exc_code', 'exchange_code');
+    return book.getProperty(EXC_CODE_PROP, 'exchange_code');
   }
 
 

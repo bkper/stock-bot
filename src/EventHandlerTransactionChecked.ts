@@ -64,10 +64,10 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setDebitAccount(connectedDebitAccount)
       .setDescription(transaction.description)
       .addRemoteId(transaction.id)
-      .setProperty('price', price.toFixed(baseBook.getFractionDigits()))
+      .setProperty(PRICE_PROP, price.toFixed(baseBook.getFractionDigits()))
 
       if (buy) {
-        newTransaction.setProperty('original_quantity', quantity.toFixed(0));
+        newTransaction.setProperty(ORIGINAL_QUANTITY, quantity.toFixed(0));
       }
 
       let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${connectedCreditAccount.getName()} ${connectedDebitAccount.getName()} ${newTransaction.getDescription()}`;

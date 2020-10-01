@@ -22,8 +22,13 @@ class EventHandlerTransactionUpdated extends EventHandlerTransaction {
     connectedTransaction.setDate(transaction.date)
     .setAmount(quantity)
     .setDescription(transaction.description)
-    .setProperty('price', price.toFixed(baseBook.getFractionDigits()))
-    .update();
+    .setProperty(PRICE_PROP, price.toFixed(baseBook.getFractionDigits()));
+
+    if (BotService.isPurchase(connectedTransaction)) {
+      connectedTransaction.setProperty(ORIGINAL_QUANTITY, quantity.toFixed(0));
+    }
+
+    connectedTransaction.update();
 
     let bookAnchor = super.buildBookAnchor(connectedBook);
     let record = `EDITED: ${connectedTransaction.getDateFormatted()} ${quantity} ${connectedTransaction.getCreditAccountName()} ${connectedTransaction.getDebitAccountName()} ${connectedTransaction.getDescription()}`;

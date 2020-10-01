@@ -1,7 +1,12 @@
 BkperApp.setApiKey(PropertiesService.getScriptProperties().getProperty('API_KEY'));
 
-let STOCK_EXC_CODE_PROP = 'stock_exc_code';
-let NEEDS_REBUILD_PROP = 'needs_rebuild';
+const STOCK_EXC_CODE_PROP = 'stock_exc_code';
+const NEEDS_REBUILD_PROP = 'needs_rebuild';
+const PRICE_PROP = 'price';
+const ORIGINAL_QUANTITY = 'original_quantity';
+const SALE_PRICE_PROP = 'sale_price';
+const SALE_DATE_PROP = 'sale_date';
+const EXC_CODE_PROP = 'exc_code';
 
 function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   //@ts-ignore
