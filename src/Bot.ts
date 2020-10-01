@@ -5,13 +5,11 @@ let STOCK_EXC_CODE_PROP = 'stock_exc_code';
 function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   //@ts-ignore
   let bookId = e.parameter.bookId;
-  //@ts-ignore
-  let accountId = e.parameter.accountId;
-  return BotService.getBotViewTemplate(bookId, accountId);
+  return BotService.getBotViewTemplate(bookId);
 }
 
-function calculateRealizedResults(bookId: string, accountId: string): void {
-  BotService.calculateRealizedResults(bookId, accountId);
+function calculateRealizedResults(bookId: string): void {
+  BotService.calculateRealizedResultsForBook(bookId);
 }
 
 function onTransactionChecked(event: bkper.Event) {

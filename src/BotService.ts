@@ -23,9 +23,8 @@ namespace BotService {
     return null;
   }
 
-  export function getBotViewTemplate(baseBookId: string, baseAccountId: string): GoogleAppsScript.HTML.HtmlOutput {
+  export function getBotViewTemplate(baseBookId: string): GoogleAppsScript.HTML.HtmlOutput {
     let baseBook = BkperApp.getBook(baseBookId);
-    let baseAccount = baseBook.getAccount(baseAccountId);
 
     let stockBook = getStockBook(baseBook);
 
@@ -33,17 +32,11 @@ namespace BotService {
       throw 'No book with 0 decimal places found in the collection';
     }
 
-    let stockAccount = stockBook.getAccount(baseAccount.getName());
-
     const template = HtmlService.createTemplateFromFile('BotView');
   
     template.book = {
       id: stockBook.getId(),
       name: stockBook.getName(),
-    }
-    template.account = {
-      id: stockAccount.getId(),
-      name: stockAccount.getName()
     }
 
     return template.evaluate().setTitle('Stock Bot');
@@ -65,54 +58,63 @@ namespace BotService {
     return null;
   }
 
-  export function calculateRealizedResults(stockBookId: string, stockAccountId: string): void {
+
+  export function calculateRealizedResultsForBook(stockBookId: string) {
     let stockBook = BkperApp.getBook(stockBookId);
-    let stockAccount = stockBook.getAccount(stockAccountId);
 
-    let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' is:unchecked`);
+    //let excCode = getStockExchangeCodeForAccount(stockAccount);
 
-    let excCode = getStockExchangeCode(stockAccount);
-    
-    let financialBook = getFinancialBook(stockBook, excCode);
     let saleTransactions: Bkper.Transaction[] = [];
+    let purchaseTransactions: Bkper.Transaction[] = [];
+
+    let iterator = stockBook.getTransactions(`is:unchecked`);
+
     while (iterator.hasNext()) {
       let tx = iterator.next();
       //Make sure get sales only
-      if (tx.getCreditAccountName() == stockAccount.getName()) {
+      if (isSale(tx)) {
         saleTransactions.push(tx);
+      }
+      if (isPurchase(tx)) {
+        purchaseTransactions.push(tx);
       }
     }
 
     //FIFO
     saleTransactions = saleTransactions.reverse();
+    purchaseTransactions = purchaseTransactions.reverse();
+    //TODO sort based on 'order' property
 
-    for (const saleTransaction of saleTransactions) {
-      processSale(financialBook, stockBook, saleTransaction);
-    }
-  }
-
-
-  function processSale(financialBook: Bkper.Book, stockBook: Bkper.Book, saleTransaction: Bkper.Transaction): void {
-
-    let iterator = stockBook.getTransactions(`account:'${saleTransaction.getCreditAccountName()}' is:unchecked`);
-    let buyTransactions: Bkper.Transaction[] = [];
-    while (iterator.hasNext()) {
-      let tx = iterator.next();
-      //Make sure get buy only
-      if (tx.getDebitAccountName() == saleTransaction.getCreditAccountName()) {
-        buyTransactions.push(tx);
+    let stockAccounts = stockBook.getAccounts();
+    for (const stockAccount of stockAccounts) {
+      let stockExcCode = getStockExchangeCode(stockAccount);
+      let financialBook = getFinancialBook(stockBook, stockExcCode)
+      let stockAccountSaleTransactions = saleTransactions.filter(tx => tx.getCreditAccount().getId() == stockAccount.getId());
+      let stockAccountPurchaseTransactions = purchaseTransactions.filter(tx => tx.getDebitAccount().getId() == stockAccount.getId());
+      for (const saleTransaction of stockAccountSaleTransactions) {
+        processSale(financialBook, stockBook, saleTransaction, stockAccountPurchaseTransactions);
       }
     }
 
-    //FIFO
-    buyTransactions = buyTransactions.reverse();
+  }
+
+  function isSale(transaction: Bkper.Transaction): boolean {
+    return transaction.isPosted() && transaction.getDebitAccount().getType() == BkperApp.AccountType.OUTGOING;
+  }
+
+  function isPurchase(transaction: Bkper.Transaction): boolean {
+    return transaction.isPosted() && transaction.getCreditAccount().getType() == BkperApp.AccountType.INCOMING;
+  }
+
+
+  function processSale(financialBook: Bkper.Book, stockBook: Bkper.Book, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[]): void {
 
     let salePrice: number = +saleTransaction.getProperty('price');
 
     let gainTotal = 0;
     let soldQuantity = saleTransaction.getAmount();
 
-    for (const buyTransaction of buyTransactions) {
+    for (const buyTransaction of purchaseTransactions) {
       
       let buyPrice: number = +buyTransaction.getProperty('price');
       let buyQuantity = buyTransaction.getAmount();
@@ -161,6 +163,10 @@ namespace BotService {
     }
 
     if (gainTotal > 0) {
+      // financialBook.newTransaction()
+      // .addRemoteId(saleTransaction.getId())
+      // .setAmount(gainTotal)
+      // .setDescription(`sale of ${soldQuantity} #stock_gain`)
       financialBook.record(`#stock_gain ${financialBook.formatValue(gainTotal)} id:${saleTransaction.getId()}`)
     } else if (gainTotal < 0) {
       financialBook.record(`#stock_loss ${financialBook.formatValue(gainTotal * -1)} id:${saleTransaction.getId()}`)
