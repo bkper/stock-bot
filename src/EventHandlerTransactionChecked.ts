@@ -61,7 +61,6 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setDescription(transaction.description)
       .addRemoteId(transaction.id)
       .setProperty('price', price.toFixed(baseBook.getFractionDigits()))
-      .setProperty('code', stockExcCode);
 
       if (buy) {
         newTransaction.setProperty('original_quantity', quantity.toFixed(0));
@@ -69,9 +68,6 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
       let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${connectedCreditAccount.getName()} ${connectedDebitAccount.getName()} ${newTransaction.getDescription()}`;
       newTransaction.post();
-      // if (selling) {
-      //   this.sell(baseBook, connectedBook, newTransaction);
-      // }
 
       return `POSTED: ${connectedBookAnchor}: ${record}`;
     }

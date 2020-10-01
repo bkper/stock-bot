@@ -23,7 +23,6 @@ class EventHandlerTransactionUpdated extends EventHandlerTransaction {
     .setAmount(quantity)
     .setDescription(transaction.description)
     .setProperty('price', price.toFixed(baseBook.getFractionDigits()))
-    .setProperty('code', stockExcCode)
     .update();
 
     let bookAnchor = super.buildBookAnchor(connectedBook);

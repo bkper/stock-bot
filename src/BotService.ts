@@ -145,7 +145,6 @@ namespace BotService {
         .setDebitAccount(buyTransaction.getDebitAccount())
         .setDescription(buyTransaction.getDescription())
         .setProperty('price', buyTransaction.getProperty('price'))
-        .setProperty('code', buyTransaction.getProperty('code'))
         .setProperty('sale_price', salePrice.toFixed(financialBook.getFractionDigits()))
         .setProperty('sale_date', saleTransaction.getDate())
         .post()
@@ -162,9 +161,9 @@ namespace BotService {
     }
 
     if (gainTotal > 0) {
-      financialBook.record(`#stock_gain ${financialBook.formatValue(gainTotal)} id:${saleTransaction}`)
+      financialBook.record(`#stock_gain ${financialBook.formatValue(gainTotal)} id:${saleTransaction.getId()}`)
     } else if (gainTotal < 0) {
-      financialBook.record(`#stock_loss ${financialBook.formatValue(gainTotal * -1)} id:${saleTransaction}`)
+      financialBook.record(`#stock_loss ${financialBook.formatValue(gainTotal * -1)} id:${saleTransaction.getId()}`)
     }
 
     saleTransaction.check();
