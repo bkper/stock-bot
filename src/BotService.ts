@@ -74,6 +74,9 @@ namespace BotService {
     return null;
   }
 
+  export function revertRealizedResultsForBook(stockBookId: string) {
+
+  }
 
   export function calculateRealizedResultsForBook(stockBookId: string) {
     let stockBook = BkperApp.getBook(stockBookId);
