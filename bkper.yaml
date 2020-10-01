@@ -3,7 +3,7 @@ clientId: 783262894504-rk14vg9ogq4fpsusf87lsubc8c644bni.apps.googleusercontent.c
 scriptId: 14dxucr5SCH4th01ndHLdN4HA0civDnVqk4HR9lAfsWaPCr4mOnOZFa_c
 # menuUrl: https://script.google.com/macros/s/AKfycbwPOy2a-8rclTaY3MHLQp1P3Nk75Ot8hJ86zANML91mCOVMfA/exec?bookId=${book.id}
 menuUrl: https://script.google.com/a/bkper.com/macros/s/AKfycbywpzjsUP7qAeDoAt-Jgs-Jc_pRRmxQnPnx1wgWKg/dev?bookId=${book.id}
-menuText: Realized Results
+menuText: Calculate Realized Results
 menuPopupWidth: 500
 menuPopupHeight: 300
 scopes: >
