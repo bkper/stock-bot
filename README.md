@@ -15,8 +15,6 @@ Financial and Instruments Books **should be in same [Collection](https://help.bk
 
 The Instruments Book is identified by a single book in the Collection with the **decimal places set to 0 (zero)**.
 
-The Stock Bot should be **installed in the Financial Book(s) only**.
-
 The bot interact with the following properties:
 
 ### Group Properties
