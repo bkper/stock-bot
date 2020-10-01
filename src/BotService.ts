@@ -76,6 +76,13 @@ namespace BotService {
 
   export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account) {
     let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}'`);
+    
+    let stockAccountSaleTransactions: Bkper.Transaction[] = [];
+    let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
+
+    let stockExcCode = getStockExchangeCode(stockAccount);
+    let financialBook = getFinancialBook(stockBook, stockExcCode)
+
     while (iterator.hasNext()) {
       let tx = iterator.next();
       //Make sure get sales only
@@ -85,12 +92,11 @@ namespace BotService {
       }
 
       if (isSale(tx)) {
-        let stockExcCode = getStockExchangeCode(stockAccount);
-        let financialBook = getFinancialBook(stockBook, stockExcCode)
         let iterator = financialBook.getTransactions(`remoteId:${tx.getId()}`)
         while (iterator.hasNext()) {
           iterator.next().remove();
         }
+        stockAccountSaleTransactions.push(tx);
       }
 
       if (isPurchase(tx)) {
@@ -101,12 +107,21 @@ namespace BotService {
           .deleteProperty(SALE_DATE_PROP)
           .deleteProperty(SALE_PRICE_PROP)
           .setAmount(+tx.getProperty(ORIGINAL_QUANTITY))
-          .update()
+          stockAccountPurchaseTransactions.push(tx);
         }
       }
     }
 
     stockAccount.deleteProperty(NEEDS_REBUILD_PROP).update();
+
+    //FIFO
+    stockAccountSaleTransactions = stockAccountSaleTransactions.reverse();
+    stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.reverse();
+
+    for (const saleTransaction of stockAccountSaleTransactions) {
+      processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
+    }
+
   }
 
   export function flagAccountForRebuildIfNeeded(baseBook: Bkper.Book, event: bkper.Event): string {
@@ -137,11 +152,15 @@ namespace BotService {
   export function calculateRealizedResultsForBook(stockBookId: string) {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccounts = stockBook.getAccounts();
-    for (const stockAccount of stockAccounts) {
-      if (needsRebuild(stockAccount)) {
-        revertRealizedResultsForAccount(stockBook, stockAccount);
-      }
+    for (let i = 0; i < stockAccounts.length; i++) {
+        const stockAccount = stockAccounts[i];
+        if (needsRebuild(stockAccount)) {
+          revertRealizedResultsForAccount(stockBook, stockAccount);
+          stockAccounts.splice(i, 1);
+        }        
     }
+
+
 
     let saleTransactions: Bkper.Transaction[] = [];
     let purchaseTransactions: Bkper.Transaction[] = [];
