@@ -58,6 +58,22 @@ namespace BotService {
     return null;
   }
 
+  function getStockExchangeGroup(account: Bkper.Account): Bkper.Group {
+    if (account == null) {
+      return null;
+    }
+    let groups = account.getGroups();
+    if (groups != null) {
+      for (const group of groups) {
+        let stockExchange = group.getProperty(STOCK_EXC_CODE_PROP);
+        if (stockExchange != null && stockExchange.trim() != '') {
+          return group;
+        }
+      }
+    }
+    return null;
+  }
+
 
   export function calculateRealizedResultsForBook(stockBookId: string) {
     let stockBook = BkperApp.getBook(stockBookId);
@@ -92,7 +108,7 @@ namespace BotService {
       let stockAccountSaleTransactions = saleTransactions.filter(tx => tx.getCreditAccount().getId() == stockAccount.getId());
       let stockAccountPurchaseTransactions = purchaseTransactions.filter(tx => tx.getDebitAccount().getId() == stockAccount.getId());
       for (const saleTransaction of stockAccountSaleTransactions) {
-        processSale(financialBook, stockBook, saleTransaction, stockAccountPurchaseTransactions);
+        processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
       }
     }
 
@@ -107,7 +123,7 @@ namespace BotService {
   }
 
 
-  function processSale(financialBook: Bkper.Book, stockBook: Bkper.Book, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[]): void {
+  function processSale(financialBook: Bkper.Book, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[]): void {
 
     let salePrice: number = +saleTransaction.getProperty('price');
 
@@ -162,14 +178,58 @@ namespace BotService {
 
     }
 
+    const unrealizedAccountName = `${stockAccount.getName()} Unrealized`;
+    let unrealizedAccount = financialBook.getAccount(unrealizedAccountName)
+    if (unrealizedAccount == null) {
+      let stockExchangeGroup = getStockExchangeGroup(stockAccount);
+      let unrealizedGroup = stockExchangeGroup != null ? financialBook.getGroup(stockExchangeGroup.getName()) : null;
+      unrealizedAccount = financialBook.newAccount()
+      .setName(unrealizedAccountName)
+      .setType(BkperApp.AccountType.LIABILITY)
+      .addGroup(unrealizedGroup)
+      .create()
+    }
+
+
     if (gainTotal > 0) {
-      // financialBook.newTransaction()
-      // .addRemoteId(saleTransaction.getId())
-      // .setAmount(gainTotal)
-      // .setDescription(`sale of ${soldQuantity} #stock_gain`)
-      financialBook.record(`#stock_gain ${financialBook.formatValue(gainTotal)} id:${saleTransaction.getId()}`)
+
+      const realizedGainAccountName = `${stockAccount.getName()} Gain`;
+      let realizedGainAccount = financialBook.getAccount(realizedGainAccountName);
+      if (realizedGainAccount == null) {
+        realizedGainAccount = financialBook.newAccount()
+        .setName(realizedGainAccountName)
+        .setType(BkperApp.AccountType.INCOMING)
+        .create()
+      }
+
+      financialBook.newTransaction()
+      .addRemoteId(saleTransaction.getId())
+      .setDate(saleTransaction.getDate())
+      .setAmount(gainTotal)
+      .setDescription(`sale of ${saleTransaction.getAmount()} #stock_gain`)
+      .from(realizedGainAccount)
+      .to(unrealizedAccount)
+      .post();
+      
     } else if (gainTotal < 0) {
-      financialBook.record(`#stock_loss ${financialBook.formatValue(gainTotal * -1)} id:${saleTransaction.getId()}`)
+
+      const realizedLossAccountName = `${stockAccount.getName()} Loss`;
+      let realizedLossAccount = financialBook.getAccount(realizedLossAccountName);
+      if (realizedLossAccount == null) {
+        realizedLossAccount = financialBook.newAccount()
+        .setName(realizedLossAccountName)
+        .setType(BkperApp.AccountType.OUTGOING)
+        .create()
+      }
+
+      financialBook.newTransaction()
+      .addRemoteId(saleTransaction.getId())
+      .setDate(saleTransaction.getDate())
+      .setAmount(gainTotal)
+      .setDescription(`sale of ${saleTransaction.getAmount()} #stock_loss`)
+      .from(unrealizedAccount)
+      .to(realizedLossAccount)
+      .post()
     }
 
     saleTransaction.check();
