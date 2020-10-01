@@ -2,9 +2,16 @@ abstract class EventHandler {
 
   protected abstract processObject(baseBook: Bkper.Book, connectedBook: Bkper.Book, event: bkper.Event): string;
 
+  protected intercept(baseBook: Bkper.Book, event: bkper.Event): string {return null}
+
   handleEvent(event: bkper.Event): string[] | string | boolean {
     let bookId = event.bookId;
     let baseBook = BkperApp.getBook(bookId);
+
+    let interceptionResponse = this.intercept(baseBook, event);
+    if (interceptionResponse) {
+      return interceptionResponse;
+    }
 
     let responses: string[] = [];
     let stockBook = BotService.getStockBook(baseBook);

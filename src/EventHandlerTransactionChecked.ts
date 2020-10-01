@@ -5,6 +5,10 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
     return `remoteId:${transaction.id}`;
   }
 
+  intercept(baseBook: Bkper.Book, event: bkper.Event): string {
+    return BotService.flagAccountForRebuildIfNeeded(baseBook, event);
+  }
+
   protected connectedTransactionFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, connectedTransaction: Bkper.Transaction, stockExcCode: string): string {
     let bookAnchor = super.buildBookAnchor(connectedBook);
     let record = `${connectedTransaction.getDate()} ${connectedTransaction.getAmount()} ${connectedTransaction.getCreditAccountName()} ${connectedTransaction.getDebitAccountName()} ${connectedTransaction.getDescription()}`;

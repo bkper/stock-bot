@@ -74,14 +74,43 @@ namespace BotService {
     return null;
   }
 
-  export function revertRealizedResultsForBook(stockBookId: string) {
+  export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account) {
 
+  }
+
+  export function flagAccountForRebuildIfNeeded(baseBook: Bkper.Book, event: bkper.Event): string {
+    if (baseBook.getFractionDigits() == 0 && event.agent.id != 'stock-bot') {
+      let operation = event.data.object as bkper.TransactionOperation;
+      let transactionPayload = operation.transaction;
+      let transaction = baseBook.getTransaction(transactionPayload.id);
+      let stockAccount: Bkper.Account;
+      if (BotService.isSale(transaction)) {
+        stockAccount = transaction.getCreditAccount();
+      }
+      if (BotService.isPurchase(transaction)) {
+        stockAccount = transaction.getDebitAccount();
+      }
+
+      if(stockAccount && stockAccount.getProperty(NEEDS_REBUILD_PROP) == null) {
+        stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
+        return `Flagging account ${stockAccount.getName()} for rebuild`;
+      }
+    }
+    return null;
+  }
+
+  function needsRebuild(stockAccount: Bkper.Account): boolean {
+    return stockAccount.getProperty(NEEDS_REBUILD_PROP) == 'TRUE';
   }
 
   export function calculateRealizedResultsForBook(stockBookId: string) {
     let stockBook = BkperApp.getBook(stockBookId);
-
-    //let excCode = getStockExchangeCodeForAccount(stockAccount);
+    let stockAccounts = stockBook.getAccounts();
+    for (const stockAccount of stockAccounts) {
+      if (needsRebuild(stockAccount)) {
+        revertRealizedResultsForAccount(stockBook, stockAccount);
+      }
+    }
 
     let saleTransactions: Bkper.Transaction[] = [];
     let purchaseTransactions: Bkper.Transaction[] = [];
@@ -104,7 +133,6 @@ namespace BotService {
     purchaseTransactions = purchaseTransactions.reverse();
     //TODO sort based on 'order' property
 
-    let stockAccounts = stockBook.getAccounts();
     for (const stockAccount of stockAccounts) {
       let stockExcCode = getStockExchangeCode(stockAccount);
       let financialBook = getFinancialBook(stockBook, stockExcCode)
@@ -117,14 +145,13 @@ namespace BotService {
 
   }
 
-  function isSale(transaction: Bkper.Transaction): boolean {
+  export function isSale(transaction: Bkper.Transaction): boolean {
     return transaction.isPosted() && transaction.getDebitAccount().getType() == BkperApp.AccountType.OUTGOING;
   }
 
-  function isPurchase(transaction: Bkper.Transaction): boolean {
+  export function isPurchase(transaction: Bkper.Transaction): boolean {
     return transaction.isPosted() && transaction.getCreditAccount().getType() == BkperApp.AccountType.INCOMING;
   }
-
 
   function processSale(financialBook: Bkper.Book, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[]): void {
 
@@ -241,6 +268,7 @@ namespace BotService {
   export function getExcCode(book: Bkper.Book): string {
     return book.getProperty('exc_code', 'exchange_code');
   }
+
 
 }
 
