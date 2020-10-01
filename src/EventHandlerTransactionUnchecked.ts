@@ -1,9 +1,13 @@
 
 class EventHandlerTransactionUnchecked {
 
-  handleEvent(event: bkper.Event): string {
+  handleEvent(event: bkper.Event): string | boolean {
     let baseBook = BkperApp.getBook(event.bookId);
-    return BotService.flagAccountForRebuildIfNeeded(baseBook, event);
+    const response = BotService.flagAccountForRebuildIfNeeded(baseBook, event);
+    if (response) {
+      return response;
+    }
+    return false;
   }
 
 }
