@@ -12,6 +12,7 @@ scopes: >
 
 triggers: >
     onTransactionChecked
+    onTransactionUnchecked
     onTransactionUpdated
     onTransactionDeleted
     onTransactionRestored

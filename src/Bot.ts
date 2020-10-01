@@ -16,6 +16,10 @@ function onTransactionChecked(event: bkper.Event) {
   return new EventHandlerTransactionChecked().handleEvent(event);
 }
 
+function onTransactionUnchecked(event: bkper.Event) {
+  return new EventHandlerTransactionUnchecked().handleEvent(event);
+}
+
 function onTransactionUpdated(event: bkper.Event) {
   return new EventHandlerTransactionUpdated().handleEvent(event);
 }
