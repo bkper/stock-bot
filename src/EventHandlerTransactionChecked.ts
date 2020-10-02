@@ -45,6 +45,13 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setProperty(PRICE_PROP, price.toFixed(financialBook.getFractionDigits()))
       .post()
 
+      let lastSaleDate = stockAccount.getProperty(LAST_SALE_DATE_PROP);
+      if (lastSaleDate == null || transaction.dateValue > +lastSaleDate) {
+        stockAccount.setProperty(LAST_SALE_DATE_PROP, transaction.dateValue+'').update();
+      } else if (transaction.dateValue <= +lastSaleDate) {
+        stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
+      }
+
       let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${stockAccount.getName()} ${stockSellAccount.getName()} ${newTransaction.getDescription()}`;
       return `SELL: ${stockBookAnchor}: ${record}`;
 
@@ -67,6 +74,11 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
         .setProperty(PRICE_PROP, price.toFixed(financialBook.getFractionDigits()))
         .setProperty(ORIGINAL_QUANTITY, quantity.toFixed(0))
         .post()
+
+        let lastSaleDate = stockAccount.getProperty(LAST_SALE_DATE_PROP);
+        if (lastSaleDate != null && transaction.dateValue <= +lastSaleDate) {
+          stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
+        }
 
         let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${stockBuyAccount.getName()} ${stockAccount.getName()} ${newTransaction.getDescription()}`;
         return `BUY: ${stockBookAnchor}: ${record}`;

@@ -7,6 +7,7 @@ const ORIGINAL_QUANTITY = 'original_quantity';
 const SALE_PRICE_PROP = 'sale_price';
 const SALE_DATE_PROP = 'sale_date';
 const EXC_CODE_PROP = 'exc_code';
+const LAST_SALE_DATE_PROP = 'last_sale_date';
 const STOCK_SELL_ACCOUNT_NAME = 'Sell';
 const STOCK_BUY_ACCOUNT_NAME = 'Buy';
 
