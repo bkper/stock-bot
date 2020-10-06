@@ -28,6 +28,8 @@ properties:
       keys: quantity order
     group:
       keys: stock_exc_code
+    account:
+      keys: stock_exc_account stock_gain_account stock_loss_account
 
 apiVersion: v3
 deploymentId: AKfycbwtsLZgfLUKpXPSQzDjjGMgJEkvwXN5CklmeCHtpEPpXDK66g

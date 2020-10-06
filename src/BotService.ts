@@ -290,7 +290,10 @@ namespace BotService {
 
     }
 
-    const unrealizedAccountName = `${stockAccount.getName()} Unrealized`;
+    let unrealizedAccountName = stockAccount.getProperty(STOCK_EXC_ACCOUNT_PROP);
+    if (unrealizedAccountName == null) {
+      unrealizedAccountName = `${stockAccount.getName()} Exchange`;
+    }
     let unrealizedAccount = financialBook.getAccount(unrealizedAccountName)
     if (unrealizedAccount == null) {
       let stockExchangeGroup = getStockExchangeGroup(stockAccount);
@@ -305,7 +308,10 @@ namespace BotService {
 
     if (gainTotal > 0) {
 
-      const realizedGainAccountName = `${stockAccount.getName()} Gain`;
+      let realizedGainAccountName = stockAccount.getProperty(STOCK_GAIN_ACCOUNT_PROP);
+      if (realizedGainAccountName == null) {
+        realizedGainAccountName = `${stockAccount.getName()} Gain`
+      }
       let realizedGainAccount = financialBook.getAccount(realizedGainAccountName);
       if (realizedGainAccount == null) {
         realizedGainAccount = financialBook.newAccount()
@@ -325,7 +331,10 @@ namespace BotService {
       
     } else if (gainTotal < 0) {
 
-      const realizedLossAccountName = `${stockAccount.getName()} Loss`;
+      let realizedLossAccountName = stockAccount.getProperty(STOCK_LOSS_ACCOUNT_PROP);
+      if (realizedLossAccountName == null) {
+        realizedLossAccountName = `${stockAccount.getName()} Loss`
+      }
       let realizedLossAccount = financialBook.getAccount(realizedLossAccountName);
       if (realizedLossAccount == null) {
         realizedLossAccount = financialBook.newAccount()
