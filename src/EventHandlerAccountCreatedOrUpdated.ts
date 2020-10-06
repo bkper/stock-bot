@@ -9,33 +9,33 @@ class EventHandlerAccountCreatedOrUpdated extends EventHandlerAccount {
     return `${bookAnchor}: ACCOUNT ${connectedAccount.getName()} CREATED`;
   }
 
-  protected connectedAccountFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, baseAccount: bkper.Account, connectedAccount: Bkper.Account): string {
-    this.syncAccounts(baseBook, connectedBook, baseAccount, connectedAccount);
-    connectedAccount.update();
-    let bookAnchor = super.buildBookAnchor(connectedBook);
-    return `${bookAnchor}: ACCOUNT ${connectedAccount.getName()} UPDATED`;
+  protected connectedAccountFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialAccount: bkper.Account, stockAccount: Bkper.Account): string {
+    this.syncAccounts(financialBook, stockBook, financialAccount, stockAccount);
+    stockAccount.update();
+    let bookAnchor = super.buildBookAnchor(stockBook);
+    return `${bookAnchor}: ACCOUNT ${stockAccount.getName()} UPDATED`;
   }
 
-  protected syncAccounts(baseBook: Bkper.Book, connectedBook: Bkper.Book, baseAccount: bkper.Account, connectedAccount: Bkper.Account) {
-    connectedAccount.setGroups([]);
-    connectedAccount.setName(baseAccount.name)
-      .setType(baseAccount.type as Bkper.AccountType)
-      .setProperties(baseAccount.properties)
-      .setArchived(baseAccount.archived);
-    if (baseAccount.groups) {
-      baseAccount.groups.forEach(baseGroupId => {
-        let baseGroup = baseBook.getGroup(baseGroupId);
+  protected syncAccounts(financialBook: Bkper.Book, stockBook: Bkper.Book, financialAccount: bkper.Account, stockAccount: Bkper.Account) {
+    stockAccount.setGroups([]);
+    stockAccount.setName(financialAccount.name)
+      .setType(financialAccount.type as Bkper.AccountType)
+      .setProperties(financialAccount.properties)
+      .setArchived(financialAccount.archived);
+    if (financialAccount.groups) {
+      financialAccount.groups.forEach(baseGroupId => {
+        let baseGroup = financialBook.getGroup(baseGroupId);
         if (baseGroup) {
-          let connectedGroup = connectedBook.getGroup(baseGroup.getName());
+          let connectedGroup = stockBook.getGroup(baseGroup.getName());
           let stockExcCode = baseGroup.getProperty(STOCK_EXC_CODE_PROP);
           if (connectedGroup == null && stockExcCode != null && stockExcCode.trim() != '') {
-            connectedGroup = connectedBook.newGroup()
+            connectedGroup = stockBook.newGroup()
               .setHidden(baseGroup.isHidden())
               .setName(baseGroup.getName())
               .setProperties(baseGroup.getProperties())
               .create();
           }
-          connectedAccount.addGroup(connectedGroup);
+          stockAccount.addGroup(connectedGroup);
         }
       });
     }

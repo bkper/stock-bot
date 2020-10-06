@@ -1,15 +1,15 @@
 class EventHandlerAccountDeleted extends EventHandlerAccount {
-  protected connectedAccountNotFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, account: bkper.Account): string {
-    let bookAnchor = super.buildBookAnchor(connectedBook);
-    return `${bookAnchor}: ACCOUNT ${account.name} NOT Found`;
+  protected connectedAccountNotFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialAccount: bkper.Account): string {
+    let bookAnchor = super.buildBookAnchor(stockBook);
+    return `${bookAnchor}: ACCOUNT ${financialAccount.name} NOT Found`;
   }
-  protected connectedAccountFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, account: bkper.Account, connectedAccount: Bkper.Account): string {
-    if (connectedAccount.hasTransactionPosted()) {
-      connectedAccount.setArchived(true).update();
+  protected connectedAccountFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialAccount: bkper.Account, stockAccount: Bkper.Account): string {
+    if (stockAccount.hasTransactionPosted()) {
+      stockAccount.setArchived(true).update();
     } else {
-      connectedAccount.remove();
+      stockAccount.remove();
     }
-    let bookAnchor = super.buildBookAnchor(connectedBook);
-    return `${bookAnchor}: ACCOUNT ${connectedAccount.getName()} DELETED`;
+    let bookAnchor = super.buildBookAnchor(stockBook);
+    return `${bookAnchor}: ACCOUNT ${stockAccount.getName()} DELETED`;
   }
 }

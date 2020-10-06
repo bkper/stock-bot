@@ -4,34 +4,34 @@ class EventHandlerTransactionUpdated extends EventHandlerTransaction {
     return `remoteId:${transaction.id}`;
   }
 
-  protected connectedTransactionNotFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, stockExcCode: string): string {
+  protected connectedTransactionNotFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialTransaction: bkper.Transaction, stockExcCode: string): string {
     return null;
   }
-  protected connectedTransactionFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, connectedTransaction: Bkper.Transaction, stockExcCode: string): string {
+  protected connectedTransactionFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialTransaction: bkper.Transaction, stockTransaction: Bkper.Transaction, stockExcCode: string): string {
 
-    if (!transaction.posted) {
+    if (!financialTransaction.posted) {
       return null;
     }
 
-    let quantity = this.getQuantity(transaction);
+    let quantity = this.getQuantity(financialTransaction);
     if (quantity == null) {
       return null;
     }
 
-    let price = new Number(transaction.amount).valueOf() / quantity;
-    connectedTransaction.setDate(transaction.date)
+    let price = new Number(financialTransaction.amount).valueOf() / quantity;
+    stockTransaction.setDate(financialTransaction.date)
     .setAmount(quantity)
-    .setDescription(transaction.description)
-    .setProperty(PRICE_PROP, price.toFixed(baseBook.getFractionDigits()));
+    .setDescription(financialTransaction.description)
+    .setProperty(PRICE_PROP, price.toFixed(financialBook.getFractionDigits()));
 
-    if (BotService.isPurchase(connectedTransaction)) {
-      connectedTransaction.setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(0));
+    if (BotService.isPurchase(stockTransaction)) {
+      stockTransaction.setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(0));
     }
 
-    connectedTransaction.update();
+    stockTransaction.update();
 
-    let bookAnchor = super.buildBookAnchor(connectedBook);
-    let record = `EDITED: ${connectedTransaction.getDateFormatted()} ${quantity} ${connectedTransaction.getCreditAccountName()} ${connectedTransaction.getDebitAccountName()} ${connectedTransaction.getDescription()}`;
+    let bookAnchor = super.buildBookAnchor(stockBook);
+    let record = `EDITED: ${stockTransaction.getDateFormatted()} ${quantity} ${stockTransaction.getCreditAccountName()} ${stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;
     return `${bookAnchor}: ${record}`;
   }
 

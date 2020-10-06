@@ -4,17 +4,17 @@ class EventHandlerTransactionRestored extends EventHandlerTransaction {
     return `remoteId:${transaction.id} is:trashed`;
   }
 
-  protected connectedTransactionNotFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, stockExcCode: string): string {
+  protected connectedTransactionNotFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialTransaction: bkper.Transaction, stockExcCode: string): string {
     return null;
   }
-  protected connectedTransactionFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, connectedTransaction: Bkper.Transaction, stockExcCode: string): string {
-    let bookAnchor = super.buildBookAnchor(connectedBook);
+  protected connectedTransactionFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialTransaction: bkper.Transaction, stockTransaction: Bkper.Transaction, stockExcCode: string): string {
+    let bookAnchor = super.buildBookAnchor(stockBook);
 
-    connectedTransaction.restore();
+    stockTransaction.restore();
 
-    let amountFormatted = connectedBook.formatValue(connectedTransaction.getAmount())
+    let amountFormatted = stockBook.formatValue(stockTransaction.getAmount())
 
-    let record = `RESTORED: ${connectedTransaction.getDateFormatted()} ${amountFormatted} ${connectedTransaction.getCreditAccountName()} ${connectedTransaction.getDebitAccountName()} ${connectedTransaction.getDescription()}`;
+    let record = `RESTORED: ${stockTransaction.getDateFormatted()} ${amountFormatted} ${stockTransaction.getCreditAccountName()} ${stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;
 
     return `${bookAnchor}: ${record}`;
   }

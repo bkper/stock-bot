@@ -1,21 +1,21 @@
 class EventHandlerGroupCreatedOrUpdated extends EventHandlerGroup {
-  protected connectedGroupNotFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, baseGroup: bkper.Group): string {
-    let connectedGroup = connectedBook.newGroup()
-    .setName(baseGroup.name)
-    .setHidden(baseGroup.hidden)
-    .setProperties(baseGroup.properties)
+  protected connectedGroupNotFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialGroup: bkper.Group): string {
+    let connectedGroup = stockBook.newGroup()
+    .setName(financialGroup.name)
+    .setHidden(financialGroup.hidden)
+    .setProperties(financialGroup.properties)
     .create();
-    let bookAnchor = super.buildBookAnchor(connectedBook);
+    let bookAnchor = super.buildBookAnchor(stockBook);
     return `${bookAnchor}: GROUP ${connectedGroup.getName()} CREATED`;
   }
-  protected connectedGroupFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, baseGroup: bkper.Group, connectedGroup: Bkper.Group): string {
-    connectedGroup
-    .setName(baseGroup.name)
-    .setHidden(baseGroup.hidden)
-    .setProperties(baseGroup.properties)
+  protected connectedGroupFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialGroup: bkper.Group, stockGroup: Bkper.Group): string {
+    stockGroup
+    .setName(financialGroup.name)
+    .setHidden(financialGroup.hidden)
+    .setProperties(financialGroup.properties)
     .update();
-    let bookAnchor = super.buildBookAnchor(connectedBook);
-    return `${bookAnchor}: GROUP ${connectedGroup.getName()} UPDATED`;
+    let bookAnchor = super.buildBookAnchor(stockBook);
+    return `${bookAnchor}: GROUP ${stockGroup.getName()} UPDATED`;
   }
 
 

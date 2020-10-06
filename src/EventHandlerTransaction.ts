@@ -5,23 +5,23 @@ interface AmountDescription {
 
 abstract class EventHandlerTransaction extends EventHandler {
 
-  processObject(baseBook: Bkper.Book, connectedBook: Bkper.Book, event: bkper.Event): string {
-    let excCode = BotService.getExcCode(baseBook);
+  processObject(financialBook: Bkper.Book, stockBook: Bkper.Book, event: bkper.Event): string {
+    let excCode = BotService.getExcCode(financialBook);
     let operation = event.data.object as bkper.TransactionOperation;
-    let transaction = operation.transaction;
-    let iterator = connectedBook.getTransactions(this.getTransactionQuery(transaction));
+    let financialTransaction = operation.transaction;
+    let iterator = stockBook.getTransactions(this.getTransactionQuery(financialTransaction));
 
-    let stockExcCode = this.getStockExcCodeFromTransaction(baseBook, transaction);
+    let stockExcCode = this.getStockExcCodeFromTransaction(financialBook, financialTransaction);
     
     if (!this.matchStockExchange(stockExcCode, excCode)) {
       return null;
     }
 
     if (iterator.hasNext()) {
-      let connectedTransaction = iterator.next();
-      return this.connectedTransactionFound(baseBook, connectedBook, transaction, connectedTransaction, stockExcCode);
+      let stockTransaction = iterator.next();
+      return this.connectedTransactionFound(financialBook, stockBook, financialTransaction, stockTransaction, stockExcCode);
     } else {
-      return this.connectedTransactionNotFound(baseBook, connectedBook, transaction, stockExcCode)
+      return this.connectedTransactionNotFound(financialBook, stockBook, financialTransaction, stockExcCode)
     }
   }
   
@@ -33,21 +33,21 @@ abstract class EventHandlerTransaction extends EventHandler {
     return new Number(quantityStr).valueOf();
   }
 
-  private getStockExcCodeFromTransaction(baseBook: Bkper.Book, transaction: bkper.Transaction) {
+  private getStockExcCodeFromTransaction(financialBook: Bkper.Book, fiancialTransaction: bkper.Transaction) {
 
-    let baseCreditAccount = transaction.creditAccount != null ? baseBook.getAccount(transaction.creditAccount.id) : null;
-    let baseDebitAccount = transaction.debitAccount != null ? baseBook.getAccount(transaction.debitAccount.id) : null;
+    let financialCreditAccount = fiancialTransaction.creditAccount != null ? financialBook.getAccount(fiancialTransaction.creditAccount.id) : null;
+    let financialDebitAccount = fiancialTransaction.debitAccount != null ? financialBook.getAccount(fiancialTransaction.debitAccount.id) : null;
 
-    let stockExcCode = BotService.getStockExchangeCode(baseCreditAccount);
+    let stockExcCode = BotService.getStockExchangeCode(financialCreditAccount);
     if (stockExcCode == null) {
-      stockExcCode = BotService.getStockExchangeCode(baseDebitAccount);
+      stockExcCode = BotService.getStockExchangeCode(financialDebitAccount);
     }
     return stockExcCode;
   }
 
   protected abstract getTransactionQuery(transaction: bkper.Transaction): string;
 
-  protected abstract connectedTransactionNotFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, stockExcCode: string): string;
+  protected abstract connectedTransactionNotFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialTransaction: bkper.Transaction, stockExcCode: string): string;
 
-  protected abstract connectedTransactionFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, transaction: bkper.Transaction, connectedTransaction: Bkper.Transaction, stockExcCode: string): string;
+  protected abstract connectedTransactionFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, financialTransaction: bkper.Transaction, stockTransaction: Bkper.Transaction, stockExcCode: string): string;
 }

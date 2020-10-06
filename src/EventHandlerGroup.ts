@@ -1,7 +1,7 @@
 abstract class EventHandlerGroup extends EventHandler {
 
-  protected processObject(baseBook: Bkper.Book, connectedBook: Bkper.Book, event: bkper.Event): string {
-    let excCode = BotService.getExcCode(baseBook);
+  protected processObject(financialBook: Bkper.Book, stockBook: Bkper.Book, event: bkper.Event): string {
+    let excCode = BotService.getExcCode(financialBook);
     let group = event.data.object as bkper.Group;
 
     let stockExcCode = group.properties[STOCK_EXC_CODE_PROP];
@@ -10,20 +10,20 @@ abstract class EventHandlerGroup extends EventHandler {
       return null;
     }
 
-    let connectedGroup = connectedBook.getGroup(group.name);
+    let connectedGroup = stockBook.getGroup(group.name);
     if (connectedGroup == null && (event.data.previousAttributes && event.data.previousAttributes['name'])) {
-      connectedGroup = connectedBook.getGroup(event.data.previousAttributes['name']);
+      connectedGroup = stockBook.getGroup(event.data.previousAttributes['name']);
     }
 
     if (connectedGroup) {
-      return this.connectedGroupFound(baseBook, connectedBook, group, connectedGroup);
+      return this.connectedGroupFound(financialBook, stockBook, group, connectedGroup);
     } else {
-      return this.connectedGroupNotFound(baseBook, connectedBook, group);
+      return this.connectedGroupNotFound(financialBook, stockBook, group);
     }
   }
 
-  protected abstract connectedGroupNotFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, group: bkper.Group): string;
+  protected abstract connectedGroupNotFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialGroup: bkper.Group): string;
 
-  protected abstract connectedGroupFound(baseBook: Bkper.Book, connectedBook: Bkper.Book, group: bkper.Group, connectedGroup: Bkper.Group): string;
+  protected abstract connectedGroupFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialGroup: bkper.Group, stockGroup: Bkper.Group): string;
 
 }
