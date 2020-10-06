@@ -183,15 +183,24 @@ namespace BotService {
     purchaseTransactions = purchaseTransactions.reverse();
     //TODO sort based on 'order' property
 
+    let booksToAudit: Bkper.Book[] = []
+    booksToAudit.push(stockBook);
+
     for (const stockAccount of stockAccounts) {
       let stockExcCode = getStockExchangeCode(stockAccount);
-      let financialBook = getFinancialBook(stockBook, stockExcCode)
+      let financialBook = getFinancialBook(stockBook, stockExcCode);
+      if (financialBook == null) {
+        continue; //Skip
+      }
+      booksToAudit.push(financialBook);
       let stockAccountSaleTransactions = saleTransactions.filter(tx => tx.getCreditAccount().getId() == stockAccount.getId());
       let stockAccountPurchaseTransactions = purchaseTransactions.filter(tx => tx.getDebitAccount().getId() == stockAccount.getId());
       for (const saleTransaction of stockAccountSaleTransactions) {
         processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
       }
     }
+
+    booksToAudit.forEach(book => book.audit());
 
   }
 
