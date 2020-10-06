@@ -25,7 +25,7 @@ class EventHandlerTransactionUpdated extends EventHandlerTransaction {
     .setProperty(PRICE_PROP, price.toFixed(baseBook.getFractionDigits()));
 
     if (BotService.isPurchase(connectedTransaction)) {
-      connectedTransaction.setProperty(ORIGINAL_QUANTITY, quantity.toFixed(0));
+      connectedTransaction.setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(0));
     }
 
     connectedTransaction.update();

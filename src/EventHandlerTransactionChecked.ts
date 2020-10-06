@@ -72,7 +72,7 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
         .setDescription(transaction.description)
         .addRemoteId(transaction.id)
         .setProperty(PRICE_PROP, price.toFixed(financialBook.getFractionDigits()))
-        .setProperty(ORIGINAL_QUANTITY, quantity.toFixed(0))
+        .setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(0))
         .post()
 
         let lastSaleDate = stockAccount.getProperty(LAST_SALE_DATE_PROP);

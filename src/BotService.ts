@@ -100,13 +100,14 @@ namespace BotService {
       }
 
       if (isPurchase(tx)) {
-        if (tx.getProperty(ORIGINAL_QUANTITY) == null) {
+        if (tx.getProperty(ORIGINAL_QUANTITY_PROP) == null) {
           tx.remove()
         } else {
           tx
           .deleteProperty(SALE_DATE_PROP)
           .deleteProperty(SALE_PRICE_PROP)
-          .setAmount(+tx.getProperty(ORIGINAL_QUANTITY))
+          .setAmount(+tx.getProperty(ORIGINAL_QUANTITY_PROP))
+          .update();
           stockAccountPurchaseTransactions.push(tx);
         }
       }
@@ -115,8 +116,8 @@ namespace BotService {
     stockAccount.deleteProperty(NEEDS_REBUILD_PROP).update();
 
     //FIFO
-    stockAccountSaleTransactions = stockAccountSaleTransactions.reverse();
-    stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.reverse();
+    stockAccountSaleTransactions = stockAccountSaleTransactions.sort(compareTo);
+    stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(compareTo);
 
     for (const saleTransaction of stockAccountSaleTransactions) {
       processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
@@ -179,8 +180,8 @@ namespace BotService {
     }
 
     //FIFO
-    saleTransactions = saleTransactions.reverse();
-    purchaseTransactions = purchaseTransactions.reverse();
+    saleTransactions = saleTransactions.sort(compareTo);
+    purchaseTransactions = purchaseTransactions.sort(compareTo);
     //TODO sort based on 'order' property
 
     let booksToAudit: Bkper.Book[] = []
@@ -212,6 +213,29 @@ namespace BotService {
     return transaction.isPosted() && transaction.getCreditAccount().getType() == BkperApp.AccountType.INCOMING;
   }
 
+  function compareTo(tx1: Bkper.Transaction, tx2: Bkper.Transaction): number {
+    if (tx1.getDateValue() < tx2.getDateValue()) {
+      return -1;
+    }
+    if (tx1.getProperty(ORDER_PROP) != null || tx2.getProperty(ORDER_PROP) != null) {
+      let order1 = +tx1.getProperty(ORDER_PROP);
+      let order2 = +tx2.getProperty(ORDER_PROP);
+      if (order1 == null) {
+        order1 = 0;
+      }
+      if (order2 == null) {
+        order2 = 0;
+      }
+      if (order1 < order2) {
+        return -1;
+      }
+    }
+    if (tx1.getCreatedAt() && tx2.getCreatedAt()) {
+      return tx1.getCreatedAt().getMilliseconds() - tx2.getCreatedAt().getMilliseconds();
+    }
+    return 0;
+  }
+
   function processSale(financialBook: Bkper.Book, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[]): void {
 
     let salePrice: number = +saleTransaction.getProperty(PRICE_PROP);
@@ -220,7 +244,7 @@ namespace BotService {
     let soldQuantity = saleTransaction.getAmount();
 
     for (const buyTransaction of purchaseTransactions) {
-      
+
       let buyPrice: number = +buyTransaction.getProperty(PRICE_PROP);
       let buyQuantity = buyTransaction.getAmount();
       
@@ -250,6 +274,7 @@ namespace BotService {
         .setDebitAccount(buyTransaction.getDebitAccount())
         .setDescription(buyTransaction.getDescription())
         .setProperty(PRICE_PROP, buyTransaction.getProperty(PRICE_PROP))
+        .setProperty(ORDER_PROP, buyTransaction.getProperty(ORDER_PROP))
         .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
         .post()

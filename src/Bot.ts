@@ -3,10 +3,11 @@ BkperApp.setApiKey(PropertiesService.getScriptProperties().getProperty('API_KEY'
 const STOCK_EXC_CODE_PROP = 'stock_exc_code';
 const NEEDS_REBUILD_PROP = 'needs_rebuild';
 const PRICE_PROP = 'price';
-const ORIGINAL_QUANTITY = 'original_quantity';
+const ORIGINAL_QUANTITY_PROP = 'original_quantity';
 const SALE_PRICE_PROP = 'sale_price';
 const SALE_DATE_PROP = 'sale_date';
 const EXC_CODE_PROP = 'exc_code';
+const ORDER_PROP = 'order';
 const LAST_SALE_DATE_PROP = 'last_sale_date';
 const STOCK_SELL_ACCOUNT_NAME = 'Sell';
 const STOCK_BUY_ACCOUNT_NAME = 'Buy';
