@@ -1,4 +1,4 @@
-Manage Stock Book in sync with Financial Book upon buying and seling instruments.
+Manage Stock Book in sync with Financial Book upon buying and seling inventory instruments.
 
 ![Stock Bot](https://docs.google.com/drawings/d/e/2PACX-1vQSjFxT6jVtwaiuDOEaDOaruFHWDp8YtT91lNUCw4BruKm3ZED__g1D4-5iAoi-J23j4v55Tk6ETg9R/pub?w=949&h=436)
 
