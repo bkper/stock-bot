@@ -43,7 +43,7 @@ namespace BotService {
   }
 
   export function getStockExchangeCode(account: Bkper.Account): string {
-    if (account == null) {
+    if (account == null || account.getType() != BkperApp.AccountType.ASSET) {
       return null;
     }
     let groups = account.getGroups();
@@ -59,7 +59,7 @@ namespace BotService {
   }
 
   function getStockExchangeGroup(account: Bkper.Account): Bkper.Group {
-    if (account == null) {
+    if (account == null || account.getType() != BkperApp.AccountType.ASSET) {
       return null;
     }
     let groups = account.getGroups();
