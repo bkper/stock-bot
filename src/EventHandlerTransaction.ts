@@ -26,7 +26,7 @@ abstract class EventHandlerTransaction extends EventHandler {
   }
   
   protected getQuantity(transaction: bkper.Transaction): number {
-    let quantityStr = transaction.properties['quantity'];
+    let quantityStr = transaction.properties[QUANTITY_PROP];
     if (quantityStr == null || quantityStr.trim() == '') {
       return null;
     }

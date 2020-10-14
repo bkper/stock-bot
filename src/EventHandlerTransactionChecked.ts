@@ -5,12 +5,13 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
     return `remoteId:${transaction.id}`;
   }
 
-  intercept(baseBook: Bkper.Book, event: bkper.Event): string {
-    let response = BotService.flagAccountForRebuildIfNeeded(baseBook, event);
+  intercept(baseBook: Bkper.Book, event: bkper.Event): string[] | string {
+    let response = new InterceptorFlagRebuild().intercept(baseBook, event);
 
     if (!response) {
-      
+      response = new InterceptorOrderProcessor().intercept(baseBook, event);
     }
+
     return response;
   }
 
