@@ -4,6 +4,10 @@ const STOCK_EXC_CODE_PROP = 'stock_exc_code';
 const STOCK_EXC_ACCOUNT_PROP = 'stock_exc_account';
 const STOCK_GAIN_ACCOUNT_PROP = 'stock_gain_account';
 const STOCK_LOSS_ACCOUNT_PROP = 'stock_loss_account';
+const SETTLEMENT_DATE_PROP = 'settlement_date';
+const INSTRUMENT_PROP = 'instrument';
+const FEES_PROP = 'fees';
+const INTEREST_PROP = 'interest';
 const NEEDS_REBUILD_PROP = 'needs_rebuild';
 const PRICE_PROP = 'price';
 const ORIGINAL_QUANTITY_PROP = 'original_quantity';
@@ -24,6 +28,10 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
 
 function calculateRealizedResults(bookId: string): void {
   BotService.calculateRealizedResultsForBook(bookId);
+}
+
+function onTransactionPosted(event: bkper.Event) {
+  return new EventHandlerTransactionPosted().handleEvent(event);
 }
 
 function onTransactionChecked(event: bkper.Event) {

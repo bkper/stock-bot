@@ -11,6 +11,7 @@ scopes: >
     https://www.googleapis.com/auth/script.external_request
 
 triggers: >
+    onTransactionPosted
     onTransactionChecked
     onTransactionUnchecked
     onTransactionUpdated
@@ -25,11 +26,25 @@ triggers: >
 
 properties: 
     transaction:
-      keys: quantity order
+      keys: >
+        quantity
+        order
+        interest
+        fees
+        instrument
+        settlement_date
+        
     group:
-      keys: stock_exc_code
+      keys: >
+        stock_exc_code
+
     account:
-      keys: stock_exc_account stock_gain_account stock_loss_account
+      keys: >
+        stock_exc_account
+        stock_gain_account
+        stock_loss_account
+        stock_fees_account 
+        stock_int_account
 
 apiVersion: v3
 deploymentId: AKfycbwtsLZgfLUKpXPSQzDjjGMgJEkvwXN5CklmeCHtpEPpXDK66g
