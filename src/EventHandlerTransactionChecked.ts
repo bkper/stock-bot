@@ -6,7 +6,12 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
   }
 
   intercept(baseBook: Bkper.Book, event: bkper.Event): string {
-    return BotService.flagAccountForRebuildIfNeeded(baseBook, event);
+    let response = BotService.flagAccountForRebuildIfNeeded(baseBook, event);
+
+    if (!response) {
+      
+    }
+    return response;
   }
 
   protected connectedTransactionFound(financialBook: Bkper.Book, stockBook: Bkper.Book, transaction: bkper.Transaction, connectedTransaction: Bkper.Transaction, stockExcCode: string): string {
