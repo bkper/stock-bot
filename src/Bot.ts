@@ -5,7 +5,6 @@ const STOCK_EXC_ACCOUNT_PROP = 'stock_exc_account';
 const STOCK_GAIN_ACCOUNT_PROP = 'stock_gain_account';
 const STOCK_LOSS_ACCOUNT_PROP = 'stock_loss_account';
 const STOCK_FEES_ACCOUNT_PROP = 'stock_fees_account';
-const STOCK_INT_ACCOUNT_PROP = 'stock_int_account';
 const SETTLEMENT_DATE_PROP = 'settlement_date';
 const INSTRUMENT_PROP = 'instrument';
 const QUANTITY_PROP = 'quantity';

@@ -43,7 +43,6 @@ properties:
         stock_gain_account
         stock_loss_account
         stock_fees_account 
-        stock_int_account
 
 apiVersion: v3
 deploymentId: AKfycbwtsLZgfLUKpXPSQzDjjGMgJEkvwXN5CklmeCHtpEPpXDK66g

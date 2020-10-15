@@ -67,10 +67,7 @@ class InterceptorOrderProcessor {
     }
 
     if (interest != 0) {
-      let interestAccountName = exchangeAccount.getProperty(STOCK_INT_ACCOUNT_PROP);
-      if (interestAccountName == null) {
-        interestAccountName = `${instrumentProp} Interest`;
-      }
+      let interestAccountName =  `${instrumentProp} Interest`;
       let interestAccount = baseBook.getAccount(interestAccountName);
       if (interestAccount == null) {
         interestAccount = baseBook.newAccount().setName(interestAccountName).setType(BkperApp.AccountType.ASSET).create();
