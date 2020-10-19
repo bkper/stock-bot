@@ -32,7 +32,7 @@ properties:
         interest
         fees
         instrument
-        settlement_date
+        settle_date
         
     group:
       keys: >
@@ -40,11 +40,10 @@ properties:
 
     account:
       keys: >
-        stock_exchange
+        stock_fees_account
         stock_unreal_account
         stock_gain_account
         stock_loss_account
-        stock_fees_account 
 
 apiVersion: v3
 deploymentId: AKfycbwtsLZgfLUKpXPSQzDjjGMgJEkvwXN5CklmeCHtpEPpXDK66g

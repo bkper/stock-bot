@@ -17,7 +17,7 @@ The bot interact with the following properties:
 
 ### Account Properties
 
-- ```stock_exchange```: [true/false] - Flag the account as an intermediary stock exchange account for processing buy/sell orders.
+- ```stock_fees_account```: The fees account used by the exchange accoount. 
 - ```stock_unreal_account```: The liability account used to track unrealized gains/losses upon intermediary valuations of the inventory instruments.
 - ```stock_gain_account```: The Incoming account used to track realized gains upon stock sales.
 - ```stock_loss_account```: The Outgoing account used to track realized gains upon stock sales.

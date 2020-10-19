@@ -64,8 +64,8 @@ class InterceptorOrderProcessor {
     return transactionPayload.properties[INSTRUMENT_PROP];
   }
 
-  protected getSettlementDate(transactionPayload: bkper.Transaction): string {
-    return transactionPayload.properties[SETTLEMENT_DATE_PROP];
+  protected getSettleDate(transactionPayload: bkper.Transaction): string {
+    return transactionPayload.properties[SETTLE_DATE_PROP];
   }
 
   protected getFees(transactionPayload: bkper.Transaction): number {
@@ -81,7 +81,7 @@ class InterceptorOrderProcessor {
   protected processFees(baseBook: Bkper.Book, transactionPayload: bkper.Transaction): string {
     let fees = this.getFees(transactionPayload);
     if (fees != 0) {
-      let settlementDate = this.getSettlementDate(transactionPayload);
+      let settlementDate = this.getSettleDate(transactionPayload);
       let exchangeAccount = this.getExchangeAccount(baseBook, transactionPayload);
       let feesAccountName = exchangeAccount.getProperty(STOCK_FEES_ACCOUNT_PROP);
       if (feesAccountName == null) {
@@ -110,7 +110,7 @@ class InterceptorOrderProcessor {
     let instrument = this.getInstrument(transactionPayload);
     let interest = this.getInterest(transactionPayload);
     if (interest != 0) {
-      let settlementDate = this.getSettlementDate(transactionPayload);
+      let settlementDate = this.getSettleDate(transactionPayload);
       let exchangeAccount = this.getExchangeAccount(baseBook, transactionPayload);
       let interestAccountName =  `${instrument} Interest`;
       let interestAccount = baseBook.getAccount(interestAccountName);
@@ -136,7 +136,7 @@ class InterceptorOrderProcessor {
     let quantity = this.getQuantity(transactionPayload);
     let fees = this.getFees(transactionPayload);
     let interest = this.getInterest(transactionPayload);
-    let settlementDate = this.getSettlementDate(transactionPayload);
+    let settlementDate = this.getSettleDate(transactionPayload);
     let tx = baseBook.newTransaction()
     .setAmount(+transactionPayload.amount - interest - fees)
     .from(exchangeAccount)
