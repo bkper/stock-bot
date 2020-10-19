@@ -259,7 +259,7 @@ class InterceptorOrderProcessor {
     let interest = this.getInterest(transactionPayload);
     let settleDate = this.getSettleDate(transactionPayload);
     let tx = baseBook.newTransaction()
-    .setAmount(+transactionPayload.amount - interest - fees)
+    .setAmount(+transactionPayload.amount - interest + fees)
     .from(instrumentAccount)
     .to(exchangeAccount)
     .setDescription(transactionPayload.description)
