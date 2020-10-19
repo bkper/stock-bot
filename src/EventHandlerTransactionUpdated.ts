@@ -1,5 +1,10 @@
 class EventHandlerTransactionUpdated extends EventHandlerTransaction {
 
+  intercept(baseBook: Bkper.Book, event: bkper.Event): string[] | string {
+    new InterceptorOrderProcessorDelete().intercept(baseBook, event);
+    return new InterceptorOrderProcessor().intercept(baseBook, event);
+  }
+
   protected getTransactionQuery(transaction: bkper.Transaction): string {
     return `remoteId:${transaction.id}`;
   }
