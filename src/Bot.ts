@@ -1,7 +1,7 @@
 BkperApp.setApiKey(PropertiesService.getScriptProperties().getProperty('API_KEY'));
 
 const STOCK_EXC_CODE_PROP = 'stock_exc_code';
-const STOCK_EXC_ACCOUNT_PROP = 'stock_exc_account';
+const STOCK_EXC_ACCOUNT_PROP = 'stock_exchange';
 const STOCK_UNREALIZED_ACCOUNT_PROP = 'stock_unreal_account';
 const STOCK_GAIN_ACCOUNT_PROP = 'stock_gain_account';
 const STOCK_LOSS_ACCOUNT_PROP = 'stock_loss_account';

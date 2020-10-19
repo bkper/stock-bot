@@ -40,7 +40,7 @@ properties:
 
     account:
       keys: >
-        stock_exc_account
+        stock_exchange
         stock_unreal_account
         stock_gain_account
         stock_loss_account
