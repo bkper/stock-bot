@@ -15,12 +15,17 @@ The Stock Book is identified by a single book in the Collection with the **decim
 
 The bot interact with the following properties:
 
+### Account Properties
+
+- ```stock_exchange```: [true/false] - Flag the account as an intermediary stock exchange account for processing buy/sell orders.
+- ```stock_unreal_account```: The liability account used to track unrealized gains/losses upon intermediary valuations of the inventory instruments.
+- ```stock_gain_account```: The Incoming account used to track realized gains upon stock sales.
+- ```stock_loss_account```: The Outgoing account used to track realized gains upon stock sales.
+
 ### Group Properties
 
 - ```stock_exc_code```: Defines the exchange code of the instruments that will have quantities mirrored into the stocks book. Only transactions with accounts withing groups with ```stock_exc_code``` set will be mirrored.
-- ```stock_exc_account```: The liability account used to track unrealized gains/losses upon intermediary valuations of the inventory instruments.
-- ```stock_gain_account```: The Incoming account used to track realized gains upon stock sales.
-- ```stock_loss_account```: The Outgoing account used to track realized gains upon stock sales.
+
 
 ### Transaction Properties 
 

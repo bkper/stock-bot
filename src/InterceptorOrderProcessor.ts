@@ -42,33 +42,6 @@ class InterceptorOrderProcessor {
     return responses;
   }
 
-  protected processFees(baseBook: Bkper.Book, transactionPayload: bkper.Transaction): string {
-    let fees = this.getFees(transactionPayload);
-    if (fees != 0) {
-      let settlementDate = this.getSettlementDate(transactionPayload);
-      let exchangeAccount = this.getExchangeAccount(baseBook, transactionPayload);
-      let feesAccountName = exchangeAccount.getProperty(STOCK_FEES_ACCOUNT_PROP);
-      if (feesAccountName == null) {
-        feesAccountName = 'Fees';
-      }
-      let feesAccount = baseBook.getAccount(feesAccountName);
-      if (feesAccount == null) {
-        feesAccount = baseBook.newAccount().setName(feesAccountName).setType(BkperApp.AccountType.OUTGOING).create();
-      }
-      let tx = baseBook.newTransaction()
-        .setAmount(fees)
-        .from(exchangeAccount)
-        .to(feesAccount)
-        .setDescription(transactionPayload.description)
-        .setDate(settlementDate)
-        .addRemoteId(`${FEES_PROP}_${transactionPayload.id}`)
-        .post();
-
-        return `${tx.getDate()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;
-    }
-    return null;
-  }
-
 
   protected getInstrumentAccount(baseBook: Bkper.Book, transactionPayload: bkper.Transaction): Bkper.Account {
     let instrument = this.getInstrument(transactionPayload);
@@ -103,7 +76,35 @@ class InterceptorOrderProcessor {
   protected getInterest(transactionPayload: bkper.Transaction): number {
     let interestProp = transactionPayload.properties[INTEREST_PROP];
     return interestProp ? +interestProp : 0;
+  }  
+
+  protected processFees(baseBook: Bkper.Book, transactionPayload: bkper.Transaction): string {
+    let fees = this.getFees(transactionPayload);
+    if (fees != 0) {
+      let settlementDate = this.getSettlementDate(transactionPayload);
+      let exchangeAccount = this.getExchangeAccount(baseBook, transactionPayload);
+      let feesAccountName = exchangeAccount.getProperty(STOCK_FEES_ACCOUNT_PROP);
+      if (feesAccountName == null) {
+        feesAccountName = 'Fees';
+      }
+      let feesAccount = baseBook.getAccount(feesAccountName);
+      if (feesAccount == null) {
+        feesAccount = baseBook.newAccount().setName(feesAccountName).setType(BkperApp.AccountType.OUTGOING).create();
+      }
+      let tx = baseBook.newTransaction()
+        .setAmount(fees)
+        .from(exchangeAccount)
+        .to(feesAccount)
+        .setDescription(transactionPayload.description)
+        .setDate(settlementDate)
+        .addRemoteId(`${FEES_PROP}_${transactionPayload.id}`)
+        .post();
+
+        return `${tx.getDate()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;
+    }
+    return null;
   }
+
   
   protected processInterest(baseBook: Bkper.Book, transactionPayload: bkper.Transaction): string {
     let instrument = this.getInstrument(transactionPayload);

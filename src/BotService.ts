@@ -269,9 +269,9 @@ namespace BotService {
 
     }
 
-    let unrealizedAccountName = stockAccount.getProperty(STOCK_EXC_ACCOUNT_PROP);
+    let unrealizedAccountName = stockAccount.getProperty(STOCK_UNREALIZED_ACCOUNT_PROP);
     if (unrealizedAccountName == null) {
-      unrealizedAccountName = `${stockAccount.getName()} Exchange`;
+      unrealizedAccountName = `${stockAccount.getName()} Unrealized`;
     }
     let unrealizedAccount = financialBook.getAccount(unrealizedAccountName)
     if (unrealizedAccount == null) {
