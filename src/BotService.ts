@@ -229,6 +229,9 @@ namespace BotService {
       
       if (soldQuantity >= buyQuantity ) {
         let gain = (salePrice * buyQuantity) - (buyPrice * buyQuantity); 
+        if (buyTransaction.isChecked()) {
+          buyTransaction.uncheck();
+        }
         buyTransaction
         .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
@@ -237,7 +240,11 @@ namespace BotService {
         gainTotal += gain;
         soldQuantity -= buyQuantity;
       } else {
+        
         let remainingBuyQuantity = buyQuantity - soldQuantity;
+        if (buyTransaction.isChecked()) {
+          buyTransaction.uncheck();
+        }
         buyTransaction
         .setAmount(remainingBuyQuantity)
         .update();
