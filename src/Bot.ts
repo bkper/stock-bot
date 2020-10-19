@@ -32,6 +32,10 @@ function calculateRealizedResults(bookId: string): void {
   BotService.calculateRealizedResultsForBook(bookId);
 }
 
+function onTransactionPosted(event: bkper.Event) {
+  return new EventHandlerTransactionPosted().handleEvent(event);
+}
+
 function onTransactionChecked(event: bkper.Event) {
   return new EventHandlerTransactionChecked().handleEvent(event);
 }

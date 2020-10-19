@@ -7,11 +7,6 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
   intercept(baseBook: Bkper.Book, event: bkper.Event): string[] | string {
     let response = new InterceptorFlagRebuild().intercept(baseBook, event);
-
-    if (!response) {
-      response = new InterceptorOrderProcessor().intercept(baseBook, event);
-    }
-
     return response;
   }
 

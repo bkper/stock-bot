@@ -11,6 +11,7 @@ scopes: >
     https://www.googleapis.com/auth/script.external_request
 
 triggers: >
+    onTransactionPosted
     onTransactionChecked
     onTransactionUnchecked
     onTransactionUpdated
