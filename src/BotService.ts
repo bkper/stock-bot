@@ -88,13 +88,17 @@ namespace BotService {
       //Make sure get sales only
 
       if (tx.isChecked()) {
-        tx.uncheck();
+        tx = tx.uncheck();
       }
 
       if (isSale(tx)) {
         let iterator = financialBook.getTransactions(`remoteId:${tx.getId()}`)
         while (iterator.hasNext()) {
-          iterator.next().remove();
+          let financialTx = iterator.next();
+          if (financialTx.isChecked()) {
+            financialTx = financialTx.uncheck();
+          }
+          financialTx.remove();
         }
         stockAccountSaleTransactions.push(tx);
       }
