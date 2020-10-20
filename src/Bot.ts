@@ -6,7 +6,6 @@ const STOCK_UNREALIZED_ACCOUNT_PROP = 'stock_unreal_account';
 const STOCK_GAIN_ACCOUNT_PROP = 'stock_gain_account';
 const STOCK_LOSS_ACCOUNT_PROP = 'stock_loss_account';
 const STOCK_FEES_ACCOUNT_PROP = 'stock_fees_account';
-const SETTLE_DATE_PROP = 'settle_date';
 const TRADE_DATE_PROP = 'trade_date';
 const INSTRUMENT_PROP = 'instrument';
 const QUANTITY_PROP = 'quantity';

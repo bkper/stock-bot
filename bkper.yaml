@@ -32,7 +32,6 @@ properties:
         interest
         fees
         instrument
-        settle_date
         trade_date
         
     group:

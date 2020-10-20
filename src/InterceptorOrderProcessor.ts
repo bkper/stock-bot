@@ -79,7 +79,7 @@ class InterceptorOrderProcessor {
       return false;
     }
 
-    if (this.getSettleDate(transactionPayload) == null) {
+    if (this.getTradeDate(transactionPayload) == null) {
       return false;
     }
 
@@ -137,10 +137,6 @@ class InterceptorOrderProcessor {
     return transactionPayload.properties[INSTRUMENT_PROP];
   }
 
-  protected getSettleDate(transactionPayload: bkper.Transaction): string {
-    return transactionPayload.properties[SETTLE_DATE_PROP];
-  }
-
   protected getTradeDate(transactionPayload: bkper.Transaction): string {
     return transactionPayload.properties[TRADE_DATE_PROP];
   }
@@ -179,7 +175,7 @@ class InterceptorOrderProcessor {
   protected postFees(baseBook: Bkper.Book, exchangeAccount: Bkper.Account, transactionPayload: bkper.Transaction): string {
     let fees = this.getFees(transactionPayload);
     if (fees != 0) {
-      let settlementDate = this.getSettleDate(transactionPayload);
+      let tradeDate = this.getTradeDate(transactionPayload);
       let feesAccountName = this.getFeesAccountName(exchangeAccount);
       let feesAccount = this.getFeesAccount(baseBook, feesAccountName);
       let tx = baseBook.newTransaction()
@@ -187,7 +183,7 @@ class InterceptorOrderProcessor {
         .from(exchangeAccount)
         .to(feesAccount)
         .setDescription(transactionPayload.description)
-        .setDate(settlementDate)
+        .setDate(tradeDate)
         .addRemoteId(`${FEES_PROP}_${transactionPayload.id}`)
         .post();
 
@@ -201,14 +197,14 @@ class InterceptorOrderProcessor {
     let instrument = this.getInstrument(transactionPayload);
     let interest = this.getInterest(transactionPayload);
     if (interest != 0) {
-      let settlementDate = this.getSettleDate(transactionPayload);
+      let tradeDate = this.getTradeDate(transactionPayload);
       let interestAccount = this.getInterestAccount(instrument, baseBook);
       let tx = baseBook.newTransaction()
         .setAmount(interest)
         .from(exchangeAccount)
         .to(interestAccount)
         .setDescription(transactionPayload.description)
-        .setDate(settlementDate)
+        .setDate(tradeDate)
         .addRemoteId(`${INTEREST_PROP}_${transactionPayload.id}`)
         .post();
         return `${tx.getDate()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;
@@ -239,13 +235,13 @@ class InterceptorOrderProcessor {
     let quantity = this.getQuantity(transactionPayload);
     let fees = this.getFees(transactionPayload);
     let interest = this.getInterest(transactionPayload);
-    let settleDate = this.getSettleDate(transactionPayload);
+    let tradeDate = this.getTradeDate(transactionPayload);
     let tx = baseBook.newTransaction()
     .setAmount(+transactionPayload.amount - interest - fees)
     .from(exchangeAccount)
     .to(instrumentAccount)
     .setDescription(transactionPayload.description)
-    .setDate(settleDate)
+    .setDate(tradeDate)
     .setProperty(QUANTITY_PROP, quantity)
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
@@ -257,13 +253,13 @@ class InterceptorOrderProcessor {
     let quantity = this.getQuantity(transactionPayload);
     let fees = this.getFees(transactionPayload);
     let interest = this.getInterest(transactionPayload);
-    let settleDate = this.getSettleDate(transactionPayload);
+    let tradeDate = this.getTradeDate(transactionPayload);
     let tx = baseBook.newTransaction()
     .setAmount(+transactionPayload.amount - interest + fees)
     .from(instrumentAccount)
     .to(exchangeAccount)
     .setDescription(transactionPayload.description)
-    .setDate(settleDate)
+    .setDate(tradeDate)
     .setProperty(QUANTITY_PROP, quantity)
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
