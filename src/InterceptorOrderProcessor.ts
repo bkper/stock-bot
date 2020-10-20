@@ -217,12 +217,13 @@ class InterceptorOrderProcessor {
     let interest = this.getInterest(transactionPayload);
     if (interest != 0) {
       let interestAccount = this.getInterestAccount(instrument, baseBook);
+      let tradeDate = this.getTradeDate(transactionPayload);
       let tx = baseBook.newTransaction()
         .setAmount(interest)
         .from(interestAccount)
         .to(exchangeAccount)
         .setDescription(transactionPayload.description)
-        .setDate(transactionPayload.date)
+        .setDate(tradeDate)
         .addRemoteId(`${INTEREST_PROP}_${transactionPayload.id}`)
         .post();
         return `${tx.getDate()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;
