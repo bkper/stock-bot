@@ -18,7 +18,7 @@ class EventHandlerTransactionUpdated extends EventHandlerTransaction {
       return null;
     }
 
-    let quantity = this.getQuantity(financialTransaction);
+    let quantity = this.getQuantity(stockBook, financialTransaction);
     if (quantity == null) {
       return null;
     }

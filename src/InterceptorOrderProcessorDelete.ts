@@ -9,6 +9,10 @@ class InterceptorOrderProcessorDelete {
     let operation = event.data.object as bkper.TransactionOperation;
     let transactionPayload = operation.transaction;
 
+    if (!transactionPayload.posted) {
+      return null;
+    }
+
     let responses: string[] = [];
 
     let response1 = this.deleteTransaction(baseBook, `${FEES_PROP}_${transactionPayload.id}`);

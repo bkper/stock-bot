@@ -13,7 +13,11 @@ class InterceptorOrderProcessor {
     let operation = event.data.object as bkper.TransactionOperation;
     let transactionPayload = operation.transaction;
 
-    if (this.getQuantity(transactionPayload) == null) {
+    if (!transactionPayload.posted) {
+      return null;
+    }
+
+    if (this.getQuantity(baseBook, transactionPayload) == null) {
       return null;
     }
 
@@ -129,8 +133,12 @@ class InterceptorOrderProcessor {
     return instrumentAccount;
   }
 
-  protected getQuantity(transactionPayload: bkper.Transaction): string {
-    return transactionPayload.properties[QUANTITY_PROP];
+  protected getQuantity(book: Bkper.Book, transactionPayload: bkper.Transaction): string {
+    let quantityProp = transactionPayload.properties[QUANTITY_PROP];
+    if (quantityProp == null) {
+      return null;
+    }
+    return book.parseValue(quantityProp).toFixed(0);    
   }
 
   protected getInstrument(transactionPayload: bkper.Transaction): string {
@@ -141,14 +149,14 @@ class InterceptorOrderProcessor {
     return transactionPayload.properties[TRADE_DATE_PROP];
   }
 
-  protected getFees(transactionPayload: bkper.Transaction): number {
+  protected getFees(book: Bkper.Book, transactionPayload: bkper.Transaction): number {
     let feesProp = transactionPayload.properties[FEES_PROP];
-    return feesProp ? +feesProp : 0;
+    return feesProp ? book.parseValue(feesProp) : 0;
   }
 
-  protected getInterest(transactionPayload: bkper.Transaction): number {
+  protected getInterest(book: Bkper.Book, transactionPayload: bkper.Transaction): number {
     let interestProp = transactionPayload.properties[INTEREST_PROP];
-    return interestProp ? +interestProp : 0;
+    return interestProp ? book.parseValue(interestProp) : 0;
   }
 
   protected getFeesAccountName(exchangeAccount: Bkper.Account): string {
@@ -173,7 +181,7 @@ class InterceptorOrderProcessor {
   }
 
   protected postFees(baseBook: Bkper.Book, exchangeAccount: Bkper.Account, transactionPayload: bkper.Transaction): string {
-    let fees = this.getFees(transactionPayload);
+    let fees = this.getFees(baseBook, transactionPayload);
     if (fees != 0) {
       let tradeDate = this.getTradeDate(transactionPayload);
       let feesAccountName = this.getFeesAccountName(exchangeAccount);
@@ -195,7 +203,7 @@ class InterceptorOrderProcessor {
   
   protected postInterestOnPurchase(baseBook: Bkper.Book, exchangeAccount: Bkper.Account, transactionPayload: bkper.Transaction): string {
     let instrument = this.getInstrument(transactionPayload);
-    let interest = this.getInterest(transactionPayload);
+    let interest = this.getInterest(baseBook, transactionPayload);
     if (interest != 0) {
       let tradeDate = this.getTradeDate(transactionPayload);
       let interestAccount = this.getInterestAccount(instrument, baseBook);
@@ -214,7 +222,7 @@ class InterceptorOrderProcessor {
 
   protected postInterestOnSale(baseBook: Bkper.Book, exchangeAccount: Bkper.Account, transactionPayload: bkper.Transaction): string {
     let instrument = this.getInstrument(transactionPayload);
-    let interest = this.getInterest(transactionPayload);
+    let interest = this.getInterest(baseBook, transactionPayload);
     if (interest != 0) {
       let interestAccount = this.getInterestAccount(instrument, baseBook);
       let tradeDate = this.getTradeDate(transactionPayload);
@@ -233,9 +241,9 @@ class InterceptorOrderProcessor {
 
   protected postInstrumentTradeOnPurchase(baseBook: Bkper.Book, exchangeAccount: Bkper.Account, transactionPayload: bkper.Transaction): string {
     let instrumentAccount = this.getInstrumentAccount(baseBook, transactionPayload);
-    let quantity = this.getQuantity(transactionPayload);
-    let fees = this.getFees(transactionPayload);
-    let interest = this.getInterest(transactionPayload);
+    let quantity = this.getQuantity(baseBook, transactionPayload);
+    let fees = this.getFees(baseBook, transactionPayload);
+    let interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
     let tx = baseBook.newTransaction()
     .setAmount(+transactionPayload.amount - interest - fees)
@@ -251,9 +259,9 @@ class InterceptorOrderProcessor {
 
   protected postInstrumentTradeOnSale(baseBook: Bkper.Book, exchangeAccount: Bkper.Account, transactionPayload: bkper.Transaction): string {
     let instrumentAccount = this.getInstrumentAccount(baseBook, transactionPayload);
-    let quantity = this.getQuantity(transactionPayload);
-    let fees = this.getFees(transactionPayload);
-    let interest = this.getInterest(transactionPayload);
+    let quantity = this.getQuantity(baseBook, transactionPayload);
+    let fees = this.getFees(baseBook, transactionPayload);
+    let interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
     let tx = baseBook.newTransaction()
     .setAmount(+transactionPayload.amount - interest + fees)

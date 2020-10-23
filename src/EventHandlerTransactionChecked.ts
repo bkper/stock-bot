@@ -21,7 +21,7 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
     let financialDebitAccount = financialBook.getAccount(transaction.debitAccount.id);
     let stockBookAnchor = super.buildBookAnchor(stockBook);
 
-    let quantity = this.getQuantity(transaction);
+    let quantity = this.getQuantity(stockBook, transaction);
     if (quantity == null) {
       return null;
     }

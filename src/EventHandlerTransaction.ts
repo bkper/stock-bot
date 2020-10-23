@@ -25,12 +25,12 @@ abstract class EventHandlerTransaction extends EventHandler {
     }
   }
   
-  protected getQuantity(transaction: bkper.Transaction): number {
+  protected getQuantity(stockBook: Bkper.Book, transaction: bkper.Transaction): number {
     let quantityStr = transaction.properties[QUANTITY_PROP];
     if (quantityStr == null || quantityStr.trim() == '') {
       return null;
     }
-    return new Number(quantityStr).valueOf();
+    return stockBook.parseValue(quantityStr);
   }
 
   private getStockExcCodeFromTransaction(financialBook: Bkper.Book, fiancialTransaction: bkper.Transaction) {

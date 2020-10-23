@@ -7,10 +7,10 @@
   resolved "https://registry.yarnpkg.com/@bkper/bkper-api-types/-/bkper-api-types-3.6.1.tgz#f573f6d539233850e43a91823990f0b3bf233d3b"
   integrity sha512-X6t+MP4vdFyq4UewSKiGcZ5KjYJqYRk+ssHve5Q9xoAhT2PnCUVIeXD2FnhBttiF1t3pxmZrnpSBdTWy6QVc8g==
 
-"@bkper/bkper-app-types@^3.6.4":
-  version "3.6.4"
-  resolved "https://registry.yarnpkg.com/@bkper/bkper-app-types/-/bkper-app-types-3.6.4.tgz#98d89fe4c7d00ed3fa0726d518ea66e92e0a6977"
-  integrity sha512-T99WnHeGisad8+xEP25HHz2OBuDgKtFPTnQ/gyefg9BdxQQlkvsSheP1z2xrDL64DJF0PPGk/o17tldeErDHeA==
+"@bkper/bkper-app-types@^3.6.6":
+  version "3.6.6"
+  resolved "https://registry.yarnpkg.com/@bkper/bkper-app-types/-/bkper-app-types-3.6.6.tgz#d2204cc2c8689fcde0590a64f974dfcc95f46947"
+  integrity sha512-yGf1UzOft1tFJAjtexR6X6tRLx+NSgjD577OQi2Ss7WwLL4EUWh1vblJ5Z0ExCQxyaZGgPi0DR/Iuz4kEZv6dA==
   dependencies:
     "@types/google-apps-script" "*"
 
