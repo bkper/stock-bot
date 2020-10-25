@@ -9,6 +9,11 @@ abstract class EventHandlerTransaction extends EventHandler {
     let excCode = BotService.getExcCode(financialBook);
     let operation = event.data.object as bkper.TransactionOperation;
     let financialTransaction = operation.transaction;
+
+    if (!financialTransaction.posted) {
+      return null;
+    }
+
     let iterator = stockBook.getTransactions(this.getTransactionQuery(financialTransaction));
 
     let stockExcCode = this.getStockExcCodeFromTransaction(financialBook, financialTransaction);
