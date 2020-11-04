@@ -35,7 +35,7 @@ abstract class EventHandlerTransaction extends EventHandler {
     if (quantityStr == null || quantityStr.trim() == '') {
       return null;
     }
-    return stockBook.parseValue(quantityStr);
+    return Math.abs(stockBook.parseValue(quantityStr));
   }
 
   private getStockExcCodeFromTransaction(financialBook: Bkper.Book, fiancialTransaction: bkper.Transaction) {
