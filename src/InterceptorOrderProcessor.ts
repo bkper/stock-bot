@@ -138,7 +138,11 @@ class InterceptorOrderProcessor {
     if (quantityProp == null) {
       return null;
     }
-    return book.parseValue(quantityProp).toFixed(0);    
+    const quantity = book.parseValue(quantityProp);
+    if (isNaN(quantity)) {
+      return null;
+    }
+    return quantity.toFixed(0);    
   }
 
   protected getInstrument(transactionPayload: bkper.Transaction): string {
@@ -151,12 +155,20 @@ class InterceptorOrderProcessor {
 
   protected getFees(book: Bkper.Book, transactionPayload: bkper.Transaction): number {
     let feesProp = transactionPayload.properties[FEES_PROP];
-    return feesProp ? book.parseValue(feesProp) : 0;
+    const fees = feesProp ? book.parseValue(feesProp) : 0;
+    if (isNaN(fees)) {
+      return 0;
+    }
+    return fees;
   }
 
   protected getInterest(book: Bkper.Book, transactionPayload: bkper.Transaction): number {
     let interestProp = transactionPayload.properties[INTEREST_PROP];
-    return interestProp ? book.parseValue(interestProp) : 0;
+    const insterest = interestProp ? book.parseValue(interestProp) : 0;
+    if (isNaN(insterest)) {
+      return 0;
+    }
+    return insterest;
   }
 
   protected getFeesAccountName(exchangeAccount: Bkper.Account): string {
