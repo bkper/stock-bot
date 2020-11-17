@@ -22,7 +22,7 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
     let stockBookAnchor = super.buildBookAnchor(stockBook);
 
     let quantity = this.getQuantity(stockBook, transaction);
-    if (quantity == null) {
+    if (quantity == null || quantity == 0) {
       return null;
     }
 
