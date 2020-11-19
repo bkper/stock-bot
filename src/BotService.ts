@@ -49,6 +49,9 @@ namespace BotService {
     let groups = account.getGroups();
     if (groups != null) {
       for (const group of groups) {
+        if (group == null) {
+          continue;
+        }
         let stockExchange = group.getProperty(STOCK_EXC_CODE_PROP);
         if (stockExchange != null && stockExchange.trim() != '') {
           return stockExchange;
