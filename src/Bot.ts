@@ -12,9 +12,16 @@ const QUANTITY_PROP = 'quantity';
 const FEES_PROP = 'fees';
 const INTEREST_PROP = 'interest';
 const NEEDS_REBUILD_PROP = 'needs_rebuild';
-const PRICE_PROP = 'price';
+const DEPRECATED_PRICE_PROP = 'price'
+const PURCHASE_PRICE_PROP = 'purchase_price';
+const PURCHASE_AMOUNT_PROP = 'purchase_amount';
+const PURCHASE_QUANTITY_PROP = 'purchase_quantity';
+
+const GAIN_AMOUNT_PROP = 'gain_amount';
 const ORIGINAL_QUANTITY_PROP = 'original_quantity';
+const ORIGINAL_AMOUNT_PROP = 'original_amount';
 const SALE_PRICE_PROP = 'sale_price';
+const SALE_AMOUNT_PROP = 'sale_amount';
 const SALE_DATE_PROP = 'sale_date';
 const EXC_CODE_PROP = 'exc_code';
 const ORDER_PROP = 'order';

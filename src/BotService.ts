@@ -102,6 +102,10 @@ namespace BotService {
             financialTx = financialTx.uncheck();
           }
           financialTx.remove();
+          tx.deleteProperty(GAIN_AMOUNT_PROP)
+          tx.deleteProperty(PURCHASE_AMOUNT_PROP)
+          tx.deleteProperty(PURCHASE_PRICE_PROP)
+          .update();
         }
         stockAccountSaleTransactions.push(tx);
       }
@@ -113,6 +117,9 @@ namespace BotService {
           tx
           .deleteProperty(SALE_DATE_PROP)
           .deleteProperty(SALE_PRICE_PROP)
+          .deleteProperty(SALE_AMOUNT_PROP)
+          .deleteProperty(GAIN_AMOUNT_PROP)
+          .deleteProperty(PURCHASE_AMOUNT_PROP)
           .setAmount(+tx.getProperty(ORIGINAL_QUANTITY_PROP))
           .update();
           stockAccountPurchaseTransactions.push(tx);
@@ -146,7 +153,6 @@ namespace BotService {
           stockAccounts.splice(i, 1);
         }        
     }
-
 
 
     let saleTransactions: Bkper.Transaction[] = [];
@@ -224,31 +230,39 @@ namespace BotService {
 
   function processSale(financialBook: Bkper.Book, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[]): void {
 
-    let salePrice: number = +saleTransaction.getProperty(PRICE_PROP);
+    let salePrice: number = +saleTransaction.getProperty(SALE_PRICE_PROP, DEPRECATED_PRICE_PROP);
 
     let gainTotal = 0;
     let soldQuantity = saleTransaction.getAmount();
 
+    let purchaseTotal = 0;
+
     for (const buyTransaction of purchaseTransactions) {
 
-      let buyPrice: number = +buyTransaction.getProperty(PRICE_PROP);
-      let buyQuantity = buyTransaction.getAmount();
+      let purchasePrice: number = +buyTransaction.getProperty(PURCHASE_PRICE_PROP, DEPRECATED_PRICE_PROP);
+      let purchaseQuantity = buyTransaction.getAmount();
       
-      if (soldQuantity >= buyQuantity ) {
-        let gain = (salePrice * buyQuantity) - (buyPrice * buyQuantity); 
+      if (soldQuantity >= purchaseQuantity ) {
+        const saleAmount = (salePrice * purchaseQuantity);
+        const purchaseAmount = (purchasePrice * purchaseQuantity);
+        let gain = saleAmount - purchaseAmount; 
         if (buyTransaction.isChecked()) {
           buyTransaction.uncheck();
         }
         buyTransaction
         .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
+        .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
+        .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
+        .setProperty(GAIN_AMOUNT_PROP, gain.toFixed(financialBook.getFractionDigits()))
         .addRemoteId(saleTransaction.getId())
         .update().check();
         gainTotal += gain;
-        soldQuantity -= buyQuantity;
+        purchaseTotal += purchaseAmount;
+        soldQuantity -= purchaseQuantity;
       } else {
         
-        let remainingBuyQuantity = buyQuantity - soldQuantity;
+        let remainingBuyQuantity = purchaseQuantity - soldQuantity;
         if (buyTransaction.isChecked()) {
           buyTransaction.uncheck();
         }
@@ -256,9 +270,11 @@ namespace BotService {
         .setAmount(remainingBuyQuantity)
         .update();
 
-        let partialBuyQuantity = buyQuantity - remainingBuyQuantity;
+        let partialBuyQuantity = purchaseQuantity - remainingBuyQuantity;
 
-        let gain = (salePrice * partialBuyQuantity) - (buyPrice * partialBuyQuantity); 
+        const saleAmount = (salePrice * partialBuyQuantity);
+        const purchaseAmount = (purchasePrice * partialBuyQuantity);
+        let gain = saleAmount - purchaseAmount; 
 
         let newTransaction = stockBook.newTransaction()
         .setDate(buyTransaction.getDate())
@@ -266,15 +282,18 @@ namespace BotService {
         .setCreditAccount(buyTransaction.getCreditAccount())
         .setDebitAccount(buyTransaction.getDebitAccount())
         .setDescription(buyTransaction.getDescription())
-        .setProperty(PRICE_PROP, buyTransaction.getProperty(PRICE_PROP))
+        .setProperty(PURCHASE_PRICE_PROP, buyTransaction.getProperty(PURCHASE_PRICE_PROP, DEPRECATED_PRICE_PROP))
+        .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
+        .setProperty(GAIN_AMOUNT_PROP, gain.toFixed(financialBook.getFractionDigits()))
         .setProperty(ORDER_PROP, buyTransaction.getProperty(ORDER_PROP))
+        .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
         .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
         .post()
         .check()
         soldQuantity -= partialBuyQuantity;
         gainTotal += gain;
-
+        purchaseTotal += purchaseAmount;
       }
 
       if (soldQuantity == 0) {
@@ -346,7 +365,10 @@ namespace BotService {
       .post()
     }
 
-    saleTransaction.check();
+    saleTransaction
+    .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
+    .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits()))
+    .update().check();
   }
 
   export function getExcCode(book: Bkper.Book): string {

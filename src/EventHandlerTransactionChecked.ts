@@ -26,7 +26,9 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       return null;
     }
 
-    let price = new Number(transaction.amount).valueOf() / quantity;
+    const originalAmount = new Number(transaction.amount).valueOf();
+
+    let price = originalAmount / quantity;
 
     let stockAccount = this.getConnectedStockAccount(financialBook, stockBook, financialCreditAccount);
     if (stockAccount) {
@@ -43,7 +45,8 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setDebitAccount(stockSellAccount)
       .setDescription(transaction.description)
       .addRemoteId(transaction.id)
-      .setProperty(PRICE_PROP, price.toFixed(financialBook.getFractionDigits()))
+      .setProperty(SALE_PRICE_PROP, price.toFixed(financialBook.getFractionDigits()))
+      .setProperty(SALE_AMOUNT_PROP, originalAmount.toFixed(financialBook.getFractionDigits()))
       .post()
 
       let lastSaleDate = stockAccount.getProperty(LAST_SALE_DATE_PROP);
@@ -72,8 +75,9 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
         .setDebitAccount(stockAccount)
         .setDescription(transaction.description)
         .addRemoteId(transaction.id)
-        .setProperty(PRICE_PROP, price.toFixed(financialBook.getFractionDigits()))
+        .setProperty(PURCHASE_PRICE_PROP, price.toFixed(financialBook.getFractionDigits()))
         .setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(0))
+        .setProperty(ORIGINAL_AMOUNT_PROP, originalAmount.toFixed(financialBook.getFractionDigits()))
         .post()
 
         let lastSaleDate = stockAccount.getProperty(LAST_SALE_DATE_PROP);
