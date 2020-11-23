@@ -272,7 +272,6 @@ namespace BotService {
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
         .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
-        .setProperty(GAIN_AMOUNT_PROP, gain.toFixed(financialBook.getFractionDigits()))
         .addRemoteId(saleTransaction.getId())
         .update().check();
         gainTotal += gain;
@@ -300,7 +299,6 @@ namespace BotService {
         .setDescription(purchaseTransaction.getDescription())
         .setProperty(PURCHASE_PRICE_PROP, purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, DEPRECATED_PRICE_PROP))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
-        .setProperty(GAIN_AMOUNT_PROP, gain.toFixed(financialBook.getFractionDigits()))
         .setProperty(ORDER_PROP, purchaseTransaction.getProperty(ORDER_PROP))
         .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
         .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
@@ -393,7 +391,7 @@ namespace BotService {
       let remainingSaleQuantity = saleTransaction.getAmount() - soldQuantity;
 
       if (remainingSaleQuantity != 0) {
-        
+
         saleTransaction
         .setAmount(soldQuantity)
         .update();
