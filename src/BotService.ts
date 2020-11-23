@@ -102,12 +102,27 @@ namespace BotService {
             financialTx = financialTx.uncheck();
           }
           financialTx.remove();
+        }
+        if (tx.getProperty(ORIGINAL_QUANTITY_PROP, DEPRECATED_PRICE_PROP) == null) {
+          tx.remove();
+        } else {
           tx.deleteProperty(GAIN_AMOUNT_PROP)
           tx.deleteProperty(PURCHASE_AMOUNT_PROP)
-          tx.deleteProperty(PURCHASE_PRICE_PROP)
-          .update();
+          tx.deleteProperty(SALE_AMOUNT_PROP)
+          tx.deleteProperty(PURCHASE_PRICE_PROP);
+
+          let originalQuantity = tx.getProperty(ORIGINAL_QUANTITY_PROP)
+          if (originalQuantity == null) {
+            //Migrating old data
+            tx.setProperty(ORIGINAL_QUANTITY_PROP, tx.getAmount().toFixed(financialBook.getFractionDigits()))
+          } else {
+            tx.setAmount(+originalQuantity);
+          }
+          tx.update();
+          stockAccountSaleTransactions.push(tx);
         }
-        stockAccountSaleTransactions.push(tx);
+
+
       }
 
       if (isPurchase(tx)) {
@@ -134,7 +149,7 @@ namespace BotService {
     stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(compareTo);
 
     for (const saleTransaction of stockAccountSaleTransactions) {
-      processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
+      //processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
     }
 
   }
@@ -236,20 +251,23 @@ namespace BotService {
     let soldQuantity = saleTransaction.getAmount();
 
     let purchaseTotal = 0;
+    let saleTotal = 0;
 
-    for (const buyTransaction of purchaseTransactions) {
+    for (const purchaseTransaction of purchaseTransactions) {
 
-      let purchasePrice: number = +buyTransaction.getProperty(PURCHASE_PRICE_PROP, DEPRECATED_PRICE_PROP);
-      let purchaseQuantity = buyTransaction.getAmount();
+      if (purchaseTransaction.isChecked()) {
+        //Only process unchecked ones
+        continue;
+      }
+
+      let purchasePrice: number = +purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, DEPRECATED_PRICE_PROP);
+      let purchaseQuantity = purchaseTransaction.getAmount();
       
       if (soldQuantity >= purchaseQuantity ) {
         const saleAmount = (salePrice * purchaseQuantity);
         const purchaseAmount = (purchasePrice * purchaseQuantity);
         let gain = saleAmount - purchaseAmount; 
-        if (buyTransaction.isChecked()) {
-          buyTransaction.uncheck();
-        }
-        buyTransaction
+        purchaseTransaction
         .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
         .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
@@ -259,14 +277,12 @@ namespace BotService {
         .update().check();
         gainTotal += gain;
         purchaseTotal += purchaseAmount;
+        saleTotal += saleAmount;
         soldQuantity -= purchaseQuantity;
       } else {
         
         let remainingBuyQuantity = purchaseQuantity - soldQuantity;
-        if (buyTransaction.isChecked()) {
-          buyTransaction.uncheck();
-        }
-        buyTransaction
+        purchaseTransaction
         .setAmount(remainingBuyQuantity)
         .update();
 
@@ -276,16 +292,16 @@ namespace BotService {
         const purchaseAmount = (purchasePrice * partialBuyQuantity);
         let gain = saleAmount - purchaseAmount; 
 
-        let newTransaction = stockBook.newTransaction()
-        .setDate(buyTransaction.getDate())
+        stockBook.newTransaction()
+        .setDate(purchaseTransaction.getDate())
         .setAmount(partialBuyQuantity)
-        .setCreditAccount(buyTransaction.getCreditAccount())
-        .setDebitAccount(buyTransaction.getDebitAccount())
-        .setDescription(buyTransaction.getDescription())
-        .setProperty(PURCHASE_PRICE_PROP, buyTransaction.getProperty(PURCHASE_PRICE_PROP, DEPRECATED_PRICE_PROP))
+        .setCreditAccount(purchaseTransaction.getCreditAccount())
+        .setDebitAccount(purchaseTransaction.getDebitAccount())
+        .setDescription(purchaseTransaction.getDescription())
+        .setProperty(PURCHASE_PRICE_PROP, purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, DEPRECATED_PRICE_PROP))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
         .setProperty(GAIN_AMOUNT_PROP, gain.toFixed(financialBook.getFractionDigits()))
-        .setProperty(ORDER_PROP, buyTransaction.getProperty(ORDER_PROP))
+        .setProperty(ORDER_PROP, purchaseTransaction.getProperty(ORDER_PROP))
         .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
         .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
@@ -294,9 +310,10 @@ namespace BotService {
         soldQuantity -= partialBuyQuantity;
         gainTotal += gain;
         purchaseTotal += purchaseAmount;
+        saleTotal += saleAmount;
       }
 
-      if (soldQuantity == 0) {
+      if (soldQuantity <= 0) {
         break;
       }
 
@@ -365,10 +382,38 @@ namespace BotService {
       .post()
     }
 
-    saleTransaction
-    .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
-    .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits()))
-    .update().check();
+    if (soldQuantity == 0) {
+      saleTransaction
+      .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
+      .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits()))
+      .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
+      .update().check();
+    } else if (soldQuantity > 0) {
+
+      let remainingSaleQuantity = saleTransaction.getAmount() - soldQuantity;
+
+      if (remainingSaleQuantity != 0) {
+        
+        saleTransaction
+        .setAmount(soldQuantity)
+        .update();
+
+        stockBook.newTransaction()
+        .setDate(saleTransaction.getDate())
+        .setAmount(remainingSaleQuantity)
+        .setCreditAccount(saleTransaction.getCreditAccount())
+        .setDebitAccount(saleTransaction.getDebitAccount())
+        .setDescription(saleTransaction.getDescription())
+        .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
+        .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
+        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
+        .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits())) 
+        .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
+        .post()
+        .check()
+      }
+
+    }
   }
 
   export function getExcCode(book: Bkper.Book): string {
