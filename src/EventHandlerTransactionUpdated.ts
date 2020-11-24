@@ -23,17 +23,32 @@ class EventHandlerTransactionUpdated extends EventHandlerTransaction {
       return null;
     }
 
+    if (stockTransaction.isChecked()) {
+      stockTransaction.uncheck();
+    }
+
     let price = new Number(financialTransaction.amount).valueOf() / quantity;
+    
+    const originalAmount = new Number(financialTransaction.amount).valueOf();
+
     stockTransaction.setDate(financialTransaction.date)
     .setAmount(quantity)
     .setDescription(financialTransaction.description)
-    .setProperty(PRICE_PROP, price.toFixed(financialBook.getFractionDigits()));
+    .setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(0))
+    .setProperty(ORIGINAL_AMOUNT_PROP, originalAmount.toFixed(financialBook.getFractionDigits()))
+    ;
 
     if (BotService.isPurchase(stockTransaction)) {
-      stockTransaction.setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(0));
+      stockTransaction.setProperty(PURCHASE_PRICE_PROP, price.toFixed(financialBook.getFractionDigits()))
+    }
+
+    if (BotService.isSale(stockTransaction)) {
+      stockTransaction.setProperty(SALE_PRICE_PROP, price.toFixed(financialBook.getFractionDigits()))
     }
 
     stockTransaction.update();
+
+    this.flagStockAccountForRebuildIfNeeded(stockTransaction);
 
     let bookAnchor = super.buildBookAnchor(stockBook);
     let record = `EDITED: ${stockTransaction.getDateFormatted()} ${quantity} ${stockTransaction.getCreditAccountName()} ${stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;

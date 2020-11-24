@@ -248,10 +248,10 @@ namespace RealizedResultsService {
       lastTxDate = lastPurchaseTx.getDateValue();
     }
 
-    let stockAccountLastTxDate = stockAccount.getProperty(STOCK_RR_DATE_PROP);
+    let stockAccountLastTxDate = stockAccount.getProperty(STOCK_REALIZED_DATE_PROP);
 
     if (lastTxDate != null && (stockAccountLastTxDate == null || lastTxDate > +stockAccountLastTxDate)) {
-      stockAccount.deleteProperty('last_sale_date').setProperty(STOCK_RR_DATE_PROP, lastTxDate + '').update();
+      stockAccount.deleteProperty('last_sale_date').setProperty(STOCK_REALIZED_DATE_PROP, lastTxDate + '').update();
     }
   }
 

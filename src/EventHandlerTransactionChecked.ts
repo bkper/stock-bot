@@ -91,7 +91,7 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
   }
 
   private checkLastTxDate(stockAccount: Bkper.Account, transaction: bkper.Transaction) {
-    let lastTxDate = stockAccount.getProperty(STOCK_RR_DATE_PROP);
+    let lastTxDate = stockAccount.getProperty(STOCK_REALIZED_DATE_PROP);
     if (lastTxDate != null && transaction.dateValue <= +lastTxDate) {
       stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
     }

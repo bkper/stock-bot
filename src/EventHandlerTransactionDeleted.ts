@@ -19,6 +19,8 @@ class EventHandlerTransactionDeleted extends EventHandlerTransaction {
       stockTransaction.uncheck();
     }
 
+    this.flagStockAccountForRebuildIfNeeded(stockTransaction);
+
     stockTransaction.remove();
 
     let amountFormatted = stockBook.formatValue(stockTransaction.getAmount())

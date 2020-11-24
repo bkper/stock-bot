@@ -11,6 +11,15 @@ namespace BotService {
     return null;
   }
 
+  export function getStockAccount(stockTransaction: Bkper.Transaction): Bkper.Account {
+    if (isSale(stockTransaction)) {
+      return stockTransaction.getCreditAccount();
+    }
+    if (isPurchase(stockTransaction)) {
+      return stockTransaction.getDebitAccount();
+    }
+  }
+
   export function getFinancialBook(book: Bkper.Book, excCode?: string): Bkper.Book {
     let connectedBooks = book.getCollection().getBooks();
     for (const connectedBook of connectedBooks) {

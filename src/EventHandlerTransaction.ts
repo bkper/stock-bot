@@ -50,6 +50,14 @@ abstract class EventHandlerTransaction extends EventHandler {
     return stockExcCode;
   }
 
+  protected flagStockAccountForRebuildIfNeeded(stockTransaction: Bkper.Transaction) {
+    let stockAccount = BotService.getStockAccount(stockTransaction);
+    let lastTxDate = stockAccount.getProperty(STOCK_REALIZED_DATE_PROP);
+    if (lastTxDate != null && stockTransaction.getDateValue() <= +lastTxDate) {
+      stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
+    }
+  }
+
   protected abstract getTransactionQuery(transaction: bkper.Transaction): string;
 
   protected abstract connectedTransactionNotFound(financialBook: Bkper.Book, stockBook: Bkper.Book, financialTransaction: bkper.Transaction, stockExcCode: string): string;

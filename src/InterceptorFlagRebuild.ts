@@ -6,13 +6,8 @@ class InterceptorFlagRebuild {
       let operation = event.data.object as bkper.TransactionOperation;
       let transactionPayload = operation.transaction;
       let transaction = baseBook.getTransaction(transactionPayload.id);
-      let stockAccount: Bkper.Account;
-      if (BotService.isSale(transaction)) {
-        stockAccount = transaction.getCreditAccount();
-      }
-      if (BotService.isPurchase(transaction)) {
-        stockAccount = transaction.getDebitAccount();
-      }
+      
+      let stockAccount = BotService.getStockAccount(transaction);
 
       if(stockAccount && stockAccount.getProperty(NEEDS_REBUILD_PROP) == null) {
         stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
