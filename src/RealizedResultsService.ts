@@ -19,7 +19,7 @@ namespace RealizedResultsService {
       id: stockBook.getId(),
       name: stockBook.getName(),
     }
-    
+
     template.account = {}
 
     if (stockAccount != null) {
@@ -175,11 +175,20 @@ namespace RealizedResultsService {
 
           let originalQuantity = tx.getProperty(ORIGINAL_QUANTITY_PROP)
           if (originalQuantity == null) {
-            //Migrating old data
+            //Migrating missing original property on salee
             tx.setProperty(ORIGINAL_QUANTITY_PROP, tx.getAmount().toFixed(financialBook.getFractionDigits()))
           } else {
             tx.setAmount(+originalQuantity);
           }
+
+          //Migrating deprecated price property
+          let deprecatedPrice = tx.getProperty(DEPRECATED_PRICE_PROP);
+          if (deprecatedPrice) {
+            tx.setProperty(SALE_PRICE_PROP, deprecatedPrice);
+            tx.deleteProperty(DEPRECATED_PRICE_PROP)
+          }
+
+
           tx.update();
           stockAccountSaleTransactions.push(tx);
         }
@@ -197,8 +206,16 @@ namespace RealizedResultsService {
           .deleteProperty(SALE_AMOUNT_PROP)
           .deleteProperty(GAIN_AMOUNT_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
-          .setAmount(+tx.getProperty(ORIGINAL_QUANTITY_PROP))
-          .update();
+          .setAmount(+tx.getProperty(ORIGINAL_QUANTITY_PROP));
+
+          //Migrating deprecated price property
+          let deprecatedPrice = tx.getProperty(DEPRECATED_PRICE_PROP);
+          if (deprecatedPrice) {
+            tx.setProperty(PURCHASE_PRICE_PROP, deprecatedPrice);
+            tx.deleteProperty(DEPRECATED_PRICE_PROP)
+          }
+
+          tx.update();
           stockAccountPurchaseTransactions.push(tx);
         }
       }
