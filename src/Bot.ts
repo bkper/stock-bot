@@ -25,7 +25,7 @@ const SALE_AMOUNT_PROP = 'sale_amount';
 const SALE_DATE_PROP = 'sale_date';
 const EXC_CODE_PROP = 'exc_code';
 const ORDER_PROP = 'order';
-const LAST_SALE_DATE_PROP = 'last_sale_date';
+const STOCK_RR_DATE_PROP = 'stock_realized_date';
 const STOCK_SELL_ACCOUNT_NAME = 'Sell';
 const STOCK_BUY_ACCOUNT_NAME = 'Buy';
 

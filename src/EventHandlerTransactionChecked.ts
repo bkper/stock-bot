@@ -31,6 +31,8 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
     let price = originalAmount / quantity;
 
     let stockAccount = this.getConnectedStockAccount(financialBook, stockBook, financialCreditAccount);
+
+
     if (stockAccount) {
       //Selling
       let stockSellAccount = stockBook.getAccount(STOCK_SELL_ACCOUNT_NAME);
@@ -50,12 +52,7 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setProperty(ORIGINAL_AMOUNT_PROP, originalAmount.toFixed(financialBook.getFractionDigits()))
       .post()
 
-      let lastSaleDate = stockAccount.getProperty(LAST_SALE_DATE_PROP);
-      if (lastSaleDate == null || transaction.dateValue > +lastSaleDate) {
-        stockAccount.setProperty(LAST_SALE_DATE_PROP, transaction.dateValue+'').update();
-      } else if (transaction.dateValue <= +lastSaleDate) {
-        stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
-      }
+      this.checkLastTxDate(stockAccount, transaction);
 
       let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${stockAccount.getName()} ${stockSellAccount.getName()} ${newTransaction.getDescription()}`;
       return `SELL: ${stockBookAnchor}: ${record}`;
@@ -81,10 +78,7 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
         .setProperty(ORIGINAL_AMOUNT_PROP, originalAmount.toFixed(financialBook.getFractionDigits()))
         .post()
 
-        let lastSaleDate = stockAccount.getProperty(LAST_SALE_DATE_PROP);
-        if (lastSaleDate != null && transaction.dateValue <= +lastSaleDate) {
-          stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
-        }
+        this.checkLastTxDate(stockAccount, transaction);
 
         let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${stockBuyAccount.getName()} ${stockAccount.getName()} ${newTransaction.getDescription()}`;
         return `BUY: ${stockBookAnchor}: ${record}`;
@@ -94,6 +88,13 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
     return null;
 
+  }
+
+  private checkLastTxDate(stockAccount: Bkper.Account, transaction: bkper.Transaction) {
+    let lastTxDate = stockAccount.getProperty(STOCK_RR_DATE_PROP);
+    if (lastTxDate != null && transaction.dateValue <= +lastTxDate) {
+      stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
+    }
   }
 
   private getConnectedStockAccount(financialBook: Bkper.Book, stockBook: Bkper.Book, financialAccount: Bkper.Account, ): Bkper.Account {

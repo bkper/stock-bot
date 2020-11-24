@@ -149,8 +149,10 @@ namespace BotService {
     stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(compareTo);
 
     for (const saleTransaction of stockAccountSaleTransactions) {
-      //processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
+      processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
     }
+
+    checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
 
   }
 
@@ -206,10 +208,32 @@ namespace BotService {
       for (const saleTransaction of stockAccountSaleTransactions) {
         processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
       }
+
+      checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
+
     }
+
 
     booksToAudit.forEach(book => book.audit());
 
+  }
+
+  
+
+  function checkLastTxDate(stockAccount: Bkper.Account, stockAccountSaleTransactions: Bkper.Transaction[], stockAccountPurchaseTransactions: Bkper.Transaction[]) {
+    let lastSaleTx = stockAccountSaleTransactions.length > 0 ? stockAccountSaleTransactions[stockAccountSaleTransactions.length - 1] : null;
+    let lastPurchaseTx = stockAccountPurchaseTransactions.length > 0 ? stockAccountPurchaseTransactions[stockAccountPurchaseTransactions.length - 1] : null;
+
+    let lastTxDate = lastSaleTx != null ? lastSaleTx.getDateValue() : null;
+    if (lastTxDate == null || (lastPurchaseTx != null && lastPurchaseTx.getDateValue() > +lastTxDate)) {
+      lastTxDate = lastPurchaseTx.getDateValue();
+    }
+
+    let stockAccountLastTxDate = stockAccount.getProperty(STOCK_RR_DATE_PROP);
+
+    if (lastTxDate != null && (stockAccountLastTxDate == null || lastTxDate > +stockAccountLastTxDate)) {
+      stockAccount.deleteProperty('last_sale_date').setProperty(STOCK_RR_DATE_PROP, lastTxDate + '').update();
+    }
   }
 
   export function isSale(transaction: Bkper.Transaction): boolean {
