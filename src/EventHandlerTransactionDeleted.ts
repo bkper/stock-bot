@@ -19,7 +19,7 @@ class EventHandlerTransactionDeleted extends EventHandlerTransaction {
       stockTransaction.uncheck();
     }
 
-    this.flagStockAccountForRebuildIfNeeded(stockTransaction);
+    BotService.flagStockAccountForRebuildIfNeeded(stockTransaction);
 
     stockTransaction.remove();
 

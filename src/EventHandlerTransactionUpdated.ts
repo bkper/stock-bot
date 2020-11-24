@@ -48,7 +48,7 @@ class EventHandlerTransactionUpdated extends EventHandlerTransaction {
 
     stockTransaction.update();
 
-    this.flagStockAccountForRebuildIfNeeded(stockTransaction);
+    BotService.flagStockAccountForRebuildIfNeeded(stockTransaction);
 
     let bookAnchor = super.buildBookAnchor(stockBook);
     let record = `EDITED: ${stockTransaction.getDateFormatted()} ${quantity} ${stockTransaction.getCreditAccountName()} ${stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;
