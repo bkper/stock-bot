@@ -33,11 +33,18 @@ const STOCK_BUY_ACCOUNT_NAME = 'Buy';
 function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   //@ts-ignore
   let bookId = e.parameter.bookId;
-  return BotService.getBotViewTemplate(bookId);
+  //@ts-ignore
+  let accountId = e.parameter.accountId;
+
+  return RealizedResultsService.getBotViewTemplate(bookId, accountId);
 }
 
-function calculateRealizedResults(bookId: string): void {
-  BotService.calculateRealizedResultsForBook(bookId);
+function calculateRealizedResults(bookId: string, accountId: string): void {
+  if (accountId) {
+    RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId);
+  } else {
+    RealizedResultsService.calculateRealizedResultsForBook(bookId);
+  }
 }
 
 function onTransactionPosted(event: bkper.Event) {

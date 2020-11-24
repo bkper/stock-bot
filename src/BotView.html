@@ -47,7 +47,7 @@
   <body>
 
     <div class='header'>
-      Realized Results for&nbsp;<strong><?!= book.name ?></strong>
+      Realized Results for&nbsp;<strong><?!= account.name ? account.name : book.name ?></strong>
     </div>
 
     <div class='body'>
@@ -71,7 +71,7 @@
 
   function calculateRealizedResults() {
     showWaiting(true);
-    google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).calculateRealizedResults('<?!= book.id ?>')
+    google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).calculateRealizedResults('<?!= book.id ?>', '<?!= account.id ? account.id : null ?>')
   }
 
   function showWaiting(show) {
