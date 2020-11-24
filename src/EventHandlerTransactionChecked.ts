@@ -63,7 +63,7 @@ class EventHandlerTransactionChecked extends EventHandlerTransaction {
         //Buying
         let stockBuyAccount = stockBook.getAccount(STOCK_BUY_ACCOUNT_NAME);
         if (stockBuyAccount == null) {
-          stockBuyAccount = stockBook.newAccount().setName(STOCK_BUY_ACCOUNT_NAME).setType(BkperApp.AccountType.OUTGOING).create();
+          stockBuyAccount = stockBook.newAccount().setName(STOCK_BUY_ACCOUNT_NAME).setType(BkperApp.AccountType.INCOMING).create();
         }        
 
         let newTransaction = stockBook.newTransaction()
