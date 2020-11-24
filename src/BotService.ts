@@ -277,6 +277,9 @@ namespace BotService {
     let purchaseTotal = 0;
     let saleTotal = 0;
 
+    let gainDateValue = saleTransaction.getDateValue();
+    let gainDate = saleTransaction.getDate();
+
     for (const purchaseTransaction of purchaseTransactions) {
 
       if (purchaseTransaction.isChecked()) {
@@ -298,6 +301,7 @@ namespace BotService {
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
         .addRemoteId(saleTransaction.getId())
         .update().check();
+
         gainTotal += gain;
         purchaseTotal += purchaseAmount;
         saleTotal += saleAmount;
@@ -329,11 +333,18 @@ namespace BotService {
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
         .post()
         .check()
+
         soldQuantity -= partialBuyQuantity;
         gainTotal += gain;
         purchaseTotal += purchaseAmount;
         saleTotal += saleAmount;
       }
+
+      // Get last date that closes the position
+      if (purchaseTransaction.getDateValue() > gainDateValue) {
+        gainDateValue = purchaseTransaction.getDateValue();
+        gainDate = purchaseTransaction.getDate();
+      }      
 
       if (soldQuantity <= 0) {
         break;
@@ -373,7 +384,7 @@ namespace BotService {
 
       financialBook.newTransaction()
       .addRemoteId(saleTransaction.getId())
-      .setDate(saleTransaction.getDate())
+      .setDate(gainDate)
       .setAmount(gainTotal)
       .setDescription(`sale of ${saleTransaction.getAmount()} #stock_gain`)
       .from(realizedGainAccount)
@@ -396,7 +407,7 @@ namespace BotService {
 
       financialBook.newTransaction()
       .addRemoteId(saleTransaction.getId())
-      .setDate(saleTransaction.getDate())
+      .setDate(gainDate)
       .setAmount(gainTotal)
       .setDescription(`sale of ${saleTransaction.getAmount()} #stock_loss`)
       .from(unrealizedAccount)
