@@ -244,7 +244,7 @@ namespace RealizedResultsService {
     let lastPurchaseTx = stockAccountPurchaseTransactions.length > 0 ? stockAccountPurchaseTransactions[stockAccountPurchaseTransactions.length - 1] : null;
 
     let lastTxDate = lastSaleTx != null ? lastSaleTx.getDateValue() : null;
-    if (lastTxDate == null || (lastPurchaseTx != null && lastPurchaseTx.getDateValue() > +lastTxDate)) {
+    if ((lastTxDate == null && lastPurchaseTx != null) || (lastPurchaseTx != null && lastPurchaseTx.getDateValue() > +lastTxDate)) {
       lastTxDate = lastPurchaseTx.getDateValue();
     }
 
