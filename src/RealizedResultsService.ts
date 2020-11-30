@@ -423,7 +423,7 @@ namespace RealizedResultsService {
       .setDescription(`sale of ${saleTransaction.getAmount()} #stock_loss`)
       .from(unrealizedAccount)
       .to(realizedLossAccount)
-      .post()
+      .post().check();
     }
 
     if (soldQuantity == 0) {
