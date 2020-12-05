@@ -39,11 +39,11 @@ class EventHandlerTransactionUpdated extends EventHandlerTransaction {
     ;
 
     if (BotService.isPurchase(stockTransaction)) {
-      stockTransaction.setProperty(PURCHASE_PRICE_PROP, price.toFixed(financialBook.getFractionDigits()))
+      stockTransaction.setProperty(PURCHASE_PRICE_PROP, price + '')
     }
 
     if (BotService.isSale(stockTransaction)) {
-      stockTransaction.setProperty(SALE_PRICE_PROP, price.toFixed(financialBook.getFractionDigits()))
+      stockTransaction.setProperty(SALE_PRICE_PROP, price + '')
     }
 
     stockTransaction.update();

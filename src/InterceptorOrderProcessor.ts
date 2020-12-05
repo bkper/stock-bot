@@ -257,13 +257,16 @@ class InterceptorOrderProcessor {
     let fees = this.getFees(baseBook, transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
+    const amount = +transactionPayload.amount - interest - fees;
+    const price = amount/+quantity;
     let tx = baseBook.newTransaction()
-    .setAmount(+transactionPayload.amount - interest - fees)
+    .setAmount(amount)
     .from(exchangeAccount)
     .to(instrumentAccount)
     .setDescription(transactionPayload.description)
     .setDate(tradeDate)
     .setProperty(QUANTITY_PROP, quantity)
+    .setProperty(PRICE_PROP, baseBook.formatValue(price))
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
     return `${tx.getDate()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;
@@ -275,13 +278,16 @@ class InterceptorOrderProcessor {
     let fees = this.getFees(baseBook, transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
+    const amount = +transactionPayload.amount - interest + fees;
+    const price = amount/+quantity;
     let tx = baseBook.newTransaction()
-    .setAmount(+transactionPayload.amount - interest + fees)
+    .setAmount(amount)
     .from(instrumentAccount)
     .to(exchangeAccount)
     .setDescription(transactionPayload.description)
     .setDate(tradeDate)
     .setProperty(QUANTITY_PROP, quantity)
+    .setProperty(PRICE_PROP, baseBook.formatValue(price))
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
     return `${tx.getDate()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;

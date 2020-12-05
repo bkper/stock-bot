@@ -165,7 +165,7 @@ namespace RealizedResultsService {
           }
           financialTx.remove();
         }
-        if (tx.getProperty(ORIGINAL_QUANTITY_PROP, DEPRECATED_PRICE_PROP) == null) {
+        if (tx.getProperty(ORIGINAL_QUANTITY_PROP, PRICE_PROP) == null) {
           tx.remove();
         } else {
           tx.deleteProperty(GAIN_AMOUNT_PROP)
@@ -182,10 +182,10 @@ namespace RealizedResultsService {
           }
 
           //Migrating deprecated price property
-          let deprecatedPrice = tx.getProperty(DEPRECATED_PRICE_PROP);
+          let deprecatedPrice = tx.getProperty(PRICE_PROP);
           if (deprecatedPrice) {
             tx.setProperty(SALE_PRICE_PROP, deprecatedPrice);
-            tx.deleteProperty(DEPRECATED_PRICE_PROP)
+            tx.deleteProperty(PRICE_PROP)
           }
 
 
@@ -209,10 +209,10 @@ namespace RealizedResultsService {
           .setAmount(+tx.getProperty(ORIGINAL_QUANTITY_PROP));
 
           //Migrating deprecated price property
-          let deprecatedPrice = tx.getProperty(DEPRECATED_PRICE_PROP);
+          let deprecatedPrice = tx.getProperty(PRICE_PROP);
           if (deprecatedPrice) {
             tx.setProperty(PURCHASE_PRICE_PROP, deprecatedPrice);
-            tx.deleteProperty(DEPRECATED_PRICE_PROP)
+            tx.deleteProperty(PRICE_PROP)
           }
 
           tx.update();
@@ -280,7 +280,7 @@ namespace RealizedResultsService {
 
   function processSale(financialBook: Bkper.Book, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[]): void {
 
-    let salePrice: number = +saleTransaction.getProperty(SALE_PRICE_PROP, DEPRECATED_PRICE_PROP);
+    let salePrice: number = +saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP);
 
     let gainTotal = 0;
     let soldQuantity = saleTransaction.getAmount();
@@ -289,6 +289,7 @@ namespace RealizedResultsService {
     let saleTotal = 0;
 
     let gainDateValue = saleTransaction.getDateValue();
+    let gainDateObject = saleTransaction.getDateObject();
     let gainDate = saleTransaction.getDate();
 
     for (const purchaseTransaction of purchaseTransactions) {
@@ -298,7 +299,7 @@ namespace RealizedResultsService {
         continue;
       }
 
-      let purchasePrice: number = +purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, DEPRECATED_PRICE_PROP);
+      let purchasePrice: number = +purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP);
       let purchaseQuantity = purchaseTransaction.getAmount();
       
       if (soldQuantity >= purchaseQuantity ) {
@@ -306,7 +307,7 @@ namespace RealizedResultsService {
         const purchaseAmount = (purchasePrice * purchaseQuantity);
         let gain = saleAmount - purchaseAmount; 
         purchaseTransaction
-        .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
+        .setProperty(SALE_PRICE_PROP, salePrice+'')
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
         .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
@@ -336,11 +337,11 @@ namespace RealizedResultsService {
         .setCreditAccount(purchaseTransaction.getCreditAccount())
         .setDebitAccount(purchaseTransaction.getDebitAccount())
         .setDescription(purchaseTransaction.getDescription())
-        .setProperty(PURCHASE_PRICE_PROP, purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, DEPRECATED_PRICE_PROP))
+        .setProperty(PURCHASE_PRICE_PROP, purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
         .setProperty(ORDER_PROP, purchaseTransaction.getProperty(ORDER_PROP))
         .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
-        .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
+        .setProperty(SALE_PRICE_PROP, salePrice+'')
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
         .post()
         .check()
@@ -354,6 +355,7 @@ namespace RealizedResultsService {
       // Get last date that closes the position
       if (purchaseTransaction.getDateValue() > gainDateValue) {
         gainDateValue = purchaseTransaction.getDateValue();
+        gainDateObject = purchaseTransaction.getDateObject();
         gainDate = purchaseTransaction.getDate();
       }      
 
@@ -408,7 +410,9 @@ namespace RealizedResultsService {
       .from(realizedGainAccount)
       .to(unrealizedAccount)
       .post();
-      
+
+      markToMarket(stockBook, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
+
     } else if (gainTotal < 0) {
 
       let realizedLossAccountName = stockAccount.getProperty(STOCK_LOSS_ACCOUNT_PROP);
@@ -437,6 +441,8 @@ namespace RealizedResultsService {
       .from(unrealizedAccount)
       .to(realizedLossAccount)
       .post().check();
+
+      markToMarket(stockBook, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
     }
 
     if (soldQuantity == 0) {
@@ -462,7 +468,7 @@ namespace RealizedResultsService {
         .setDebitAccount(saleTransaction.getDebitAccount())
         .setDescription(saleTransaction.getDescription())
         .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
-        .setProperty(SALE_PRICE_PROP, salePrice.toFixed(financialBook.getFractionDigits()))
+        .setProperty(SALE_PRICE_PROP, salePrice+'')
         .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits())) 
         .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
@@ -471,6 +477,48 @@ namespace RealizedResultsService {
       }
 
     }
+  }
+
+  function markToMarket(stockBook: Bkper.Book, stockAccount: Bkper.Account, financialBook: Bkper.Book, unrealizedAccount: Bkper.Account, date: Date, price: number): void {
+    let total_quantity = getAccountBalance(stockBook, stockAccount, date);
+    let financialInstrument = financialBook.getAccount(stockAccount.getName());
+    let balance = getAccountBalance(financialBook, financialInstrument, date);
+    let newBalance = total_quantity * price;
+
+    let amount = +(newBalance - balance).toFixed(financialBook.getFractionDigits());
+
+    if (amount > 0) {
+
+      financialBook.newTransaction()
+      .setDate(date)
+      .setAmount(amount)
+      .setDescription(`#mtm`)
+      .setProperty(PRICE_PROP, financialBook.formatValue(price))
+      .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(0))
+      .from(unrealizedAccount)
+      .to(financialInstrument)
+      .post().check();
+
+    } else if (amount < 0) {
+      financialBook.newTransaction()
+      .setDate(date)
+      .setAmount(amount)
+      .setDescription(`#mtm`)
+      .setProperty(PRICE_PROP, financialBook.formatValue(price))
+      .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(0))      
+      .from(financialInstrument)
+      .to(unrealizedAccount)
+      .post().check();
+    }
+  }
+
+  function getAccountBalance(book: Bkper.Book, account: Bkper.Account, date: Date): number {
+    let balances = book.getBalancesReport(`account:"${account.getName()}" on:${book.formatDate(date)}`);
+    let containers = balances.getBalancesContainers();
+    if (containers == null || containers.length == 0) {
+      return 0;
+    }
+    return containers[0].getCumulativeBalance();
   }
 
 }
