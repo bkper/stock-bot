@@ -1,6 +1,9 @@
 namespace BotService {
 
   export function getStockBook(book: Bkper.Book): Bkper.Book {
+    if (book.getCollection() == null) {
+      return null;
+    }
     let connectedBooks = book.getCollection().getBooks();
     for (const connectedBook of connectedBooks) {
       let fractionDigits = connectedBook.getFractionDigits();
@@ -29,6 +32,9 @@ namespace BotService {
   }
 
   export function getFinancialBook(book: Bkper.Book, excCode?: string): Bkper.Book {
+    if (book.getCollection() == null) {
+      return null;
+    }
     let connectedBooks = book.getCollection().getBooks();
     for (const connectedBook of connectedBooks) {
       let excCodeConnectedBook = getExcCode(connectedBook);

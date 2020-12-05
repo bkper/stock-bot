@@ -383,9 +383,16 @@ namespace RealizedResultsService {
 
       let realizedGainAccountName = stockAccount.getProperty(STOCK_GAIN_ACCOUNT_PROP);
       if (realizedGainAccountName == null) {
-        realizedGainAccountName = `${stockAccount.getName()} Gain`
+        realizedGainAccountName = `${stockAccount.getName()} Realized Gain`
       }
       let realizedGainAccount = financialBook.getAccount(realizedGainAccountName);
+
+      if (realizedGainAccount == null) {
+        //Fallback to old XXX Gain default
+        realizedGainAccount = financialBook.getAccount(`${stockAccount.getName()} Gain`);
+      }
+
+
       if (realizedGainAccount == null) {
         realizedGainAccount = financialBook.newAccount()
         .setName(realizedGainAccountName)
@@ -406,9 +413,15 @@ namespace RealizedResultsService {
 
       let realizedLossAccountName = stockAccount.getProperty(STOCK_LOSS_ACCOUNT_PROP);
       if (realizedLossAccountName == null) {
-        realizedLossAccountName = `${stockAccount.getName()} Loss`
+        realizedLossAccountName = `${stockAccount.getName()} Realized Loss`
       }
       let realizedLossAccount = financialBook.getAccount(realizedLossAccountName);
+
+      if (realizedLossAccount == null) {
+        //Fallback to old XXX Loss account
+        realizedLossAccount = financialBook.getAccount(`${stockAccount.getName()} Loss`);
+      }
+
       if (realizedLossAccount == null) {
         realizedLossAccount = financialBook.newAccount()
         .setName(realizedLossAccountName)
