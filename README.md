@@ -11,7 +11,7 @@ The process of tracking realized gains and losses upon sales follows the FIFO (f
 
 Financial and Instruments Books **should be in same [Collection](https://help.bkper.com/en/articles/4208937-collections)**.
 
-The Stock Book is identified by a single book in the Collection with the **decimal places set to 0 (zero)**.
+The Instruments Book is identified by a single book in the Collection with the **decimal places set to 0 (zero)**.
 
 The bot interact with the following properties:
 
@@ -31,7 +31,7 @@ The bot interact with the following properties:
 
 - ```quantity```: The quantity of the instruments to track.
 
-The Bot also add the following properties to the generated transaction in the Quantities Book:
+The Bot also add the following properties to the generated transaction in the Instruments Book:
 
 - ```purchase_price```: The price the instrument was bought.
 - ```original_quantity```: The original quantity used for rebuilding FIFO gains/losses if needed
