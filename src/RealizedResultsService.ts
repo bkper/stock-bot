@@ -34,20 +34,32 @@ namespace RealizedResultsService {
   export function resetRealizedResults(stockBookId: string, stockAccountId: string) {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
-    revertRealizedResultsForAccount(stockBook, stockAccount, false);
+
+    let booksToAudit: Set<Bkper.Book> = new Set<Bkper.Book>();
+
+    revertRealizedResultsForAccount(stockBook, stockAccount, false, booksToAudit);
+
+    auditBooks(booksToAudit);
+
   }
   export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string) {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
 
+    let booksToAudit: Set<Bkper.Book> = new Set<Bkper.Book>();
+
+    booksToAudit.add(stockBook);
+
     if (needsRebuild(stockAccount)) {
-      revertRealizedResultsForAccount(stockBook, stockAccount, true);
+      revertRealizedResultsForAccount(stockBook, stockAccount, true, booksToAudit);
     } else {
       let stockExcCode = BotService.getStockExchangeCode(stockAccount);
       let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
       if (financialBook == null) {
         return; //Skip
       }
+
+      booksToAudit.add(financialBook);
 
       let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}'`);
 
@@ -80,7 +92,7 @@ namespace RealizedResultsService {
 
     }
 
-    stockBook.audit()
+    auditBooks(booksToAudit);
 
   }
 
@@ -88,11 +100,11 @@ namespace RealizedResultsService {
   export function calculateRealizedResultsForBook(stockBookId: string) {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccounts = stockBook.getAccounts();
-
+    let booksToAudit: Set<Bkper.Book> = new Set<Bkper.Book>();
     for (let i = 0; i < stockAccounts.length; i++) {
         const stockAccount = stockAccounts[i];
         if (needsRebuild(stockAccount)) {
-          revertRealizedResultsForAccount(stockBook, stockAccount, true);
+          revertRealizedResultsForAccount(stockBook, stockAccount, true, booksToAudit);
           stockAccounts.splice(i, 1);
         }        
     }
@@ -118,7 +130,6 @@ namespace RealizedResultsService {
     purchaseTransactions = purchaseTransactions.sort(compareTo);
     //TODO sort based on 'order' property
 
-    let booksToAudit: Set<Bkper.Book> = new Set<Bkper.Book>()
     booksToAudit.add(stockBook);
 
     for (const stockAccount of stockAccounts) {
@@ -138,13 +149,20 @@ namespace RealizedResultsService {
 
     }
 
-    booksToAudit.forEach(book => book.audit());
+    auditBooks(booksToAudit);
 
   }
 
 
 
-  export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account, recalculate: boolean) {
+  function auditBooks(booksToAudit: Set<Bkper.Book>) {
+    booksToAudit.forEach(book => {
+      console.log(`Auditing book ${book.getName()}`)
+      book.audit()
+    });
+  }
+
+  export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account, recalculate: boolean, booksToAudit: Set<Bkper.Book>) {
     let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}'`);
     
     let stockAccountSaleTransactions: Bkper.Transaction[] = [];
@@ -152,6 +170,9 @@ namespace RealizedResultsService {
 
     let stockExcCode = BotService.getStockExchangeCode(stockAccount);
     let financialBook = BotService.getFinancialBook(stockBook, stockExcCode)
+
+    booksToAudit.add(stockBook);
+    booksToAudit.add(financialBook);
 
     while (iterator.hasNext()) {
       let tx = iterator.next();

@@ -59,7 +59,7 @@
       <img src='https://storage.googleapis.com/bkper-public/addons/loading_3dots.gif'/>
     </div>  
     <div class="footer" id='footer-panel'>
-      <button id="reset-button" onclick="resetRealizedResults()">Reset</button>
+      <?!= account.name ? "<button id='reset-button' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
       <button id="calculate-button" onclick="calculateRealizedResults()">Calculate</button>
     </div>
 
