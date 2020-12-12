@@ -59,7 +59,8 @@
       <img src='https://storage.googleapis.com/bkper-public/addons/loading_3dots.gif'/>
     </div>  
     <div class="footer" id='footer-panel'>
-      <button class="action" id="incremental-button" onclick="calculateRealizedResults()">Calculate</button>
+      <button id="reset-button" onclick="resetRealizedResults()">Reset</button>
+      <button id="calculate-button" onclick="calculateRealizedResults()">Calculate</button>
     </div>
 
   </body>
@@ -72,6 +73,11 @@
   function calculateRealizedResults() {
     showWaiting(true);
     google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).calculateRealizedResults('<?!= book.id ?>', '<?!= account.id ? account.id : null ?>')
+  }
+
+  function resetRealizedResults() {
+    showWaiting(true);
+    google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).resetRealizedResults('<?!= book.id ?>', '<?!= account.id ? account.id : null ?>')
   }
 
   function showWaiting(show) {

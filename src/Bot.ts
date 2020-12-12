@@ -48,6 +48,13 @@ function calculateRealizedResults(bookId: string, accountId: string): void {
   }
 }
 
+function resetRealizedResults(bookId: string, accountId: string): void {
+  if (accountId) {
+    RealizedResultsService.resetRealizedResults(bookId, accountId);
+  }
+}
+
+
 function onTransactionPosted(event: bkper.Event) {
   return new EventHandlerTransactionPosted().handleEvent(event);
 }

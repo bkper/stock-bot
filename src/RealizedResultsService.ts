@@ -31,12 +31,17 @@ namespace RealizedResultsService {
 
     return template.evaluate().setTitle('Stock Bot');
   }
+  export function resetRealizedResults(stockBookId: string, stockAccountId: string) {
+    let stockBook = BkperApp.getBook(stockBookId);
+    let stockAccount = stockBook.getAccount(stockAccountId);
+    revertRealizedResultsForAccount(stockBook, stockAccount, false);
+  }
   export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string) {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
 
     if (needsRebuild(stockAccount)) {
-      revertRealizedResultsForAccount(stockBook, stockAccount);
+      revertRealizedResultsForAccount(stockBook, stockAccount, true);
     } else {
       let stockExcCode = BotService.getStockExchangeCode(stockAccount);
       let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
@@ -87,7 +92,7 @@ namespace RealizedResultsService {
     for (let i = 0; i < stockAccounts.length; i++) {
         const stockAccount = stockAccounts[i];
         if (needsRebuild(stockAccount)) {
-          revertRealizedResultsForAccount(stockBook, stockAccount);
+          revertRealizedResultsForAccount(stockBook, stockAccount, true);
           stockAccounts.splice(i, 1);
         }        
     }
@@ -113,8 +118,8 @@ namespace RealizedResultsService {
     purchaseTransactions = purchaseTransactions.sort(compareTo);
     //TODO sort based on 'order' property
 
-    let booksToAudit: Bkper.Book[] = []
-    booksToAudit.push(stockBook);
+    let booksToAudit: Set<Bkper.Book> = new Set<Bkper.Book>()
+    booksToAudit.add(stockBook);
 
     for (const stockAccount of stockAccounts) {
       let stockExcCode = BotService.getStockExchangeCode(stockAccount);
@@ -122,7 +127,7 @@ namespace RealizedResultsService {
       if (financialBook == null) {
         continue; //Skip
       }
-      booksToAudit.push(financialBook);
+      booksToAudit.add(financialBook);
       let stockAccountSaleTransactions = saleTransactions.filter(tx => tx.getCreditAccount().getId() == stockAccount.getId());
       let stockAccountPurchaseTransactions = purchaseTransactions.filter(tx => tx.getDebitAccount().getId() == stockAccount.getId());
       for (const saleTransaction of stockAccountSaleTransactions) {
@@ -139,7 +144,7 @@ namespace RealizedResultsService {
 
 
 
-  export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account) {
+  export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account, recalculate: boolean) {
     let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}'`);
     
     let stockAccountSaleTransactions: Bkper.Transaction[] = [];
@@ -223,12 +228,14 @@ namespace RealizedResultsService {
 
     stockAccount.deleteProperty(NEEDS_REBUILD_PROP).update();
 
-    //FIFO
-    stockAccountSaleTransactions = stockAccountSaleTransactions.sort(compareTo);
-    stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(compareTo);
+    if (recalculate) {
+      //FIFO
+      stockAccountSaleTransactions = stockAccountSaleTransactions.sort(compareTo);
+      stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(compareTo);
 
-    for (const saleTransaction of stockAccountSaleTransactions) {
-      processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
+      for (const saleTransaction of stockAccountSaleTransactions) {
+        processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
+      }
     }
 
     checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
