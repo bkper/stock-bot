@@ -43,17 +43,22 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   return RealizedResultsService.getBotViewTemplate(bookId, accountId);
 }
 
-function calculateRealizedResults(bookId: string, accountId: string): void {
+function calculateRealizedResults(bookId: string, accountId: string): string {
   if (accountId) {
-    RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId);
+    const summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId);
+    const summaryJSON = JSON.stringify(summary, null, 2);
+    return summaryJSON != JSON.stringify({}, null, 2) ? summaryJSON: 'Done.';
   } else {
-    RealizedResultsService.calculateRealizedResultsForBook(bookId);
+    const summary = RealizedResultsService.calculateRealizedResultsForBook(bookId);
+    const summaryJSON = JSON.stringify(summary, null, 2);
+    return summaryJSON != JSON.stringify({}, null, 2) ? summaryJSON: 'Done.';
   }
 }
 
-function resetRealizedResults(bookId: string, accountId: string): void {
+function resetRealizedResults(bookId: string, accountId: string): string {
   if (accountId) {
-    RealizedResultsService.resetRealizedResults(bookId, accountId);
+    const account = RealizedResultsService.resetRealizedResults(bookId, accountId);
+    return `Reseted Realized Results for ${account.getName()}`;
   }
 }
 

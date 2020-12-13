@@ -36,7 +36,23 @@
         display: flex;
       }
 
-      #waiting-panel, .footer {
+      #summary-panel {
+        display: none;
+        padding: 0 20px;
+      }
+
+      #summary {
+        padding: 10px;
+        width: 100%;
+      }
+
+      #summary {
+        background-color: #f5f5f5;
+        border: 1px solid grey;
+      }
+
+
+      #waiting-panel, .footer, .summary-panel {
         justify-content: center;
       }
 
@@ -57,10 +73,16 @@
     </div>
     <div id='waiting-panel'>
       <img src='https://storage.googleapis.com/bkper-public/addons/loading_3dots.gif'/>
+    </div>
+    <div id='summary-panel'>
+      <pre id='summary'>
+
+      </pre>
     </div>  
     <div class="footer" id='footer-panel'>
       <?!= account.name ? "<button id='reset-button' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
       <button id="calculate-button" onclick="calculateRealizedResults()">Calculate</button>
+      <button id="close-button" onclick="closeWindow()">Close</button>
     </div>
 
   </body>
@@ -72,21 +94,28 @@
 
   function calculateRealizedResults() {
     showWaiting(true);
-    google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).calculateRealizedResults('<?!= book.id ?>', '<?!= account.id ? account.id : null ?>')
+    google.script.run.withSuccessHandler(showSummary).withFailureHandler(showError).calculateRealizedResults('<?!= book.id ?>', '<?!= account.id ? account.id : null ?>')
   }
 
   function resetRealizedResults() {
     showWaiting(true);
-    google.script.run.withSuccessHandler(closeWindow).withFailureHandler(showError).resetRealizedResults('<?!= book.id ?>', '<?!= account.id ? account.id : null ?>')
+    google.script.run.withSuccessHandler(showSummary).withFailureHandler(showError).resetRealizedResults('<?!= book.id ?>', '<?!= account.id ? account.id : null ?>')
+  }
+
+  function showSummary(summary) {
+    showWaiting(false);
+    document.getElementById('summary').innerHTML = summary;
   }
 
   function showWaiting(show) {
     if (show) {
       document.getElementById('waiting-panel').style.display = 'flex';
       document.getElementById('footer-panel').style.display = 'none';
+      document.getElementById('summary-panel').style.display = 'none';
     } else {
       document.getElementById('waiting-panel').style.display = 'none';
       document.getElementById('footer-panel').style.display = 'flex';
+      document.getElementById('summary-panel').style.display = 'flex';
     }
   }
 

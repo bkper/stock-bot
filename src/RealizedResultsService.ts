@@ -31,7 +31,7 @@ namespace RealizedResultsService {
 
     return template.evaluate().setTitle('Stock Bot');
   }
-  export function resetRealizedResults(stockBookId: string, stockAccountId: string) {
+  export function resetRealizedResults(stockBookId: string, stockAccountId: string): Bkper.Account {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
 
@@ -41,12 +41,14 @@ namespace RealizedResultsService {
 
     auditBooks(booksToAudit);
 
+    return stockAccount;
   }
-  export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string) {
+  export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string): Summary {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
 
     let booksToAudit: Set<Bkper.Book> = new Set<Bkper.Book>();
+    let summary: Summary = {};
 
     booksToAudit.add(stockBook);
 
@@ -85,7 +87,7 @@ namespace RealizedResultsService {
       }
 
       for (const saleTransaction of stockAccountSaleTransactions) {
-        processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
+        processSale(financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary);
       }
 
       checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
@@ -94,13 +96,16 @@ namespace RealizedResultsService {
 
     auditBooks(booksToAudit);
 
+    return summary;
+
   }
 
 
-  export function calculateRealizedResultsForBook(stockBookId: string) {
+  export function calculateRealizedResultsForBook(stockBookId: string): Summary {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccounts = stockBook.getAccounts();
     let booksToAudit: Set<Bkper.Book> = new Set<Bkper.Book>();
+    let summary: Summary = {};
     for (let i = 0; i < stockAccounts.length; i++) {
         const stockAccount = stockAccounts[i];
         if (needsRebuild(stockAccount)) {
@@ -142,7 +147,7 @@ namespace RealizedResultsService {
       let stockAccountSaleTransactions = saleTransactions.filter(tx => tx.getCreditAccount().getId() == stockAccount.getId());
       let stockAccountPurchaseTransactions = purchaseTransactions.filter(tx => tx.getDebitAccount().getId() == stockAccount.getId());
       for (const saleTransaction of stockAccountSaleTransactions) {
-        processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
+        processSale(financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary);
       }
 
       checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
@@ -150,6 +155,8 @@ namespace RealizedResultsService {
     }
 
     auditBooks(booksToAudit);
+
+    return summary;
 
   }
 
@@ -162,9 +169,9 @@ namespace RealizedResultsService {
     });
   }
 
-  export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account, recalculate: boolean, booksToAudit: Set<Bkper.Book>) {
+  export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account, recalculate: boolean, booksToAudit: Set<Bkper.Book>): Summary {
     let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}'`);
-    
+    let summary: Summary = {};
     let stockAccountSaleTransactions: Bkper.Transaction[] = [];
     let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
 
@@ -255,11 +262,13 @@ namespace RealizedResultsService {
       stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(compareTo);
 
       for (const saleTransaction of stockAccountSaleTransactions) {
-        processSale(financialBook, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions);
+        processSale(financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary);
       }
     }
 
     checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
+
+    return summary;
 
   }
 
@@ -299,7 +308,7 @@ namespace RealizedResultsService {
     return 0;
   }
 
-  function processSale(financialBook: Bkper.Book, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[]): void {
+  function processSale(financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary): void {
 
     let salePrice: number = +saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP);
 
@@ -397,7 +406,8 @@ namespace RealizedResultsService {
       .setType(BkperApp.AccountType.LIABILITY);
       let groups = getAccountGroups(financialBook, STOCK_UNREALIZED_ACCOUNT_PROP, UREALIZED_SUFFIX);
       groups.forEach(group => unrealizedAccount.addGroup(group));
-      unrealizedAccount.create();      
+      unrealizedAccount.create();
+      trackAccountCreated(summary, stockExcCode, unrealizedAccount);
     }
 
 
@@ -422,6 +432,7 @@ namespace RealizedResultsService {
         let groups = getAccountGroups(financialBook, STOCK_GAIN_ACCOUNT_PROP, REALIZED_GAIN_SUFFIX);
         groups.forEach(group => realizedGainAccount.addGroup(group));
         realizedGainAccount.create();
+        trackAccountCreated(summary, stockExcCode, realizedGainAccount);
       }
 
       financialBook.newTransaction()
@@ -455,6 +466,7 @@ namespace RealizedResultsService {
         let groups = getAccountGroups(financialBook, STOCK_LOSS_ACCOUNT_PROP, REALIZED_LOSS_SUFFIX);
         groups.forEach(group => realizedLossAccount.addGroup(group));
         realizedLossAccount.create()
+        trackAccountCreated(summary, stockExcCode, realizedLossAccount);
       }
 
       financialBook.newTransaction()
@@ -501,6 +513,13 @@ namespace RealizedResultsService {
       }
 
     }
+  }
+
+  function trackAccountCreated(summary: Summary, stockExcCode: string, unrealizedAccount: Bkper.Account) {
+    if (summary[stockExcCode] == null) {
+      summary[stockExcCode] = [];
+    }
+    summary[stockExcCode].push(unrealizedAccount.getName());
   }
 
   function markToMarket(stockBook: Bkper.Book, stockAccount: Bkper.Account, financialBook: Bkper.Book, unrealizedAccount: Bkper.Account, date: Date, price: number): void {
