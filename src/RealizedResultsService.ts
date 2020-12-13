@@ -545,15 +545,15 @@ namespace RealizedResultsService {
     return containers[0].getCumulativeBalance();
   }
 
-  function getAccountGroups(financialBook: Bkper.Book, accountProperty: string, accountSuffix: string): Set<Bkper.Group> {
+  function getAccountGroups(book: Bkper.Book, accountProperty: string, gainLossSuffix: string): Set<Bkper.Group> {
     let accountNames = new Set<string>();
 
-    financialBook.getAccounts().forEach(account => {
+    book.getAccounts().forEach(account => {
       let accountName = account.getProperty(accountProperty);
       if (accountName) {
         accountNames.add(accountName);
       }
-      if (account.getName().endsWith(accountSuffix)) {
+      if (account.getName().endsWith(gainLossSuffix)) {
         accountNames.add(account.getName());
       }
     });
@@ -561,7 +561,7 @@ namespace RealizedResultsService {
     let groups = new Set<Bkper.Group>();
 
     accountNames.forEach(accountName => {
-      let account = financialBook.getAccount(accountName);
+      let account = book.getAccount(accountName);
       if (account && account.getGroups()) {
         account.getGroups().forEach(group => {groups.add(group)})
       }
