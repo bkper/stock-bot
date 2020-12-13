@@ -29,6 +29,9 @@ const ORDER_PROP = 'order';
 const STOCK_REALIZED_DATE_PROP = 'stock_realized_date';
 const STOCK_SELL_ACCOUNT_NAME = 'Sell';
 const STOCK_BUY_ACCOUNT_NAME = 'Buy';
+const REALIZED_GAIN_SUFFIX = 'Realized Gain';
+const REALIZED_LOSS_SUFFIX = 'Realized Loss';
+const UREALIZED_SUFFIX = 'Unrealized';
 
 
 function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {

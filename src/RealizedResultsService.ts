@@ -388,17 +388,16 @@ namespace RealizedResultsService {
 
     let unrealizedAccountName = stockAccount.getProperty(STOCK_UNREALIZED_ACCOUNT_PROP);
     if (unrealizedAccountName == null) {
-      unrealizedAccountName = `${stockAccount.getName()} Unrealized`;
+      unrealizedAccountName = `${stockAccount.getName()} ${UREALIZED_SUFFIX}`;
     }
     let unrealizedAccount = financialBook.getAccount(unrealizedAccountName)
     if (unrealizedAccount == null) {
-      let stockExchangeGroup = BotService.getStockExchangeGroup(stockAccount);
-      let unrealizedGroup = stockExchangeGroup != null ? financialBook.getGroup(stockExchangeGroup.getName()) : null;
       unrealizedAccount = financialBook.newAccount()
       .setName(unrealizedAccountName)
-      .setType(BkperApp.AccountType.LIABILITY)
-      .addGroup(unrealizedGroup)
-      .create()
+      .setType(BkperApp.AccountType.LIABILITY);
+      let groups = getAccountGroups(financialBook, STOCK_UNREALIZED_ACCOUNT_PROP, UREALIZED_SUFFIX);
+      groups.forEach(group => unrealizedAccount.addGroup(group));
+      unrealizedAccount.create();      
     }
 
 
@@ -406,7 +405,7 @@ namespace RealizedResultsService {
 
       let realizedGainAccountName = stockAccount.getProperty(STOCK_GAIN_ACCOUNT_PROP);
       if (realizedGainAccountName == null) {
-        realizedGainAccountName = `${stockAccount.getName()} Realized Gain`
+        realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_GAIN_SUFFIX}`
       }
       let realizedGainAccount = financialBook.getAccount(realizedGainAccountName);
 
@@ -419,8 +418,10 @@ namespace RealizedResultsService {
       if (realizedGainAccount == null) {
         realizedGainAccount = financialBook.newAccount()
         .setName(realizedGainAccountName)
-        .setType(BkperApp.AccountType.INCOMING)
-        .create()
+        .setType(BkperApp.AccountType.INCOMING);
+        let groups = getAccountGroups(financialBook, STOCK_GAIN_ACCOUNT_PROP, REALIZED_GAIN_SUFFIX);
+        groups.forEach(group => realizedGainAccount.addGroup(group));
+        realizedGainAccount.create();
       }
 
       financialBook.newTransaction()
@@ -438,7 +439,7 @@ namespace RealizedResultsService {
 
       let realizedLossAccountName = stockAccount.getProperty(STOCK_LOSS_ACCOUNT_PROP);
       if (realizedLossAccountName == null) {
-        realizedLossAccountName = `${stockAccount.getName()} Realized Loss`
+        realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_LOSS_SUFFIX}`
       }
       let realizedLossAccount = financialBook.getAccount(realizedLossAccountName);
 
@@ -450,8 +451,10 @@ namespace RealizedResultsService {
       if (realizedLossAccount == null) {
         realizedLossAccount = financialBook.newAccount()
         .setName(realizedLossAccountName)
-        .setType(BkperApp.AccountType.OUTGOING)
-        .create()
+        .setType(BkperApp.AccountType.OUTGOING);
+        let groups = getAccountGroups(financialBook, STOCK_LOSS_ACCOUNT_PROP, REALIZED_LOSS_SUFFIX);
+        groups.forEach(group => realizedLossAccount.addGroup(group));
+        realizedLossAccount.create()
       }
 
       financialBook.newTransaction()
@@ -540,6 +543,31 @@ namespace RealizedResultsService {
       return 0;
     }
     return containers[0].getCumulativeBalance();
+  }
+
+  function getAccountGroups(financialBook: Bkper.Book, accountProperty: string, accountSuffix: string): Set<Bkper.Group> {
+    let accountNames = new Set<string>();
+
+    financialBook.getAccounts().forEach(account => {
+      let accountName = account.getProperty(accountProperty);
+      if (accountName) {
+        accountNames.add(accountName);
+      }
+      if (account.getName().endsWith(accountSuffix)) {
+        accountNames.add(account.getName());
+      }
+    });
+
+    let groups = new Set<Bkper.Group>();
+
+    accountNames.forEach(accountName => {
+      let account = financialBook.getAccount(accountName);
+      if (account && account.getGroups()) {
+        account.getGroups().forEach(group => {groups.add(group)})
+      }
+    })
+
+    return groups;
   }
 
 }
