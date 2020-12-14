@@ -84,11 +84,15 @@
     <? for (var i = 0; i < accounts.length; i++) { ?>
       showAccountWaiting('<?!= accounts[i].id ?>')
     <? } ?>
+    await fireRealizedResultsForAll().catch(showError)
+    promiseRun('auditBooks' , '<?!= book.id ?>')
+    disableButtons(false)
+  }
+
+  async function fireRealizedResultsForAll() {
     <? for (var i = 0; i < accounts.length; i++) { ?>
       await promiseRun('calculateRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting)
     <? } ?>
-    await promiseRun('auditBooks' , '<?!= book.id ?>')
-    disableButtons(false)
   }
 
   async function resetRealizedResults() {
