@@ -11,14 +11,29 @@ namespace RealizedResultsService {
       throw 'No book with 0 decimal places found in the collection';
     }
 
-    let stockAccount = baseAccount != null ? stockBook.getAccount(baseAccount.getName()) : null;
-
     const template = HtmlService.createTemplateFromFile('BotView');
   
     template.book = {
       id: stockBook.getId(),
       name: stockBook.getName(),
     }
+
+    template.accounts = [];
+
+    for (const account of stockBook.getAccounts()) {
+      if (!account.isPermanent()) {
+        //bypass non permanent accounts
+        continue;
+      }
+      if (baseAccount == null || (baseAccount != null && baseAccount.getNormalizedName() == account.getNormalizedName())) {
+        template.accounts.push({
+          id: account.getId(),
+          name: account.getName()
+        })
+      }
+    }
+
+    let stockAccount = baseAccount != null ? stockBook.getAccount(baseAccount.getName()) : null;
 
     template.account = {}
 
@@ -31,37 +46,32 @@ namespace RealizedResultsService {
 
     return template.evaluate().setTitle('Stock Bot');
   }
-  export function resetRealizedResults(stockBookId: string, stockAccountId: string): Bkper.Account {
+  export function resetRealizedResults(stockBookId: string, stockAccountId: string): Summary {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
 
-    let booksToAudit: Set<Bkper.Book> = new Set<Bkper.Book>();
+    revertRealizedResultsForAccount(stockBook, stockAccount, false);
 
-    revertRealizedResultsForAccount(stockBook, stockAccount, false, booksToAudit);
-
-    auditBooks(booksToAudit);
-
-    return stockAccount;
+    return {accountId: stockAccount.getId(), result: 'Done.'};
   }
   export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string): Summary {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
 
-    let booksToAudit: Set<Bkper.Book> = new Set<Bkper.Book>();
-    let summary: Summary = {};
+    let summary: Summary = {
+      accountId: stockAccountId,
+      result: {}
+    };
 
-    booksToAudit.add(stockBook);
 
     if (needsRebuild(stockAccount)) {
-      revertRealizedResultsForAccount(stockBook, stockAccount, true, booksToAudit);
+      revertRealizedResultsForAccount(stockBook, stockAccount, true);
     } else {
       let stockExcCode = BotService.getStockExchangeCode(stockAccount);
       let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
       if (financialBook == null) {
         return; //Skip
       }
-
-      booksToAudit.add(financialBook);
 
       let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}'`);
 
@@ -94,92 +104,22 @@ namespace RealizedResultsService {
 
     }
 
-    auditBooks(booksToAudit);
-
     return summary;
 
   }
 
-
-  export function calculateRealizedResultsForBook(stockBookId: string): Summary {
-    let stockBook = BkperApp.getBook(stockBookId);
-    let stockAccounts = stockBook.getAccounts();
-    let booksToAudit: Set<Bkper.Book> = new Set<Bkper.Book>();
-    let summary: Summary = {};
-    for (let i = 0; i < stockAccounts.length; i++) {
-        const stockAccount = stockAccounts[i];
-        if (needsRebuild(stockAccount)) {
-          revertRealizedResultsForAccount(stockBook, stockAccount, true, booksToAudit);
-          stockAccounts.splice(i, 1);
-        }        
-    }
-
-    let saleTransactions: Bkper.Transaction[] = [];
-    let purchaseTransactions: Bkper.Transaction[] = [];
-
-    let iterator = stockBook.getTransactions(`is:unchecked`);
-
-    while (iterator.hasNext()) {
-      let tx = iterator.next();
-      //Make sure get sales only
-      if (BotService.isSale(tx)) {
-        saleTransactions.push(tx);
-      }
-      if (BotService.isPurchase(tx)) {
-        purchaseTransactions.push(tx);
-      }
-    }
-
-    //FIFO
-    saleTransactions = saleTransactions.sort(compareTo);
-    purchaseTransactions = purchaseTransactions.sort(compareTo);
-    //TODO sort based on 'order' property
-
-    booksToAudit.add(stockBook);
-
-    for (const stockAccount of stockAccounts) {
-      let stockExcCode = BotService.getStockExchangeCode(stockAccount);
-      let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
-      if (financialBook == null) {
-        continue; //Skip
-      }
-      booksToAudit.add(financialBook);
-      let stockAccountSaleTransactions = saleTransactions.filter(tx => tx.getCreditAccount().getId() == stockAccount.getId());
-      let stockAccountPurchaseTransactions = purchaseTransactions.filter(tx => tx.getDebitAccount().getId() == stockAccount.getId());
-      for (const saleTransaction of stockAccountSaleTransactions) {
-        processSale(financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary);
-      }
-
-      checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
-
-    }
-
-    auditBooks(booksToAudit);
-
-    return summary;
-
-  }
-
-
-
-  function auditBooks(booksToAudit: Set<Bkper.Book>) {
-    booksToAudit.forEach(book => {
-      console.log(`Auditing book ${book.getName()}`)
-      book.audit()
-    });
-  }
-
-  export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account, recalculate: boolean, booksToAudit: Set<Bkper.Book>): Summary {
+  export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account, recalculate: boolean): Summary {
     let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}'`);
-    let summary: Summary = {};
+    let summary: Summary = {
+      accountId: stockAccount.getId(),
+      result: {}
+    };
     let stockAccountSaleTransactions: Bkper.Transaction[] = [];
     let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
 
     let stockExcCode = BotService.getStockExchangeCode(stockAccount);
     let financialBook = BotService.getFinancialBook(stockBook, stockExcCode)
 
-    booksToAudit.add(stockBook);
-    booksToAudit.add(financialBook);
 
     while (iterator.hasNext()) {
       let tx = iterator.next();
@@ -515,11 +455,11 @@ namespace RealizedResultsService {
     }
   }
 
-  function trackAccountCreated(summary: Summary, stockExcCode: string, unrealizedAccount: Bkper.Account) {
-    if (summary[stockExcCode] == null) {
-      summary[stockExcCode] = [];
+  function trackAccountCreated(summary: Summary, stockExcCode: string, account: Bkper.Account) {
+    if (summary.result[stockExcCode] == null) {
+      summary.result[stockExcCode] = [];
     }
-    summary[stockExcCode].push(unrealizedAccount.getName());
+    summary.result[stockExcCode].push(account.getName());
   }
 
   function markToMarket(stockBook: Bkper.Book, stockAccount: Bkper.Account, financialBook: Bkper.Book, unrealizedAccount: Bkper.Account, date: Date, price: number): void {

@@ -1,5 +1,14 @@
 namespace BotService {
 
+  export function auditBooks(bookId: string): void {
+    let book = BkperApp.getBook(bookId);
+    let connectedBooks = book.getCollection().getBooks();
+    connectedBooks.forEach(b => {
+      b.audit();
+    });
+
+  }
+
   export function getStockBook(book: Bkper.Book): Bkper.Book {
     if (book.getCollection() == null) {
       return null;

@@ -1,3 +1,4 @@
 interface Summary {
-  [name: string]: string[];
+  accountId: string;
+  result: any;
 }

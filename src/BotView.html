@@ -24,35 +24,20 @@
         justify-content: center;
       }
 
-      #waiting-panel img {
-        height: 25px;
+      .footer, .accounts-panel .account {
+        display: flex;
+        align-items: center;
       }
 
-      #waiting-panel {
-        display: none;
+      .accounts-panel .account div {
+        padding-right: 5px;
+      }
+
+      .accounts-panel .account div img {
+        height: 12px;
       }
 
       .footer {
-        display: flex;
-      }
-
-      #summary-panel {
-        display: none;
-        padding: 0 20px;
-      }
-
-      #summary {
-        padding: 10px;
-        width: 100%;
-      }
-
-      #summary {
-        background-color: #f5f5f5;
-        border: 1px solid grey;
-      }
-
-
-      #waiting-panel, .footer, .summary-panel {
         justify-content: center;
       }
 
@@ -63,22 +48,24 @@
   <body>
 
     <div class='header'>
-      Realized Results for&nbsp;<strong><?!= account.name ? account.name : book.name ?></strong>
+      Realized Results for&nbsp;<strong><?!= book.name ?></strong>
     </div>
 
     <div class='body'>
       <div id='sub-header'>
         Calculate using FIFO method
       </div>
+  
+      <div class='accounts-panel'>
+          <? for (var i = 0; i < accounts.length; i++) { ?>
+            <div class='account'>
+              <div><?!= accounts[i].name ?></div>
+              <div id='result-<?!= accounts[i].id ?>'></div>
+            </div>
+          <? } ?>
+      </div>        
     </div>
-    <div id='waiting-panel'>
-      <img src='https://storage.googleapis.com/bkper-public/addons/loading_3dots.gif'/>
-    </div>
-    <div id='summary-panel'>
-      <pre id='summary'>
 
-      </pre>
-    </div>  
     <div class="footer" id='footer-panel'>
       <?!= account.name ? "<button id='reset-button' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
       <button id="calculate-button" onclick="calculateRealizedResults()">Calculate</button>
@@ -92,35 +79,62 @@
 
 <script>
 
-  function calculateRealizedResults() {
-    showWaiting(true);
-    google.script.run.withSuccessHandler(showSummary).withFailureHandler(showError).calculateRealizedResults('<?!= book.id ?>', '<?!= account.id ? account.id : null ?>')
+  async function calculateRealizedResults() {
+    disableButtons(true)
+    <? for (var i = 0; i < accounts.length; i++) { ?>
+      showAccountWaiting('<?!= accounts[i].id ?>')
+    <? } ?>
+    <? for (var i = 0; i < accounts.length; i++) { ?>
+      await promiseRun('calculateRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting)
+    <? } ?>
+    await promiseRun('auditBooks' , '<?!= book.id ?>')
+    disableButtons(false)
   }
 
-  function resetRealizedResults() {
-    showWaiting(true);
-    google.script.run.withSuccessHandler(showSummary).withFailureHandler(showError).resetRealizedResults('<?!= book.id ?>', '<?!= account.id ? account.id : null ?>')
+  async function resetRealizedResults() {
+    disableButtons(true)
+    showAccountWaiting('<?!= account.id ?>');
+    await promiseRun('resetRealizedResults' , '<?!= book.id ?>', '<?!= account.id ?>').then(hideAccountWaiting)
+    disableButtons(false)
   }
 
-  function showSummary(summary) {
-    showWaiting(false);
-    document.getElementById('summary').innerHTML = summary;
+
+  function showAccountWaiting(accountId) {
+    document.getElementById(`result-${accountId}`).innerHTML = `<img src='https://storage.googleapis.com/bkper-public/addons/loading_3dots.gif'/>`
   }
 
-  function showWaiting(show) {
-    if (show) {
-      document.getElementById('waiting-panel').style.display = 'flex';
+  function hideAccountWaiting(summary) {
+    document.getElementById(`result-${summary.accountId}`).innerHTML = summary.result
+  }
+
+  // using promises instead
+  function promiseRun (func) {
+    
+    // this is a trick to convert the arguments array into an array, and drop the first one
+    var runArgs = Array.prototype.slice.call(arguments).slice(1);
+    
+    return new Promise ((resolve, reject) => {
+      google.script.run
+      .withSuccessHandler (result => {
+        resolve (result);
+      })
+      .withFailureHandler (error => {
+        reject (error);
+      })
+      [func].apply (this , runArgs) ;
+    })
+  
+  }  
+
+  function disableButtons(disable) {
+    if (disable) {
       document.getElementById('footer-panel').style.display = 'none';
-      document.getElementById('summary-panel').style.display = 'none';
     } else {
-      document.getElementById('waiting-panel').style.display = 'none';
       document.getElementById('footer-panel').style.display = 'flex';
-      document.getElementById('summary-panel').style.display = 'flex';
     }
-  }
+  }    
 
   function showError(error) {
-    showWaiting(false);
     window.alert(error);
   }
 

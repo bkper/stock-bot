@@ -43,25 +43,23 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   return RealizedResultsService.getBotViewTemplate(bookId, accountId);
 }
 
-function calculateRealizedResults(bookId: string, accountId: string): string {
+function calculateRealizedResults(bookId: string, accountId: string): Summary {
   if (accountId) {
-    const summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId);
-    const summaryJSON = JSON.stringify(summary, null, 2);
-    return summaryJSON != JSON.stringify({}, null, 2) ? summaryJSON: 'Done.';
-  } else {
-    const summary = RealizedResultsService.calculateRealizedResultsForBook(bookId);
-    const summaryJSON = JSON.stringify(summary, null, 2);
-    return summaryJSON != JSON.stringify({}, null, 2) ? summaryJSON: 'Done.';
+    let summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId);
+    summary.result = JSON.stringify(summary.result);
+    return summary;
   }
 }
 
-function resetRealizedResults(bookId: string, accountId: string): string {
+function resetRealizedResults(bookId: string, accountId: string): Summary {
   if (accountId) {
-    const account = RealizedResultsService.resetRealizedResults(bookId, accountId);
-    return `Reseted Realized Results for ${account.getName()}`;
+    return RealizedResultsService.resetRealizedResults(bookId, accountId);
   }
 }
 
+function auditBooks(bookId: string) {
+  BotService.auditBooks(bookId);
+}
 
 function onTransactionPosted(event: bkper.Event) {
   return new EventHandlerTransactionPosted().handleEvent(event);
