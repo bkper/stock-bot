@@ -21,7 +21,7 @@ namespace RealizedResultsService {
     template.accounts = [];
 
     for (const account of stockBook.getAccounts()) {
-      if (!account.isPermanent()) {
+      if (!account.isPermanent() || account.isArchived()) {
         //bypass non permanent accounts
         continue;
       }
