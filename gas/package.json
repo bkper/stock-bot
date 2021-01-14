@@ -1,5 +1,5 @@
 {
-  "name": "bkper-bot",
+  "name": "stock-bot-gas",
   "version": "1.5.16",
   "scripts": {
     "login": "clasp login",
