@@ -2,6 +2,8 @@
   "name": "stock-bot",
   "version": "2.0.0",
   "scripts": {
+    "open:gas": "yarn --cwd gas/ open",
+    "open:gcf": "yarn --cwd gcf/ open",
     "watch:gas": "yarn --cwd gas/ watch",
     "watch:gcf": "yarn --cwd gcf/ watch",
     "patch:gas": "yarn version --patch && yarn deploy:gas && yarn push",
