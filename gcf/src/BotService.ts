@@ -1,15 +1,6 @@
 import { Account, AccountType, Bkper, Book, Group, Transaction } from 'bkper';
 import { EXC_CODE_PROP, NEEDS_REBUILD_PROP, STOCK_EXC_CODE_PROP, STOCK_REALIZED_DATE_PROP } from './constants';
 
-export async function auditBooks(bookId: string): Promise<void> {
-  let book = await Bkper.getBook(bookId);
-  let connectedBooks = book.getCollection().getBooks();
-  connectedBooks.forEach(b => {
-    b.audit();
-  });
-
-}
-
 export function getStockBook(book: Book): Book {
   if (book.getCollection() == null) {
     return null;

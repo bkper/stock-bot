@@ -112,7 +112,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
           .setType(financialAccount.getType())
           .setProperties(financialAccount.getProperties())
           .setArchived(financialAccount.isArchived());
-        if (financialAccount.getGroups()) {
+        if (await financialAccount.getGroups()) {
           for (const financialGroup of await financialAccount.getGroups()) {
             if (financialGroup) {
               let stockGroup = await stockBook.getGroup(financialGroup.getName());
