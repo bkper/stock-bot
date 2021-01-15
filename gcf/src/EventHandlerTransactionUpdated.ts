@@ -58,7 +58,7 @@ export class EventHandlerTransactionUpdated extends EventHandlerTransaction {
     flagStockAccountForRebuildIfNeeded(stockTransaction);
 
     let bookAnchor = super.buildBookAnchor(stockBook);
-    let record = `EDITED: ${stockTransaction.getDateFormatted()} ${quantity} ${stockTransaction.getCreditAccountName()} ${stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;
+    let record = `EDITED: ${stockTransaction.getDateFormatted()} ${quantity} ${await stockTransaction.getCreditAccountName()} ${await stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;
     return `${bookAnchor}: ${record}`;
   }
 

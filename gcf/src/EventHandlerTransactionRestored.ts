@@ -22,7 +22,7 @@ export class EventHandlerTransactionRestored extends EventHandlerTransaction {
 
     let amountFormatted = stockBook.formatValue(stockTransaction.getAmount())
 
-    let record = `RESTORED: ${stockTransaction.getDateFormatted()} ${amountFormatted} ${stockTransaction.getCreditAccountName()} ${stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;
+    let record = `RESTORED: ${stockTransaction.getDateFormatted()} ${amountFormatted} ${await stockTransaction.getCreditAccountName()} ${await stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;
 
     return `${bookAnchor}: ${record}`;
   }

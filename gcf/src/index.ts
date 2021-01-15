@@ -86,7 +86,6 @@ async function handleEvent(req: Request, res: Response) {
 
     }
 
-    result.result = 'no process..'
     console.log(`Result: ${JSON.stringify(result)}`)
     res.send(response(result))
 

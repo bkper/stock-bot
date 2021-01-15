@@ -4,7 +4,6 @@ import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, PRICE_PROP, QUANTITY_PROP, S
 export class InterceptorOrderProcessor {
 
   async intercept(baseBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {
-    console.log("intercepting...")
 
     if (event.agent.id == 'exchange-bot') {
       return false;
@@ -25,16 +24,13 @@ export class InterceptorOrderProcessor {
       return false;
     }
 
-    console.log("check purchase...")
     if (await this.isPurchase(baseBook, transactionPayload)) {
       return this.processPurchase(baseBook, transactionPayload);
     }
     
-    console.log("check purchase...")
     if (await this.isSale(baseBook, transactionPayload)) {
       return this.processSale(baseBook, transactionPayload);
     }
-    console.log("none.")
 
     return false;
 
@@ -214,7 +210,7 @@ export class InterceptorOrderProcessor {
         .addRemoteId(`${FEES_PROP}_${transactionPayload.id}`)
         .post();
 
-        return `${tx.getDate()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;
+        return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
     }
     return null;
   }
@@ -234,7 +230,7 @@ export class InterceptorOrderProcessor {
         .setDate(tradeDate)
         .addRemoteId(`${INTEREST_PROP}_${transactionPayload.id}`)
         .post();
-        return `${tx.getDate()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;
+        return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
     }
     return null;
   }
@@ -253,7 +249,7 @@ export class InterceptorOrderProcessor {
         .setDate(tradeDate)
         .addRemoteId(`${INTEREST_PROP}_${transactionPayload.id}`)
         .post();
-        return `${tx.getDate()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;
+        return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
     }
     return null;
   }
@@ -276,7 +272,7 @@ export class InterceptorOrderProcessor {
     .setProperty(PRICE_PROP, baseBook.formatValue(price))
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
-    return `${tx.getDate()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;
+    return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
   }
 
   protected async postInstrumentTradeOnSale(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
@@ -297,7 +293,7 @@ export class InterceptorOrderProcessor {
     .setProperty(PRICE_PROP, baseBook.formatValue(price))
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
-    return `${tx.getDate()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;
+    return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
   }
   
 }

@@ -30,7 +30,7 @@ export class EventHandlerTransactionDeleted extends EventHandlerTransaction {
 
     let amountFormatted = stockBook.formatValue(stockTransaction.getAmount())
 
-    let record = `DELETED: ${stockTransaction.getDateFormatted()} ${amountFormatted} ${stockTransaction.getCreditAccountName()} ${stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;
+    let record = `DELETED: ${stockTransaction.getDateFormatted()} ${amountFormatted} ${await stockTransaction.getCreditAccountName()} ${await stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;
 
     return `${bookAnchor}: ${record}`;
   }

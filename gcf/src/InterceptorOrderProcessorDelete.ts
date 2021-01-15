@@ -33,7 +33,7 @@ export class InterceptorOrderProcessorDelete {
       responses.push(response3);
     }
     
-    return responses.length > 0 ? responses : null;
+    return responses.length > 0 ? responses : false;
   }
 
   private async deleteTransaction(baseBook: Book, remoteId: string, checkStockBook: boolean): Promise<string> {
@@ -41,7 +41,7 @@ export class InterceptorOrderProcessorDelete {
     if (await iterator.hasNext()) {
       let tx = await iterator.next();
       if (tx.isChecked()) {
-        tx.uncheck();
+        tx = await tx.uncheck();
       }
 
       if (checkStockBook) {
@@ -52,13 +52,13 @@ export class InterceptorOrderProcessorDelete {
           if (stockTransaction.isChecked()) {
             stockTransaction.uncheck();
           }
-          flagStockAccountForRebuildIfNeeded(stockTransaction);
-          stockTransaction.remove();
+          await flagStockAccountForRebuildIfNeeded(stockTransaction);
+          await stockTransaction.remove();
         }
       }
 
-      tx.remove();
-      return `DELETED: ${tx.getDateFormatted()} ${tx.getAmount()} ${tx.getCreditAccountName()} ${tx.getDebitAccountName()} ${tx.getDescription()}`;
+      tx = await tx.remove();
+      return `DELETED: ${tx.getDateFormatted()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
     }
     return null;
   }
