@@ -11,18 +11,16 @@ export abstract class EventHandler {
     let bookId = event.bookId;
     let baseBook = await Bkper.getBook(bookId);
 
-    console.log("Intercepting...")
-    let interceptionResponse = this.intercept(baseBook, event);
+    let interceptionResponse = await this.intercept(baseBook, event);
     if (interceptionResponse) {
       return interceptionResponse;
     }
-
-    console.log("Not Intercepted")
-
     let responses: string[] = [];
     let stockBook = getStockBook(baseBook);
 
+    
     if (stockBook) {
+      console.log(`Stock book ${stockBook.getName()}`)
       let response = await this.processObject(baseBook, stockBook, event);
       if (response) {
         responses.push(response);

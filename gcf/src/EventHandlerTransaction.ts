@@ -48,9 +48,9 @@ export abstract class EventHandlerTransaction extends EventHandler {
     let financialCreditAccount = fiancialTransaction.creditAccount != null ? await financialBook.getAccount(fiancialTransaction.creditAccount.id) : null;
     let financialDebitAccount = fiancialTransaction.debitAccount != null ? await financialBook.getAccount(fiancialTransaction.debitAccount.id) : null;
 
-    let stockExcCode = getStockExchangeCode(financialCreditAccount);
+    let stockExcCode = await getStockExchangeCode(financialCreditAccount);
     if (stockExcCode == null) {
-      stockExcCode = getStockExchangeCode(financialDebitAccount);
+      stockExcCode = await getStockExchangeCode(financialDebitAccount);
     }
     return stockExcCode;
   }
