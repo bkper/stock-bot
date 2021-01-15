@@ -6,6 +6,10 @@ menuUrlDev: https://script.google.com/a/bkper.com/macros/s/AKfycbywpzjsUP7qAeDoA
 menuText: Calculate Realized Results
 menuPopupWidth: 600
 menuPopupHeight: 600
+
+webhookUrl: https://us-central1-bkper-stock-bot.cloudfunctions.net/prod
+
+
 scopes: >
     https://www.googleapis.com/auth/userinfo.email
     https://www.googleapis.com/auth/script.external_request
