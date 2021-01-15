@@ -1,6 +1,6 @@
 {
   "name": "stock-bot-gcf",
-  "version": "2.0.1",
+  "version": "1.0.0",
   "main": "index.js",
   "projectId": "bkper-stock-bot",
   "functionName": "prod",
@@ -18,13 +18,8 @@
     "functions:authorize": "gcloud alpha functions add-iam-policy-binding $npm_package_functionName --member=serviceAccount:bkper-hrd@appspot.gserviceaccount.com --role=roles/cloudfunctions.invoker --project $npm_package_projectId",
     "functions:open": "open \"https://console.cloud.google.com/functions/details/us-central1/$npm_package_functionName?organizationId=305881217394&project=$npm_package_projectId&tab=logs\"",
     "open": "yarn functions:open",
-    "patch": "yarn version --patch",
-    "minor": "yarn version --minor",
-    "major": "yarn version --major",
     "deploy": "yarn build && yarn --cwd dist/ deploy:dist",
-    "deploy:dist": "gcloud functions deploy $npm_package_functionName --runtime nodejs12 --trigger-http --entry-point doPost --project $npm_package_projectId",
-    "preversion": "yarn deploy",
-    "postversion": "git push && git push --tags && echo \"Successfully released version $npm_package_version!\""
+    "deploy:dist": "gcloud functions deploy $npm_package_functionName --runtime nodejs12 --trigger-http --entry-point doPost --project $npm_package_projectId"
   },
   "devDependencies": {
     "@bkper/bkper-api-types": "^3.7.1",
