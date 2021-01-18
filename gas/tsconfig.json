@@ -6,6 +6,7 @@
     "lib": [ "esnext" ],
     "target": "ES6",
     "noImplicitAny": true,
+    "sourceMap": true,
     "typeRoots" : ["node_modules/@bkper", "node_modules/@types" ]    
   },
   "include": [

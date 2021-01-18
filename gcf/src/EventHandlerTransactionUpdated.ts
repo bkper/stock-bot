@@ -38,7 +38,7 @@ export class EventHandlerTransactionUpdated extends EventHandlerTransaction {
     
     const originalAmount = new Number(financialTransaction.amount).valueOf();
 
-    await stockTransaction.setDate(financialTransaction.date)
+    stockTransaction.setDate(financialTransaction.date)
     .setAmount(quantity)
     .setDescription(financialTransaction.description)
     .setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(0))
@@ -53,9 +53,15 @@ export class EventHandlerTransactionUpdated extends EventHandlerTransaction {
       stockTransaction.setProperty(SALE_PRICE_PROP, price + '')
     }
 
-    stockTransaction.update();
+    try {
+      await stockTransaction.update();
+    } catch (err) {
+      //Maybe is checked
+      await stockTransaction.uncheck();
+      await stockTransaction.update();
+    }
 
-    flagStockAccountForRebuildIfNeeded(stockTransaction);
+    await flagStockAccountForRebuildIfNeeded(stockTransaction);
 
     let bookAnchor = super.buildBookAnchor(stockBook);
     let record = `EDITED: ${stockTransaction.getDateFormatted()} ${quantity} ${await stockTransaction.getCreditAccountName()} ${await stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;

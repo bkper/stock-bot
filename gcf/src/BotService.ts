@@ -29,7 +29,7 @@ export async function flagStockAccountForRebuildIfNeeded(stockTransaction: Trans
   let stockAccount = await getStockAccount(stockTransaction);
   let lastTxDate = stockAccount.getProperty(STOCK_REALIZED_DATE_PROP);
   if (lastTxDate != null && stockTransaction.getDateValue() <= +lastTxDate) {
-    stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
+    await stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
   }
 }
 

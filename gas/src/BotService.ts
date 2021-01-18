@@ -23,23 +23,6 @@ namespace BotService {
     return null;
   }
 
-  export function getStockAccount(stockTransaction: Bkper.Transaction): Bkper.Account {
-    if (isSale(stockTransaction)) {
-      return stockTransaction.getCreditAccount();
-    }
-    if (isPurchase(stockTransaction)) {
-      return stockTransaction.getDebitAccount();
-    }
-  }
-
-  export function flagStockAccountForRebuildIfNeeded(stockTransaction: Bkper.Transaction) {
-    let stockAccount = BotService.getStockAccount(stockTransaction);
-    let lastTxDate = stockAccount.getProperty(STOCK_REALIZED_DATE_PROP);
-    if (lastTxDate != null && stockTransaction.getDateValue() <= +lastTxDate) {
-      stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
-    }
-  }
-
   export function getFinancialBook(book: Bkper.Book, excCode?: string): Bkper.Book {
     if (book.getCollection() == null) {
       return null;
@@ -75,21 +58,6 @@ namespace BotService {
     return null;
   }
 
-  export function getStockExchangeGroup(account: Bkper.Account): Bkper.Group {
-    if (account == null || account.getType() != BkperApp.AccountType.ASSET) {
-      return null;
-    }
-    let groups = account.getGroups();
-    if (groups != null) {
-      for (const group of groups) {
-        let stockExchange = group.getProperty(STOCK_EXC_CODE_PROP);
-        if (stockExchange != null && stockExchange.trim() != '') {
-          return group;
-        }
-      }
-    }
-    return null;
-  }
 
   export function isSale(transaction: Bkper.Transaction): boolean {
     return transaction.isPosted() && transaction.getDebitAccount().getType() == BkperApp.AccountType.OUTGOING;
