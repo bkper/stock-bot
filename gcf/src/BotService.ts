@@ -33,22 +33,6 @@ export async function flagStockAccountForRebuildIfNeeded(stockTransaction: Trans
   }
 }
 
-export function getFinancialBook(book: Book, excCode?: string): Book {
-  if (book.getCollection() == null) {
-    return null;
-  }
-  let connectedBooks = book.getCollection().getBooks();
-  for (const connectedBook of connectedBooks) {
-    let excCodeConnectedBook = getExcCode(connectedBook);
-    let fractionDigits = connectedBook.getFractionDigits();
-    if (fractionDigits != 0 && excCode == excCodeConnectedBook) {
-      return connectedBook;
-    }
-  }
-  return null;
-}
-
-
 export async function getStockExchangeCode(account: Account): Promise<string> {
   if (account == null || account.getType() != AccountType.ASSET) {
     return null;
