@@ -1,4 +1,4 @@
-import { Account, AccountType, Book, Transaction } from "bkper";
+import { Account, AccountType, Amount, Book, Transaction } from "bkper";
 import { getStockExchangeCode } from "./BotService";
 import * as constants from "./constants";
 import { EventHandlerTransaction } from "./EventHandlerTransaction";
@@ -27,13 +27,13 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
     let stockBookAnchor = super.buildBookAnchor(stockBook);
 
     let quantity = this.getQuantity(stockBook, transaction);
-    if (quantity == null || quantity == 0) {
+    if (quantity == null || quantity.eq(0)) {
       return null;
     }
 
-    const originalAmount = new Number(transaction.amount).valueOf();
+    const originalAmount = new Amount(transaction.amount);
 
-    let price = originalAmount / quantity;
+    let price = originalAmount.div(quantity);
 
     let stockAccount = await this.getConnectedStockAccount(financialBook, stockBook, financialCreditAccount);
 
@@ -53,8 +53,8 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setDescription(transaction.description)
       .addRemoteId(transaction.id)
       .setProperty(constants.SALE_PRICE_PROP, price+'')
-      .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toFixed(0))
-      .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toFixed(financialBook.getFractionDigits()))
+      .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
+      .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
       .post()
 
       this.checkLastTxDate(stockAccount, transaction);
@@ -79,8 +79,8 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
         .setDescription(transaction.description)
         .addRemoteId(transaction.id)
         .setProperty(constants.PURCHASE_PRICE_PROP, price+'')
-        .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toFixed(0))
-        .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toFixed(financialBook.getFractionDigits()))
+        .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
+        .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
         .post()
 
         this.checkLastTxDate(stockAccount, transaction);
@@ -102,7 +102,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
     }
   }
 
-  private async getConnectedStockAccount(financialBook: Book, stockBook: Book, financialAccount: Account, ): Promise<Account> {
+  private async getConnectedStockAccount(financialBook: Book, stockBook: Book, financialAccount: Account): Promise<Account> {
     let stockExchangeCode = getStockExchangeCode(financialAccount);
     if (stockExchangeCode != null) {
       let stockAccount = await stockBook.getAccount(financialAccount.getName());

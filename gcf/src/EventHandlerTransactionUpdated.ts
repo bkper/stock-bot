@@ -1,4 +1,4 @@
-import { Book, Transaction } from "bkper";
+import { Amount, Book, Transaction } from "bkper";
 import { flagStockAccountForRebuildIfNeeded, isPurchase, isSale } from "./BotService";
 import { ORIGINAL_AMOUNT_PROP, ORIGINAL_QUANTITY_PROP, PURCHASE_PRICE_PROP, SALE_PRICE_PROP } from "./constants";
 import { EventHandlerTransaction } from "./EventHandlerTransaction";
@@ -26,7 +26,7 @@ export class EventHandlerTransactionUpdated extends EventHandlerTransaction {
     }
 
     let quantity = this.getQuantity(stockBook, financialTransaction);
-    if (quantity == null || quantity == 0) {
+    if (quantity == null || quantity.eq(0)) {
       return null;
     }
 
@@ -34,23 +34,23 @@ export class EventHandlerTransactionUpdated extends EventHandlerTransaction {
       stockTransaction.uncheck();
     }
 
-    let price = new Number(financialTransaction.amount).valueOf() / quantity;
+    let price = new Amount(financialTransaction.amount).div(quantity);
     
-    const originalAmount = new Number(financialTransaction.amount).valueOf();
+    const originalAmount = new Amount(financialTransaction.amount);
 
     stockTransaction.setDate(financialTransaction.date)
     .setAmount(quantity)
     .setDescription(financialTransaction.description)
     .setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(0))
-    .setProperty(ORIGINAL_AMOUNT_PROP, originalAmount.toFixed(financialBook.getFractionDigits()))
+    .setProperty(ORIGINAL_AMOUNT_PROP, originalAmount.toString())
     ;
 
     if (await isPurchase(stockTransaction)) {
-      stockTransaction.setProperty(PURCHASE_PRICE_PROP, price + '')
+      stockTransaction.setProperty(PURCHASE_PRICE_PROP, price.toString())
     }
 
     if (await isSale(stockTransaction)) {
-      stockTransaction.setProperty(SALE_PRICE_PROP, price + '')
+      stockTransaction.setProperty(SALE_PRICE_PROP, price.toString())
     }
 
     try {

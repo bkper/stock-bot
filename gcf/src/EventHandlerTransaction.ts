@@ -1,10 +1,10 @@
-import { Book, Transaction } from "bkper";
+import { Amount, Book, Transaction } from "bkper";
 import { getExcCode, getStockExchangeCode } from "./BotService";
 import { QUANTITY_PROP } from "./constants";
 import { EventHandler } from "./EventHandler";
 
 export interface AmountDescription {
-  amount: number;
+  amount: Amount;
   description: string;
 }
 
@@ -35,12 +35,12 @@ export abstract class EventHandlerTransaction extends EventHandler {
     }
   }
   
-  protected getQuantity(stockBook: Book, transaction: bkper.Transaction): number {
+  protected getQuantity(stockBook: Book, transaction: bkper.Transaction): Amount {
     let quantityStr = transaction.properties[QUANTITY_PROP];
     if (quantityStr == null || quantityStr.trim() == '') {
       return null;
     }
-    return Math.abs(stockBook.parseValue(quantityStr));
+    return stockBook.parseValue(quantityStr).abs();
   }
 
   private async getStockExcCodeFromTransaction(financialBook: Book, fiancialTransaction: bkper.Transaction) {

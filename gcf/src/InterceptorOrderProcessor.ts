@@ -1,4 +1,4 @@
-import { Account, AccountType, Book } from "bkper";
+import { Account, AccountType, Amount, Book } from "bkper";
 import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, PRICE_PROP, QUANTITY_PROP, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
 
 export class InterceptorOrderProcessor {
@@ -136,16 +136,12 @@ export class InterceptorOrderProcessor {
     return instrumentAccount;
   }
 
-  protected getQuantity(book: Book, transactionPayload: bkper.Transaction): string {
+  protected getQuantity(book: Book, transactionPayload: bkper.Transaction): Amount {
     let quantityProp = transactionPayload.properties[QUANTITY_PROP];
     if (quantityProp == null) {
       return null;
     }
-    const quantity = book.parseValue(quantityProp);
-    if (isNaN(quantity)) {
-      return null;
-    }
-    return quantity.toFixed(0);    
+    return book.parseValue(quantityProp);
   }
 
   protected getInstrument(transactionPayload: bkper.Transaction): string {
@@ -156,20 +152,18 @@ export class InterceptorOrderProcessor {
     return transactionPayload.properties[TRADE_DATE_PROP];
   }
 
-  protected getFees(book: Book, transactionPayload: bkper.Transaction): number {
-    let feesProp = transactionPayload.properties[FEES_PROP];
-    const fees = feesProp ? book.parseValue(feesProp) : 0;
-    if (isNaN(fees)) {
-      return 0;
+  protected getFees(book: Book, transactionPayload: bkper.Transaction): Amount {
+    const fees = book.parseValue(transactionPayload.properties[FEES_PROP]);
+    if (fees == null) {
+      return new Amount(0);
     }
     return fees;
   }
 
-  protected getInterest(book: Book, transactionPayload: bkper.Transaction): number {
-    let interestProp = transactionPayload.properties[INTEREST_PROP];
-    const insterest = interestProp ? book.parseValue(interestProp) : 0;
-    if (isNaN(insterest)) {
-      return 0;
+  protected getInterest(book: Book, transactionPayload: bkper.Transaction): Amount {
+    const insterest = book.parseValue(transactionPayload.properties[INTEREST_PROP]);
+    if (insterest == null) {
+      return new Amount(0);
     }
     return insterest;
   }
@@ -195,9 +189,10 @@ export class InterceptorOrderProcessor {
     return interestAccount;
   }
 
+
   protected async postFees(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
     let fees = this.getFees(baseBook, transactionPayload);
-    if (fees != 0) {
+    if (!fees.eq(0)) {
       let tradeDate = this.getTradeDate(transactionPayload);
       let feesAccountName = this.getFeesAccountName(exchangeAccount);
       let feesAccount = await this.getFeesAccount(baseBook, feesAccountName);
@@ -219,7 +214,7 @@ export class InterceptorOrderProcessor {
   protected async postInterestOnPurchase(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
     let instrument = this.getInstrument(transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
-    if (interest != 0) {
+    if (!interest.eq(0)) {
       let tradeDate = this.getTradeDate(transactionPayload);
       let interestAccount = await this.getInterestAccount(instrument, baseBook);
       let tx = await baseBook.newTransaction()
@@ -238,7 +233,7 @@ export class InterceptorOrderProcessor {
   protected async postInterestOnSale(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
     let instrument = this.getInstrument(transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
-    if (interest != 0) {
+    if (!interest.eq(0)) {
       let interestAccount = await this.getInterestAccount(instrument, baseBook);
       let tradeDate = this.getTradeDate(transactionPayload);
       let tx = await baseBook.newTransaction()
@@ -260,15 +255,15 @@ export class InterceptorOrderProcessor {
     let fees = this.getFees(baseBook, transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
-    const amount = +transactionPayload.amount - interest - fees;
-    const price = amount/+quantity;
+    const amount = new Amount(transactionPayload.amount).minus(interest).minus(fees);
+    const price = amount.div(quantity);
     let tx = await baseBook.newTransaction()
     .setAmount(amount)
     .from(exchangeAccount)
     .to(instrumentAccount)
     .setDescription(transactionPayload.description)
     .setDate(tradeDate)
-    .setProperty(QUANTITY_PROP, quantity)
+    .setProperty(QUANTITY_PROP, quantity.toString())
     .setProperty(PRICE_PROP, baseBook.formatValue(price))
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
@@ -281,15 +276,15 @@ export class InterceptorOrderProcessor {
     let fees = this.getFees(baseBook, transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
-    const amount = +transactionPayload.amount - interest + fees;
-    const price = amount/+quantity;
+    const amount = new Amount(transactionPayload.amount).minus(interest).plus(fees);
+    const price = amount.div(quantity);
     let tx = await baseBook.newTransaction()
     .setAmount(amount)
     .from(instrumentAccount)
     .to(exchangeAccount)
     .setDescription(transactionPayload.description)
     .setDate(tradeDate)
-    .setProperty(QUANTITY_PROP, quantity)
+    .setProperty(QUANTITY_PROP, quantity.toString())
     .setProperty(PRICE_PROP, baseBook.formatValue(price))
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
