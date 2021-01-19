@@ -96,6 +96,9 @@ namespace RealizedResultsService {
         }
       }
 
+      stockAccountSaleTransactions = stockAccountSaleTransactions.sort(compareTo);
+      stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(compareTo);
+
       for (const saleTransaction of stockAccountSaleTransactions) {
         processSale(financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary);
       }
