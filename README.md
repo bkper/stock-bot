@@ -11,7 +11,9 @@ The process of tracking realized gains and losses upon sales follows the FIFO (f
 
 Financial and Instruments Books **should be in same [Collection](https://help.bkper.com/en/articles/4208937-collections)**.
 
-The Instruments Book is identified by a single book in the Collection with the **decimal places set to 0 (zero)**.
+Only a single Instruments Book should be defined per Collection.
+
+The Instruments Book is identified by a single book in the Collection with the **decimal places set to 0 (zero)** or by the ```stock_book``` property.
 
 The bot interact with the following properties:
 

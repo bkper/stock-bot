@@ -32,6 +32,9 @@ triggers: >
     onGroupDeleted
 
 properties: 
+    book:
+      keys: >
+        stock_book
     transaction:
       keys: >
         quantity
@@ -40,11 +43,9 @@ properties:
         fees
         instrument
         trade_date
-        
     group:
       keys: >
         stock_exc_code
-
     account:
       keys: >
         stock_fees_account

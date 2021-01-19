@@ -1,5 +1,5 @@
 import { Account, AccountType, Bkper, Book, Group, Transaction } from 'bkper';
-import { EXC_CODE_PROP, NEEDS_REBUILD_PROP, STOCK_EXC_CODE_PROP, STOCK_REALIZED_DATE_PROP } from './constants';
+import { EXC_CODE_PROP, NEEDS_REBUILD_PROP, STOCK_BOOK_PROP, STOCK_EXC_CODE_PROP, STOCK_REALIZED_DATE_PROP } from './constants';
 
 export function getStockBook(book: Book): Book {
   if (book.getCollection() == null) {
@@ -7,6 +7,9 @@ export function getStockBook(book: Book): Book {
   }
   let connectedBooks = book.getCollection().getBooks();
   for (const connectedBook of connectedBooks) {
+    if (connectedBook.getProperty(STOCK_BOOK_PROP)) {
+      return connectedBook;
+    }
     let fractionDigits = connectedBook.getFractionDigits();
     if (fractionDigits == 0) {
       return connectedBook;

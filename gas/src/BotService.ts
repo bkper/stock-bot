@@ -15,6 +15,9 @@ namespace BotService {
     }
     let connectedBooks = book.getCollection().getBooks();
     for (const connectedBook of connectedBooks) {
+      if (connectedBook.getProperty(STOCK_BOOK_PROP)) {
+        return connectedBook;
+      }
       let fractionDigits = connectedBook.getFractionDigits();
       if (fractionDigits == 0) {
         return connectedBook;

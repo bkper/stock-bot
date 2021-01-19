@@ -138,31 +138,15 @@ namespace RealizedResultsService {
           }
           financialTx.remove();
         }
-        if (tx.getProperty(ORIGINAL_QUANTITY_PROP, PRICE_PROP) == null) {
+        if (tx.getProperty(ORIGINAL_QUANTITY_PROP) == null) {
           tx.remove();
         } else {
           tx.deleteProperty(GAIN_AMOUNT_PROP)
-          tx.deleteProperty(PURCHASE_AMOUNT_PROP)
-          tx.deleteProperty(SALE_AMOUNT_PROP)
-          tx.deleteProperty(PURCHASE_PRICE_PROP);
-
-          let originalQuantity = tx.getProperty(ORIGINAL_QUANTITY_PROP)
-          if (originalQuantity == null) {
-            //Migrating missing original property on salee
-            tx.setProperty(ORIGINAL_QUANTITY_PROP, tx.getAmount().toFixed(financialBook.getFractionDigits()))
-          } else {
-            tx.setAmount(originalQuantity);
-          }
-
-          //Migrating deprecated price property
-          let deprecatedPrice = tx.getProperty(PRICE_PROP);
-          if (deprecatedPrice) {
-            tx.setProperty(SALE_PRICE_PROP, deprecatedPrice);
-            tx.deleteProperty(PRICE_PROP)
-          }
-
-
-          tx.update();
+          .deleteProperty(PURCHASE_AMOUNT_PROP)
+          .deleteProperty(SALE_AMOUNT_PROP)
+          .deleteProperty(PURCHASE_PRICE_PROP)
+          .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
+          .update();
           stockAccountSaleTransactions.push(tx);
         }
 
@@ -179,16 +163,8 @@ namespace RealizedResultsService {
           .deleteProperty(SALE_AMOUNT_PROP)
           .deleteProperty(GAIN_AMOUNT_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
-          .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP));
-
-          //Migrating deprecated price property
-          let deprecatedPrice = tx.getProperty(PRICE_PROP);
-          if (deprecatedPrice) {
-            tx.setProperty(PURCHASE_PRICE_PROP, deprecatedPrice);
-            tx.deleteProperty(PRICE_PROP)
-          }
-
-          tx.update();
+          .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
+          .update();
           stockAccountPurchaseTransactions.push(tx);
         }
       }

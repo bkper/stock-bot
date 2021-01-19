@@ -52,7 +52,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setDebitAccount(stockSellAccount)
       .setDescription(transaction.description)
       .addRemoteId(transaction.id)
-      .setProperty(constants.SALE_PRICE_PROP, price+'')
+      .setProperty(constants.SALE_PRICE_PROP, price.toString())
       .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
       .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
       .post()
@@ -78,7 +78,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
         .setDebitAccount(stockAccount)
         .setDescription(transaction.description)
         .addRemoteId(transaction.id)
-        .setProperty(constants.PURCHASE_PRICE_PROP, price+'')
+        .setProperty(constants.PURCHASE_PRICE_PROP, price.toString())
         .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
         .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
         .post()
@@ -103,7 +103,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
   }
 
   private async getConnectedStockAccount(financialBook: Book, stockBook: Book, financialAccount: Account): Promise<Account> {
-    let stockExchangeCode = getStockExchangeCode(financialAccount);
+    let stockExchangeCode = await getStockExchangeCode(financialAccount);
     if (stockExchangeCode != null) {
       let stockAccount = await stockBook.getAccount(financialAccount.getName());
       if (stockAccount == null) {
