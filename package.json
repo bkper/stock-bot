@@ -1,6 +1,6 @@
 {
   "name": "stock-bot",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "license": "MIT",
   "scripts": {
     "open:gas": "yarn --cwd gas/ open",
