@@ -7,10 +7,10 @@
   resolved "https://registry.yarnpkg.com/@bkper/bkper-api-types/-/bkper-api-types-3.6.1.tgz#f573f6d539233850e43a91823990f0b3bf233d3b"
   integrity sha512-X6t+MP4vdFyq4UewSKiGcZ5KjYJqYRk+ssHve5Q9xoAhT2PnCUVIeXD2FnhBttiF1t3pxmZrnpSBdTWy6QVc8g==
 
-"@bkper/bkper-app-types@^3.6.6":
-  version "3.6.6"
-  resolved "https://registry.yarnpkg.com/@bkper/bkper-app-types/-/bkper-app-types-3.6.6.tgz#d2204cc2c8689fcde0590a64f974dfcc95f46947"
-  integrity sha512-yGf1UzOft1tFJAjtexR6X6tRLx+NSgjD577OQi2Ss7WwLL4EUWh1vblJ5Z0ExCQxyaZGgPi0DR/Iuz4kEZv6dA==
+"@bkper/bkper-app-types@^3.8.3":
+  version "3.8.3"
+  resolved "https://registry.yarnpkg.com/@bkper/bkper-app-types/-/bkper-app-types-3.8.3.tgz#67f285a9c011d79cf9bbaec91bfb947bfb2d1692"
+  integrity sha512-hD0mqfkYpWu6bLc0M8F7pPSvW3gnxLZ0pao3PRiKOB5VS292P7qBvKCU+YlkrOZwfyY3VR3I4int4TdWNvSX0g==
   dependencies:
     "@types/google-apps-script" "*"
 
@@ -63,9 +63,9 @@
   integrity sha512-rr+OQyAjxze7GgWrSaJwydHStIhHq2lvY3BOC2Mj7KnzI7XK0Uw1TOOdI9lDoajEbSWLiYgoo4f1R51erQfhPQ==
 
 "@types/google-apps-script@*":
-  version "1.0.16"
-  resolved "https://registry.yarnpkg.com/@types/google-apps-script/-/google-apps-script-1.0.16.tgz#9062710053be0cad4e77d81842bf335d64976c3e"
-  integrity sha512-Ps1d8hYsq0eGDPuFv/Jz+aS0/ZlxxR6cnwRZR9GSS+BOhQPVfv+SFVQDJjSjfi7pDGyghTU8JfRqavMxBRgjJA==
+  version "1.0.21"
+  resolved "https://registry.yarnpkg.com/@types/google-apps-script/-/google-apps-script-1.0.21.tgz#70a44d529872fd6b0edc017e5eea796b92a71e15"
+  integrity sha512-voTSdmYQjDweXWj+g2Sz8WBPSgAL7gKKEEbws5dl/c1Jhu7YoBVLnYr1ctg6GAbZy9+x+RQMzjb2ofk51s3adQ==
 
 "@types/minimatch@^3.0.3":
   version "3.0.3"

@@ -250,13 +250,13 @@ namespace RealizedResultsService {
 
   function processSale(financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary): void {
 
-    let salePrice: number = +saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP);
+    let salePrice: Bkper.Amount = BkperApp.newAmount(saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP));
 
-    let gainTotal = 0;
+    let gainTotal = BkperApp.newAmount(0);
     let soldQuantity = saleTransaction.getAmount();
 
-    let purchaseTotal = 0;
-    let saleTotal = 0;
+    let purchaseTotal = BkperApp.newAmount(0);
+    let saleTotal = BkperApp.newAmount(0);
 
     let gainDateValue = saleTransaction.getDateValue();
     let gainDateObject = saleTransaction.getDateObject();
@@ -269,13 +269,13 @@ namespace RealizedResultsService {
         continue;
       }
 
-      let purchasePrice: number = +purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP);
+      let purchasePrice: Bkper.Amount = BkperApp.newAmount(purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP));
       let purchaseQuantity = purchaseTransaction.getAmount();
       
-      if (soldQuantity >= purchaseQuantity ) {
-        const saleAmount = (salePrice * purchaseQuantity);
-        const purchaseAmount = (purchasePrice * purchaseQuantity);
-        let gain = saleAmount - purchaseAmount; 
+      if (soldQuantity.gte(purchaseQuantity)) {
+        const saleAmount = (salePrice.times(purchaseQuantity));
+        const purchaseAmount = (purchasePrice.times(purchaseQuantity));
+        let gain = saleAmount.minus(purchaseAmount); 
         purchaseTransaction
         .setProperty(SALE_PRICE_PROP, salePrice+'')
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
@@ -284,22 +284,22 @@ namespace RealizedResultsService {
         .addRemoteId(saleTransaction.getId())
         .update().check();
 
-        gainTotal += gain;
-        purchaseTotal += purchaseAmount;
-        saleTotal += saleAmount;
-        soldQuantity -= purchaseQuantity;
+        gainTotal = gainTotal.plus(gain);
+        purchaseTotal = purchaseTotal.plus(purchaseAmount);
+        saleTotal = saleTotal.plus(saleAmount);
+        soldQuantity = soldQuantity.minus(purchaseQuantity);
       } else {
         
-        let remainingBuyQuantity = purchaseQuantity - soldQuantity;
+        let remainingBuyQuantity = purchaseQuantity.minus(soldQuantity);
         purchaseTransaction
         .setAmount(remainingBuyQuantity)
         .update();
 
-        let partialBuyQuantity = purchaseQuantity - remainingBuyQuantity;
+        let partialBuyQuantity = purchaseQuantity.minus(remainingBuyQuantity);
 
-        const saleAmount = (salePrice * partialBuyQuantity);
-        const purchaseAmount = (purchasePrice * partialBuyQuantity);
-        let gain = saleAmount - purchaseAmount; 
+        const saleAmount = salePrice.times(partialBuyQuantity);
+        const purchaseAmount = purchasePrice.times(partialBuyQuantity);
+        let gain = saleAmount.minus(purchaseAmount); 
 
         stockBook.newTransaction()
         .setDate(purchaseTransaction.getDate())
@@ -316,10 +316,10 @@ namespace RealizedResultsService {
         .post()
         .check()
 
-        soldQuantity -= partialBuyQuantity;
-        gainTotal += gain;
-        purchaseTotal += purchaseAmount;
-        saleTotal += saleAmount;
+        soldQuantity = soldQuantity.minus(partialBuyQuantity);
+        gainTotal = gainTotal.plus(gain);
+        purchaseTotal = purchaseTotal.plus(purchaseAmount);
+        saleTotal = saleTotal.plus(saleAmount);
       }
 
       // Get last date that closes the position
@@ -329,7 +329,7 @@ namespace RealizedResultsService {
         gainDate = purchaseTransaction.getDate();
       }      
 
-      if (soldQuantity <= 0) {
+      if (soldQuantity.lte(0)) {
         break;
       }
 
@@ -351,7 +351,7 @@ namespace RealizedResultsService {
     }
 
 
-    if (gainTotal > 0) {
+    if (gainTotal.gt(0)) {
 
       let realizedGainAccountName = stockAccount.getProperty(STOCK_GAIN_ACCOUNT_PROP);
       if (realizedGainAccountName == null) {
@@ -386,7 +386,7 @@ namespace RealizedResultsService {
 
       markToMarket(stockBook, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
 
-    } else if (gainTotal < 0) {
+    } else if (gainTotal.lt(0)) {
 
       let realizedLossAccountName = stockAccount.getProperty(STOCK_LOSS_ACCOUNT_PROP);
       if (realizedLossAccountName == null) {
@@ -421,17 +421,17 @@ namespace RealizedResultsService {
       markToMarket(stockBook, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
     }
 
-    if (soldQuantity == 0) {
+    if (soldQuantity.eq(0)) {
       saleTransaction
       .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
       .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits()))
       .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
       .update().check();
-    } else if (soldQuantity > 0) {
+    } else if (soldQuantity.gt(0)) {
 
-      let remainingSaleQuantity = saleTransaction.getAmount() - soldQuantity;
+      let remainingSaleQuantity = saleTransaction.getAmount().minus(soldQuantity);
 
-      if (remainingSaleQuantity != 0) {
+      if (!remainingSaleQuantity.eq(0)) {
 
         saleTransaction
         .setAmount(soldQuantity)
@@ -462,15 +462,15 @@ namespace RealizedResultsService {
     summary.result[stockExcCode].push(account.getName());
   }
 
-  function markToMarket(stockBook: Bkper.Book, stockAccount: Bkper.Account, financialBook: Bkper.Book, unrealizedAccount: Bkper.Account, date: Date, price: number): void {
+  function markToMarket(stockBook: Bkper.Book, stockAccount: Bkper.Account, financialBook: Bkper.Book, unrealizedAccount: Bkper.Account, date: Date, price: Bkper.Amount): void {
     let total_quantity = getAccountBalance(stockBook, stockAccount, date);
     let financialInstrument = financialBook.getAccount(stockAccount.getName());
     let balance = getAccountBalance(financialBook, financialInstrument, date);
-    let newBalance = total_quantity * price;
+    let newBalance = total_quantity.times(price);
 
-    let amount = +(newBalance - balance).toFixed(financialBook.getFractionDigits());
+    let amount = newBalance.minus(balance);
 
-    if (amount > 0) {
+    if (amount.gt(0)) {
 
       financialBook.newTransaction()
       .setDate(date)
@@ -482,7 +482,7 @@ namespace RealizedResultsService {
       .to(financialInstrument)
       .post().check();
 
-    } else if (amount < 0) {
+    } else if (amount.lt(0)) {
       financialBook.newTransaction()
       .setDate(date)
       .setAmount(amount)
@@ -495,11 +495,11 @@ namespace RealizedResultsService {
     }
   }
 
-  function getAccountBalance(book: Bkper.Book, account: Bkper.Account, date: Date): number {
+  function getAccountBalance(book: Bkper.Book, account: Bkper.Account, date: Date): Bkper.Amount {
     let balances = book.getBalancesReport(`account:"${account.getName()}" on:${book.formatDate(date)}`);
     let containers = balances.getBalancesContainers();
     if (containers == null || containers.length == 0) {
-      return 0;
+      return BkperApp.newAmount(0);
     }
     return containers[0].getCumulativeBalance();
   }
