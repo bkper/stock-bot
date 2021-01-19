@@ -151,7 +151,7 @@ namespace RealizedResultsService {
             //Migrating missing original property on salee
             tx.setProperty(ORIGINAL_QUANTITY_PROP, tx.getAmount().toFixed(financialBook.getFractionDigits()))
           } else {
-            tx.setAmount(+originalQuantity);
+            tx.setAmount(originalQuantity);
           }
 
           //Migrating deprecated price property
@@ -179,7 +179,7 @@ namespace RealizedResultsService {
           .deleteProperty(SALE_AMOUNT_PROP)
           .deleteProperty(GAIN_AMOUNT_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
-          .setAmount(+tx.getProperty(ORIGINAL_QUANTITY_PROP));
+          .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP));
 
           //Migrating deprecated price property
           let deprecatedPrice = tx.getProperty(PRICE_PROP);
@@ -277,7 +277,7 @@ namespace RealizedResultsService {
         const purchaseAmount = (purchasePrice.times(purchaseQuantity));
         let gain = saleAmount.minus(purchaseAmount); 
         purchaseTransaction
-        .setProperty(SALE_PRICE_PROP, salePrice+'')
+        .setProperty(SALE_PRICE_PROP, salePrice.toString())
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
         .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
@@ -311,7 +311,7 @@ namespace RealizedResultsService {
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
         .setProperty(ORDER_PROP, purchaseTransaction.getProperty(ORDER_PROP))
         .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
-        .setProperty(SALE_PRICE_PROP, salePrice+'')
+        .setProperty(SALE_PRICE_PROP, salePrice.toString())
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
         .post()
         .check()
@@ -444,7 +444,7 @@ namespace RealizedResultsService {
         .setDebitAccount(saleTransaction.getDebitAccount())
         .setDescription(saleTransaction.getDescription())
         .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
-        .setProperty(SALE_PRICE_PROP, salePrice+'')
+        .setProperty(SALE_PRICE_PROP, salePrice.toString())
         .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits())) 
         .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
@@ -477,7 +477,7 @@ namespace RealizedResultsService {
       .setAmount(amount)
       .setDescription(`#mtm`)
       .setProperty(PRICE_PROP, financialBook.formatValue(price))
-      .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(0))
+      .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(stockBook.getFractionDigits()))
       .from(unrealizedAccount)
       .to(financialInstrument)
       .post().check();
@@ -488,7 +488,7 @@ namespace RealizedResultsService {
       .setAmount(amount)
       .setDescription(`#mtm`)
       .setProperty(PRICE_PROP, financialBook.formatValue(price))
-      .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(0))      
+      .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(stockBook.getFractionDigits()))      
       .from(financialInstrument)
       .to(unrealizedAccount)
       .post().check();

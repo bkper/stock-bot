@@ -41,7 +41,7 @@ export class EventHandlerTransactionUpdated extends EventHandlerTransaction {
     stockTransaction.setDate(financialTransaction.date)
     .setAmount(quantity)
     .setDescription(financialTransaction.description)
-    .setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(0))
+    .setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(stockBook.getFractionDigits()))
     .setProperty(ORIGINAL_AMOUNT_PROP, originalAmount.toString())
     ;
 
