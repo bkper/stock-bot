@@ -3,9 +3,6 @@ BkperApp.setApiKey(PropertiesService.getScriptProperties().getProperty('API_KEY'
 const STOCK_BOOK_PROP = 'stock_book';
 const STOCK_EXC_CODE_PROP = 'stock_exc_code';
 const STOCK_EXC_ACCOUNT_PROP = 'stock_exchange';
-const STOCK_UNREALIZED_ACCOUNT_PROP = 'stock_unreal_account';
-const STOCK_GAIN_ACCOUNT_PROP = 'stock_gain_account';
-const STOCK_LOSS_ACCOUNT_PROP = 'stock_loss_account';
 const STOCK_FEES_ACCOUNT_PROP = 'stock_fees_account';
 const TRADE_DATE_PROP = 'trade_date';
 const INSTRUMENT_PROP = 'instrument';
@@ -30,8 +27,7 @@ const ORDER_PROP = 'order';
 const STOCK_REALIZED_DATE_PROP = 'stock_realized_date';
 const STOCK_SELL_ACCOUNT_NAME = 'Sell';
 const STOCK_BUY_ACCOUNT_NAME = 'Buy';
-const REALIZED_GAIN_SUFFIX = 'Realized Gain';
-const REALIZED_LOSS_SUFFIX = 'Realized Loss';
+const REALIZED_SUFFIX = 'Realized';
 const UREALIZED_SUFFIX = 'Unrealized';
 
 

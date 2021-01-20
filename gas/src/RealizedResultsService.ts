@@ -314,16 +314,13 @@ namespace RealizedResultsService {
 
     }
 
-    let unrealizedAccountName = stockAccount.getProperty(STOCK_UNREALIZED_ACCOUNT_PROP);
-    if (unrealizedAccountName == null) {
-      unrealizedAccountName = `${stockAccount.getName()} ${UREALIZED_SUFFIX}`;
-    }
+    let unrealizedAccountName = `${stockAccount.getName()} ${UREALIZED_SUFFIX}`;
     let unrealizedAccount = financialBook.getAccount(unrealizedAccountName)
     if (unrealizedAccount == null) {
       unrealizedAccount = financialBook.newAccount()
       .setName(unrealizedAccountName)
       .setType(BkperApp.AccountType.LIABILITY);
-      let groups = getAccountGroups(financialBook, STOCK_UNREALIZED_ACCOUNT_PROP, UREALIZED_SUFFIX);
+      let groups = getAccountGroups(financialBook, UREALIZED_SUFFIX);
       groups.forEach(group => unrealizedAccount.addGroup(group));
       unrealizedAccount.create();
       trackAccountCreated(summary, stockExcCode, unrealizedAccount);
@@ -332,15 +329,12 @@ namespace RealizedResultsService {
 
     if (gainTotal.gt(0)) {
 
-      let realizedGainAccountName = stockAccount.getProperty(STOCK_GAIN_ACCOUNT_PROP);
-      if (realizedGainAccountName == null) {
-        realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_GAIN_SUFFIX}`
-      }
+      let realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`
       let realizedGainAccount = financialBook.getAccount(realizedGainAccountName);
 
       if (realizedGainAccount == null) {
         //Fallback to old XXX Gain default
-        realizedGainAccount = financialBook.getAccount(`${stockAccount.getName()} Gain`);
+        realizedGainAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Gain`);
       }
 
 
@@ -348,7 +342,7 @@ namespace RealizedResultsService {
         realizedGainAccount = financialBook.newAccount()
         .setName(realizedGainAccountName)
         .setType(BkperApp.AccountType.INCOMING);
-        let groups = getAccountGroups(financialBook, STOCK_GAIN_ACCOUNT_PROP, REALIZED_GAIN_SUFFIX);
+        let groups = getAccountGroups(financialBook,  REALIZED_SUFFIX);
         groups.forEach(group => realizedGainAccount.addGroup(group));
         realizedGainAccount.create();
         trackAccountCreated(summary, stockExcCode, realizedGainAccount);
@@ -367,22 +361,18 @@ namespace RealizedResultsService {
 
     } else if (gainTotal.lt(0)) {
 
-      let realizedLossAccountName = stockAccount.getProperty(STOCK_LOSS_ACCOUNT_PROP);
-      if (realizedLossAccountName == null) {
-        realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_LOSS_SUFFIX}`
-      }
+      let realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`
       let realizedLossAccount = financialBook.getAccount(realizedLossAccountName);
 
       if (realizedLossAccount == null) {
         //Fallback to old XXX Loss account
-        realizedLossAccount = financialBook.getAccount(`${stockAccount.getName()} Loss`);
+        realizedLossAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Loss`);
       }
-
       if (realizedLossAccount == null) {
         realizedLossAccount = financialBook.newAccount()
         .setName(realizedLossAccountName)
         .setType(BkperApp.AccountType.OUTGOING);
-        let groups = getAccountGroups(financialBook, STOCK_LOSS_ACCOUNT_PROP, REALIZED_LOSS_SUFFIX);
+        let groups = getAccountGroups(financialBook, REALIZED_SUFFIX);
         groups.forEach(group => realizedLossAccount.addGroup(group));
         realizedLossAccount.create()
         trackAccountCreated(summary, stockExcCode, realizedLossAccount);
@@ -483,15 +473,11 @@ namespace RealizedResultsService {
     return containers[0].getCumulativeBalance();
   }
 
-  function getAccountGroups(book: Bkper.Book, accountProperty: string, gainLossSuffix: string): Set<Bkper.Group> {
+  function getAccountGroups(book: Bkper.Book, gainLossSuffix: string): Set<Bkper.Group> {
     let accountNames = new Set<string>();
 
     book.getAccounts().forEach(account => {
-      let accountName = account.getProperty(accountProperty);
-      if (accountName) {
-        accountNames.add(accountName);
-      }
-      if (account.getName().endsWith(gainLossSuffix)) {
+      if (account.getName().endsWith(` ${gainLossSuffix}`)) {
         accountNames.add(account.getName());
       }
     });
