@@ -2,9 +2,6 @@
 export const STOCK_BOOK_PROP = 'stock_book';
 export const STOCK_EXC_CODE_PROP = 'stock_exc_code';
 export const STOCK_EXC_ACCOUNT_PROP = 'stock_exchange';
-export const STOCK_UNREALIZED_ACCOUNT_PROP = 'stock_unreal_account';
-export const STOCK_GAIN_ACCOUNT_PROP = 'stock_gain_account';
-export const STOCK_LOSS_ACCOUNT_PROP = 'stock_loss_account';
 export const STOCK_FEES_ACCOUNT_PROP = 'stock_fees_account';
 export const TRADE_DATE_PROP = 'trade_date';
 export const INSTRUMENT_PROP = 'instrument';
