@@ -141,6 +141,14 @@ namespace RealizedResultsService {
           }
           financialTx.remove();
         }
+        iterator = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`)
+        while (iterator.hasNext()) {
+          let mtmTx = iterator.next();
+          if (mtmTx.isChecked()) {
+            mtmTx = mtmTx.uncheck();
+          }
+          mtmTx.remove();
+        }
         if (tx.getProperty(ORIGINAL_QUANTITY_PROP) == null) {
           tx.remove();
         } else {
@@ -357,7 +365,7 @@ namespace RealizedResultsService {
       .to(unrealizedAccount)
       .post();
 
-      markToMarket(stockBook, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
+      markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
 
     } else if (gainTotal.lt(0)) {
 
@@ -387,7 +395,7 @@ namespace RealizedResultsService {
       .to(realizedLossAccount)
       .post().check();
 
-      markToMarket(stockBook, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
+      markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
     }
 
     if (soldQuantity.eq(0)) {
@@ -431,7 +439,7 @@ namespace RealizedResultsService {
     summary.result[stockExcCode].push(account.getName());
   }
 
-  function markToMarket(stockBook: Bkper.Book, stockAccount: Bkper.Account, financialBook: Bkper.Book, unrealizedAccount: Bkper.Account, date: Date, price: Bkper.Amount): void {
+  function markToMarket(stockBook: Bkper.Book, saleTransaction: Bkper.Transaction, stockAccount: Bkper.Account, financialBook: Bkper.Book, unrealizedAccount: Bkper.Account, date: Date, price: Bkper.Amount): void {
     let total_quantity = getAccountBalance(stockBook, stockAccount, date);
     let financialInstrument = financialBook.getAccount(stockAccount.getName());
     let balance = getAccountBalance(financialBook, financialInstrument, date);
@@ -449,6 +457,7 @@ namespace RealizedResultsService {
       .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(stockBook.getFractionDigits()))
       .from(unrealizedAccount)
       .to(financialInstrument)
+      .addRemoteId(`mtm_${saleTransaction.getId()}`)
       .post().check();
 
     } else if (amount.lt(0)) {
@@ -460,6 +469,7 @@ namespace RealizedResultsService {
       .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(stockBook.getFractionDigits()))      
       .from(financialInstrument)
       .to(unrealizedAccount)
+      .addRemoteId(`mtm_${saleTransaction.getId()}`)
       .post().check();
     }
   }
