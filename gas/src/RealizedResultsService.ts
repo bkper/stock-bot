@@ -335,7 +335,7 @@ namespace RealizedResultsService {
     }
 
 
-    if (gainTotal.gt(0)) {
+    if (gainTotal.round(financialBook.getFractionDigits()).gt(0)) {
 
       let realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`
       let realizedGainAccount = financialBook.getAccount(realizedGainAccountName);
@@ -367,7 +367,7 @@ namespace RealizedResultsService {
 
       markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
 
-    } else if (gainTotal.lt(0)) {
+    } else if (gainTotal.round(financialBook.getFractionDigits()).lt(0)) {
 
       let realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`
       let realizedLossAccount = financialBook.getAccount(realizedLossAccountName);
@@ -398,13 +398,13 @@ namespace RealizedResultsService {
       markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
     }
 
-    if (soldQuantity.eq(0)) {
+    if (soldQuantity.round(stockBook.getFractionDigits()).eq(0)) {
       saleTransaction
       .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
       .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits()))
       .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
       .update().check();
-    } else if (soldQuantity.gt(0)) {
+    } else if (soldQuantity.round(stockBook.getFractionDigits()).gt(0)) {
 
       let remainingSaleQuantity = saleTransaction.getAmount().minus(soldQuantity);
 
@@ -447,7 +447,7 @@ namespace RealizedResultsService {
 
     let amount = newBalance.minus(balance);
 
-    if (amount.gt(0)) {
+    if (amount.round(financialBook.getFractionDigits()).gt(0)) {
 
       financialBook.newTransaction()
       .setDate(date)
@@ -460,7 +460,7 @@ namespace RealizedResultsService {
       .addRemoteId(`mtm_${saleTransaction.getId()}`)
       .post().check();
 
-    } else if (amount.lt(0)) {
+    } else if (amount.round(financialBook.getFractionDigits()).lt(0)) {
       financialBook.newTransaction()
       .setDate(date)
       .setAmount(amount)
