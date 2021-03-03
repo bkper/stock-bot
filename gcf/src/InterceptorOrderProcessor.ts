@@ -1,5 +1,5 @@
 import { Account, AccountType, Amount, Book } from "bkper";
-import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, PRICE_PROP, QUANTITY_PROP, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
+import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, ORDER_PROP, PRICE_PROP, QUANTITY_PROP, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
 
 export class InterceptorOrderProcessor {
 
@@ -265,6 +265,7 @@ export class InterceptorOrderProcessor {
     .setDate(tradeDate)
     .setProperty(QUANTITY_PROP, quantity.toString())
     .setProperty(PRICE_PROP, baseBook.formatValue(price))
+    .setProperty(ORDER_PROP, transactionPayload.properties[ORDER_PROP])
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
     return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
@@ -286,6 +287,7 @@ export class InterceptorOrderProcessor {
     .setDate(tradeDate)
     .setProperty(QUANTITY_PROP, quantity.toString())
     .setProperty(PRICE_PROP, baseBook.formatValue(price))
+    .setProperty(ORDER_PROP, transactionPayload.properties[ORDER_PROP])
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
     return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
