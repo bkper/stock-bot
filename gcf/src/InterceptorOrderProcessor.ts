@@ -152,6 +152,18 @@ export class InterceptorOrderProcessor {
     return transactionPayload.properties[TRADE_DATE_PROP];
   }
 
+  protected getOrder(book: Book, transactionPayload: bkper.Transaction): string {
+    const orderProp = transactionPayload.properties[ORDER_PROP];
+    if (orderProp == null) {
+      return null;
+    }
+    const orderAmount = book.parseValue(orderProp);
+    if (orderAmount == null) {
+      return null;
+    }
+    return orderAmount.round(0).toString();
+  }
+
   protected getFees(book: Book, transactionPayload: bkper.Transaction): Amount {
     const fees = book.parseValue(transactionPayload.properties[FEES_PROP]);
     if (fees == null) {
@@ -253,6 +265,7 @@ export class InterceptorOrderProcessor {
     let instrumentAccount = await this.getInstrumentAccount(baseBook, transactionPayload);
     let quantity = this.getQuantity(baseBook, transactionPayload);
     let fees = this.getFees(baseBook, transactionPayload);
+    let order = this.getOrder(baseBook, transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
     const amount = new Amount(transactionPayload.amount).minus(interest).minus(fees);
@@ -265,7 +278,7 @@ export class InterceptorOrderProcessor {
     .setDate(tradeDate)
     .setProperty(QUANTITY_PROP, quantity.toString())
     .setProperty(PRICE_PROP, baseBook.formatValue(price))
-    .setProperty(ORDER_PROP, transactionPayload.properties[ORDER_PROP])
+    .setProperty(ORDER_PROP, order)
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
     return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
@@ -275,6 +288,7 @@ export class InterceptorOrderProcessor {
     let instrumentAccount = await this.getInstrumentAccount(baseBook, transactionPayload);
     let quantity = this.getQuantity(baseBook, transactionPayload);
     let fees = this.getFees(baseBook, transactionPayload);
+    let order = this.getOrder(baseBook, transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
     const amount = new Amount(transactionPayload.amount).minus(interest).plus(fees);
@@ -287,7 +301,7 @@ export class InterceptorOrderProcessor {
     .setDate(tradeDate)
     .setProperty(QUANTITY_PROP, quantity.toString())
     .setProperty(PRICE_PROP, baseBook.formatValue(price))
-    .setProperty(ORDER_PROP, transactionPayload.properties[ORDER_PROP])
+    .setProperty(ORDER_PROP, order)
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
     return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
