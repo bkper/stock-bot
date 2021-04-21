@@ -293,9 +293,9 @@ namespace RealizedResultsService {
           purchaseTransaction
           .setProperty(SALE_PRICE_PROP, salePrice.toString())
           .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
-          .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
-          .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
-          .setProperty(GAIN_AMOUNT_PROP, gain.toFixed(financialBook.getFractionDigits()))
+          .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
+          .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
+          .setProperty(GAIN_AMOUNT_PROP, gain.toString())
           .setProperty(SHORT_SALE_PROP, 'true')
           .update();
           
@@ -331,10 +331,10 @@ namespace RealizedResultsService {
         .setProperty(PARENT_ID, purchaseTransaction.getId())
         .setProperty(PURCHASE_PRICE_PROP, purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
-        .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
+        .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
         .setProperty(SALE_PRICE_PROP, salePrice.toString())
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
-        .setProperty(GAIN_AMOUNT_PROP, gain.toFixed(financialBook.getFractionDigits()))
+        .setProperty(GAIN_AMOUNT_PROP, gain.toString())
         .setProperty(SHORT_SALE_PROP, 'true')
         .post().check()
 
@@ -362,9 +362,9 @@ namespace RealizedResultsService {
 
     if (soldQuantity.round(stockBook.getFractionDigits()).eq(0)) {
         saleTransaction
-        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
-        .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits()))
-        .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
+        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
+        .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString())
+        .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
         .update().check();
     } else if (soldQuantity.round(stockBook.getFractionDigits()).gt(0)) {
 
@@ -385,9 +385,9 @@ namespace RealizedResultsService {
         .setDescription(saleTransaction.getDescription())
         .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
         .setProperty(SALE_PRICE_PROP, salePrice.toString())
-        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
-        .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits())) 
-        .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
+        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
+        .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString()) 
+        .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
         .setProperty(PARENT_ID, saleTransaction.getId())
         .post().check()
       }
