@@ -132,35 +132,36 @@ namespace RealizedResultsService {
         tx = tx.uncheck();
       }
 
+      let i = financialBook.getTransactions(`remoteId:${tx.getId()}`)
+      while (i.hasNext()) {
+        let financialTx = i.next();
+        if (financialTx.isChecked()) {
+          financialTx = financialTx.uncheck();
+        }
+        financialTx.remove();
+      }
+      i = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`)
+      while (i.hasNext()) {
+        let mtmTx = i.next();
+        if (mtmTx.isChecked()) {
+          mtmTx = mtmTx.uncheck();
+        }
+        mtmTx.remove();
+      }
+
       if (BotService.isSale(tx)) {
-        let iterator = financialBook.getTransactions(`remoteId:${tx.getId()}`)
-        while (iterator.hasNext()) {
-          let financialTx = iterator.next();
-          if (financialTx.isChecked()) {
-            financialTx = financialTx.uncheck();
-          }
-          financialTx.remove();
-        }
-        iterator = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`)
-        while (iterator.hasNext()) {
-          let mtmTx = iterator.next();
-          if (mtmTx.isChecked()) {
-            mtmTx = mtmTx.uncheck();
-          }
-          mtmTx.remove();
-        }
         if (tx.getProperty(ORIGINAL_QUANTITY_PROP) == null) {
           tx.remove();
         } else {
           tx.deleteProperty(GAIN_AMOUNT_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
           .deleteProperty(SALE_AMOUNT_PROP)
+          .deleteProperty(SHORT_SALES_PROP)
           .deleteProperty(PURCHASE_PRICE_PROP)
           .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
           .update();
           stockAccountSaleTransactions.push(tx);
         }
-
 
       }
 
@@ -172,6 +173,7 @@ namespace RealizedResultsService {
           .deleteProperty(SALE_DATE_PROP)
           .deleteProperty(SALE_PRICE_PROP)
           .deleteProperty(SALE_AMOUNT_PROP)
+          .deleteProperty(SHORT_SALES_PROP)
           .deleteProperty(GAIN_AMOUNT_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
           .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
@@ -239,88 +241,11 @@ namespace RealizedResultsService {
 
     let salePrice: Bkper.Amount = BkperApp.newAmount(saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP));
 
-    let gainTotal = BkperApp.newAmount(0);
     let soldQuantity = saleTransaction.getAmount();
-
+    
     let purchaseTotal = BkperApp.newAmount(0);
     let saleTotal = BkperApp.newAmount(0);
-
-    let gainDateValue = saleTransaction.getDateValue();
-    let gainDateObject = saleTransaction.getDateObject();
-    let gainDate = saleTransaction.getDate();
-
-    for (const purchaseTransaction of purchaseTransactions) {
-
-      if (purchaseTransaction.isChecked()) {
-        //Only process unchecked ones
-        continue;
-      }
-
-      let purchasePrice: Bkper.Amount = BkperApp.newAmount(purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP));
-      let purchaseQuantity = purchaseTransaction.getAmount();
-      
-      if (soldQuantity.gte(purchaseQuantity)) {
-        const saleAmount = (salePrice.times(purchaseQuantity));
-        const purchaseAmount = (purchasePrice.times(purchaseQuantity));
-        let gain = saleAmount.minus(purchaseAmount); 
-        purchaseTransaction
-        .setProperty(SALE_PRICE_PROP, salePrice.toString())
-        .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
-        .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
-        .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
-        .addRemoteId(saleTransaction.getId())
-        .update().check();
-
-        gainTotal = gainTotal.plus(gain);
-        purchaseTotal = purchaseTotal.plus(purchaseAmount);
-        saleTotal = saleTotal.plus(saleAmount);
-        soldQuantity = soldQuantity.minus(purchaseQuantity);
-      } else {
-        
-        let remainingBuyQuantity = purchaseQuantity.minus(soldQuantity);
-        purchaseTransaction
-        .setAmount(remainingBuyQuantity)
-        .update();
-
-        let partialBuyQuantity = purchaseQuantity.minus(remainingBuyQuantity);
-
-        const saleAmount = salePrice.times(partialBuyQuantity);
-        const purchaseAmount = purchasePrice.times(partialBuyQuantity);
-        let gain = saleAmount.minus(purchaseAmount); 
-
-        stockBook.newTransaction()
-        .setDate(purchaseTransaction.getDate())
-        .setAmount(partialBuyQuantity)
-        .setCreditAccount(purchaseTransaction.getCreditAccount())
-        .setDebitAccount(purchaseTransaction.getDebitAccount())
-        .setDescription(purchaseTransaction.getDescription())
-        .setProperty(PURCHASE_PRICE_PROP, purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP))
-        .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
-        .setProperty(ORDER_PROP, purchaseTransaction.getProperty(ORDER_PROP))
-        .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
-        .setProperty(SALE_PRICE_PROP, salePrice.toString())
-        .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
-        .post()
-        .check()
-
-        soldQuantity = soldQuantity.minus(partialBuyQuantity);
-        gainTotal = gainTotal.plus(gain);
-        purchaseTotal = purchaseTotal.plus(purchaseAmount);
-        saleTotal = saleTotal.plus(saleAmount);
-      }
-
-      // Get last date that closes the position
-      if (purchaseTransaction.getDateValue() > gainDateValue) {
-        gainDateValue = purchaseTransaction.getDateValue();
-        gainDateObject = purchaseTransaction.getDateObject();
-        gainDate = purchaseTransaction.getDate();
-      }      
-
-      if (soldQuantity.lte(0)) {
-        break;
-      }
-
-    }
+    let gainTotal = BkperApp.newAmount(0);
 
     let unrealizedAccountName = `${stockAccount.getName()} ${UREALIZED_SUFFIX}`;
     let unrealizedAccount = financialBook.getAccount(unrealizedAccountName)
@@ -333,77 +258,114 @@ namespace RealizedResultsService {
       unrealizedAccount.create();
       trackAccountCreated(summary, stockExcCode, unrealizedAccount);
     }
+    
+    for (const purchaseTransaction of purchaseTransactions) {
 
+      let shortSales = false;
 
-    if (gainTotal.round(financialBook.getFractionDigits()).gt(0)) {
-
-      let realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`
-      let realizedGainAccount = financialBook.getAccount(realizedGainAccountName);
-
-      if (realizedGainAccount == null) {
-        //Fallback to old XXX Gain default
-        realizedGainAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Gain`);
+      if (purchaseTransaction.isChecked()) {
+        //Only process unchecked ones
+        continue;
       }
 
+      //TODO check if does day trade
+      if (purchaseTransaction.getDateValue() > saleTransaction.getDateValue()) {
+        shortSales = true;
+      } else {
+        shortSales = false;
+      }   
 
-      if (realizedGainAccount == null) {
-        realizedGainAccount = financialBook.newAccount()
-        .setName(realizedGainAccountName)
-        .setType(BkperApp.AccountType.INCOMING);
-        let groups = getAccountGroups(financialBook,  REALIZED_SUFFIX);
-        groups.forEach(group => realizedGainAccount.addGroup(group));
-        realizedGainAccount.create();
-        trackAccountCreated(summary, stockExcCode, realizedGainAccount);
+      let purchasePrice: Bkper.Amount = BkperApp.newAmount(purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP));
+      let purchaseQuantity = purchaseTransaction.getAmount();
+
+
+      
+      if (soldQuantity.gte(purchaseQuantity)) {
+        const saleAmount = (salePrice.times(purchaseQuantity));
+        const purchaseAmount = (purchasePrice.times(purchaseQuantity));
+        let gain = saleAmount.minus(purchaseAmount); 
+        if (!shortSales) {
+          purchaseTotal = purchaseTotal.plus(purchaseAmount);
+          saleTotal = saleTotal.plus(saleAmount);
+          gainTotal = gainTotal.plus(gain);
+        }
+        if (shortSales) {
+          purchaseTransaction
+          .setProperty(SALE_PRICE_PROP, salePrice.toString())
+          .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
+          .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
+          .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
+          .setProperty(GAIN_AMOUNT_PROP, gain.toString())
+          .setProperty(SHORT_SALES_PROP, 'true')
+          .update();
+          
+          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, purchaseTransaction.getDate(), purchaseTransaction.getDateObject(), purchasePrice, summary);
+
+        }
+        
+        purchaseTransaction.check();
+
+        soldQuantity = soldQuantity.minus(purchaseQuantity);
+
+      } else {
+        
+        let remainingBuyQuantity = purchaseQuantity.minus(soldQuantity);
+
+        let partialBuyQuantity = purchaseQuantity.minus(remainingBuyQuantity);
+
+        const saleAmount = salePrice.times(partialBuyQuantity);
+        const purchaseAmount = purchasePrice.times(partialBuyQuantity);
+        let gain = saleAmount.minus(purchaseAmount); 
+
+        purchaseTransaction
+        .setAmount(remainingBuyQuantity)
+        .update();
+
+        let splittedTransaction = stockBook.newTransaction()
+        .setDate(purchaseTransaction.getDate())
+        .setAmount(partialBuyQuantity)
+        .setCreditAccount(purchaseTransaction.getCreditAccount())
+        .setDebitAccount(purchaseTransaction.getDebitAccount())
+        .setDescription(purchaseTransaction.getDescription())
+        .setProperty(ORDER_PROP, purchaseTransaction.getProperty(ORDER_PROP))
+        .setProperty(PARENT_ID, purchaseTransaction.getId())
+        .setProperty(PURCHASE_PRICE_PROP, purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP))
+        .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
+        .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
+        .setProperty(SALE_PRICE_PROP, salePrice.toString())
+        .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
+        .setProperty(GAIN_AMOUNT_PROP, gain.toString())
+        .setProperty(SHORT_SALES_PROP, 'true')
+        .post().check()
+
+        if (shortSales) {
+          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedTransaction, gain, splittedTransaction.getDate(), splittedTransaction.getDateObject(), purchasePrice, summary);
+        }
+
+        soldQuantity = soldQuantity.minus(partialBuyQuantity);
+        
+        if (!shortSales) {
+          purchaseTotal = purchaseTotal.plus(purchaseAmount);
+          saleTotal = saleTotal.plus(saleAmount);
+          gainTotal = gainTotal.plus(gain);
+        }
+        
       }
 
-      financialBook.newTransaction()
-      .addRemoteId(saleTransaction.getId())
-      .setDate(gainDate)
-      .setAmount(gainTotal)
-      .setDescription(`sale of ${saleTransaction.getAmount()} #stock_gain`)
-      .from(realizedGainAccount)
-      .to(unrealizedAccount)
-      .post();
-
-      markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
-
-    } else if (gainTotal.round(financialBook.getFractionDigits()).lt(0)) {
-
-      let realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`
-      let realizedLossAccount = financialBook.getAccount(realizedLossAccountName);
-
-      if (realizedLossAccount == null) {
-        //Fallback to old XXX Loss account
-        realizedLossAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Loss`);
-      }
-      if (realizedLossAccount == null) {
-        realizedLossAccount = financialBook.newAccount()
-        .setName(realizedLossAccountName)
-        .setType(BkperApp.AccountType.OUTGOING);
-        let groups = getAccountGroups(financialBook, REALIZED_SUFFIX);
-        groups.forEach(group => realizedLossAccount.addGroup(group));
-        realizedLossAccount.create()
-        trackAccountCreated(summary, stockExcCode, realizedLossAccount);
+      if (soldQuantity.lte(0)) {
+        break;
       }
 
-      financialBook.newTransaction()
-      .addRemoteId(saleTransaction.getId())
-      .setDate(gainDate)
-      .setAmount(gainTotal)
-      .setDescription(`sale of ${saleTransaction.getAmount()} #stock_loss`)
-      .from(unrealizedAccount)
-      .to(realizedLossAccount)
-      .post().check();
-
-      markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, gainDateObject, salePrice)
     }
 
+    recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, saleTransaction.getDate(), saleTransaction.getDateObject(), salePrice, summary, );
+
     if (soldQuantity.round(stockBook.getFractionDigits()).eq(0)) {
-      saleTransaction
-      .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
-      .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits()))
-      .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
-      .update().check();
+        saleTransaction
+        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
+        .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits()))
+        .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
+        .update().check();
     } else if (soldQuantity.round(stockBook.getFractionDigits()).gt(0)) {
 
       let remainingSaleQuantity = saleTransaction.getAmount().minus(soldQuantity);
@@ -411,6 +373,7 @@ namespace RealizedResultsService {
       if (!remainingSaleQuantity.eq(0)) {
 
         saleTransaction
+
         .setAmount(soldQuantity)
         .update();
 
@@ -422,13 +385,93 @@ namespace RealizedResultsService {
         .setDescription(saleTransaction.getDescription())
         .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
         .setProperty(SALE_PRICE_PROP, salePrice.toString())
-        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
+        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits())) 
         .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
-        .post()
-        .check()
+        .setProperty(PARENT_ID, saleTransaction.getId())
+        .post().check()
       }
 
+    }
+  }
+
+  function recordRealizedResult(
+    stockBook: Bkper.Book, 
+    stockAccount: Bkper.Account, 
+    stockExcCode: string, 
+    financialBook: Bkper.Book, 
+    unrealizedAccount: Bkper.Account, 
+    transaction: Bkper.Transaction, 
+    gain: Bkper.Amount, 
+    gainDate: string, 
+    gainDateObject: Date, 
+    price: Bkper.Amount,
+    summary: Summary 
+    ) {
+
+    let shortsSale = transaction.getProperty(SHORT_SALES_PROP)
+
+    if (gain.round(financialBook.getFractionDigits()).gt(0)) {
+
+      let realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
+      let realizedGainAccount = financialBook.getAccount(realizedGainAccountName);
+
+      if (realizedGainAccount == null) {
+        //Fallback to old XXX Gain default
+        realizedGainAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Gain`);
+      }
+
+
+      if (realizedGainAccount == null) {
+        realizedGainAccount = financialBook.newAccount()
+          .setName(realizedGainAccountName)
+          .setType(BkperApp.AccountType.INCOMING);
+        let groups = getAccountGroups(financialBook, REALIZED_SUFFIX);
+        groups.forEach(group => realizedGainAccount.addGroup(group));
+        realizedGainAccount.create();
+        trackAccountCreated(summary, stockExcCode, realizedGainAccount);
+      }
+
+      financialBook.newTransaction()
+        .addRemoteId(transaction.getId())
+        .setDate(gainDate)
+        .setAmount(gain)
+        .setDescription(`#stock_gain${shortsSale ? ' #short_sale' : ''}`)
+        .from(realizedGainAccount)
+        .to(unrealizedAccount)
+        .post();
+
+      markToMarket(stockBook, transaction, stockAccount, financialBook, unrealizedAccount, gainDateObject, price);
+
+    } else if (gain.round(financialBook.getFractionDigits()).lt(0)) {
+
+      let realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
+      let realizedLossAccount = financialBook.getAccount(realizedLossAccountName);
+
+      if (realizedLossAccount == null) {
+        //Fallback to old XXX Loss account
+        realizedLossAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Loss`);
+      }
+      if (realizedLossAccount == null) {
+        realizedLossAccount = financialBook.newAccount()
+          .setName(realizedLossAccountName)
+          .setType(BkperApp.AccountType.OUTGOING);
+        let groups = getAccountGroups(financialBook, REALIZED_SUFFIX);
+        groups.forEach(group => realizedLossAccount.addGroup(group));
+        realizedLossAccount.create();
+        trackAccountCreated(summary, stockExcCode, realizedLossAccount);
+      }
+
+      financialBook.newTransaction()
+        .addRemoteId(transaction.getId())
+        .setDate(gainDate)
+        .setAmount(gain)
+        .setDescription(`#stock_loss${shortsSale ? ' #short_sale' : ''}`)
+        .from(unrealizedAccount)
+        .to(realizedLossAccount)
+        .post().check();
+
+      markToMarket(stockBook, transaction, stockAccount, financialBook, unrealizedAccount, gainDateObject, price);
     }
   }
 
@@ -439,7 +482,7 @@ namespace RealizedResultsService {
     summary.result[stockExcCode].push(account.getName());
   }
 
-  function markToMarket(stockBook: Bkper.Book, saleTransaction: Bkper.Transaction, stockAccount: Bkper.Account, financialBook: Bkper.Book, unrealizedAccount: Bkper.Account, date: Date, price: Bkper.Amount): void {
+  function markToMarket(stockBook: Bkper.Book, transaction: Bkper.Transaction, stockAccount: Bkper.Account, financialBook: Bkper.Book, unrealizedAccount: Bkper.Account, date: Date, price: Bkper.Amount): void {
     let total_quantity = getAccountBalance(stockBook, stockAccount, date);
     let financialInstrument = financialBook.getAccount(stockAccount.getName());
     let balance = getAccountBalance(financialBook, financialInstrument, date);
@@ -457,7 +500,7 @@ namespace RealizedResultsService {
       .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(stockBook.getFractionDigits()))
       .from(unrealizedAccount)
       .to(financialInstrument)
-      .addRemoteId(`mtm_${saleTransaction.getId()}`)
+      .addRemoteId(`mtm_${transaction.getId()}`)
       .post().check();
 
     } else if (amount.round(financialBook.getFractionDigits()).lt(0)) {
@@ -469,7 +512,7 @@ namespace RealizedResultsService {
       .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(stockBook.getFractionDigits()))      
       .from(financialInstrument)
       .to(unrealizedAccount)
-      .addRemoteId(`mtm_${saleTransaction.getId()}`)
+      .addRemoteId(`mtm_${transaction.getId()}`)
       .post().check();
     }
   }
