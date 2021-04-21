@@ -409,8 +409,6 @@ namespace RealizedResultsService {
     summary: Summary 
     ) {
 
-    let shortSale = transaction.getProperty(SHORT_SALE_PROP)
-
     if (gain.round(financialBook.getFractionDigits()).gt(0)) {
 
       let realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
@@ -436,7 +434,7 @@ namespace RealizedResultsService {
         .addRemoteId(transaction.getId())
         .setDate(gainDate)
         .setAmount(gain)
-        .setDescription(`#stock_gain${shortSale ? ' #short_sale' : ''}`)
+        .setDescription(`#stock_gain`)
         .from(realizedGainAccount)
         .to(unrealizedAccount)
         .post();
@@ -466,7 +464,7 @@ namespace RealizedResultsService {
         .addRemoteId(transaction.getId())
         .setDate(gainDate)
         .setAmount(gain)
-        .setDescription(`#stock_loss${shortSale ? ' #short_sale' : ''}`)
+        .setDescription(`#stock_loss`)
         .from(unrealizedAccount)
         .to(realizedLossAccount)
         .post().check();
