@@ -156,7 +156,7 @@ namespace RealizedResultsService {
           tx.deleteProperty(GAIN_AMOUNT_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
           .deleteProperty(SALE_AMOUNT_PROP)
-          .deleteProperty(SHORT_SALES_PROP)
+          .deleteProperty(SHORT_SALE_PROP)
           .deleteProperty(PURCHASE_PRICE_PROP)
           .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
           .update();
@@ -173,7 +173,7 @@ namespace RealizedResultsService {
           .deleteProperty(SALE_DATE_PROP)
           .deleteProperty(SALE_PRICE_PROP)
           .deleteProperty(SALE_AMOUNT_PROP)
-          .deleteProperty(SHORT_SALES_PROP)
+          .deleteProperty(SHORT_SALE_PROP)
           .deleteProperty(GAIN_AMOUNT_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
           .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
@@ -295,8 +295,8 @@ namespace RealizedResultsService {
           .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
           .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
           .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toFixed(financialBook.getFractionDigits()))
-          .setProperty(GAIN_AMOUNT_PROP, gain.toString())
-          .setProperty(SHORT_SALES_PROP, 'true')
+          .setProperty(GAIN_AMOUNT_PROP, gain.toFixed(financialBook.getFractionDigits()))
+          .setProperty(SHORT_SALE_PROP, 'true')
           .update();
           
           recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, purchaseTransaction.getDate(), purchaseTransaction.getDateObject(), purchasePrice, summary);
@@ -331,11 +331,11 @@ namespace RealizedResultsService {
         .setProperty(PARENT_ID, purchaseTransaction.getId())
         .setProperty(PURCHASE_PRICE_PROP, purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
-        .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
+        .setProperty(SALE_AMOUNT_PROP, saleAmount.toFixed(financialBook.getFractionDigits()))
         .setProperty(SALE_PRICE_PROP, salePrice.toString())
         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
-        .setProperty(GAIN_AMOUNT_PROP, gain.toString())
-        .setProperty(SHORT_SALES_PROP, 'true')
+        .setProperty(GAIN_AMOUNT_PROP, gain.toFixed(financialBook.getFractionDigits()))
+        .setProperty(SHORT_SALE_PROP, 'true')
         .post().check()
 
         if (shortSales) {
@@ -349,7 +349,7 @@ namespace RealizedResultsService {
           saleTotal = saleTotal.plus(saleAmount);
           gainTotal = gainTotal.plus(gain);
         }
-        
+
       }
 
       if (soldQuantity.lte(0)) {
@@ -362,7 +362,7 @@ namespace RealizedResultsService {
 
     if (soldQuantity.round(stockBook.getFractionDigits()).eq(0)) {
         saleTransaction
-        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
+        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits()))
         .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
         .update().check();
@@ -385,7 +385,7 @@ namespace RealizedResultsService {
         .setDescription(saleTransaction.getDescription())
         .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
         .setProperty(SALE_PRICE_PROP, salePrice.toString())
-        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
+        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toFixed(financialBook.getFractionDigits()))
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toFixed(financialBook.getFractionDigits())) 
         .setProperty(SALE_AMOUNT_PROP, saleTotal.toFixed(financialBook.getFractionDigits()))
         .setProperty(PARENT_ID, saleTransaction.getId())
@@ -409,7 +409,7 @@ namespace RealizedResultsService {
     summary: Summary 
     ) {
 
-    let shortsSale = transaction.getProperty(SHORT_SALES_PROP)
+    let shortSale = transaction.getProperty(SHORT_SALE_PROP)
 
     if (gain.round(financialBook.getFractionDigits()).gt(0)) {
 
@@ -436,7 +436,7 @@ namespace RealizedResultsService {
         .addRemoteId(transaction.getId())
         .setDate(gainDate)
         .setAmount(gain)
-        .setDescription(`#stock_gain${shortsSale ? ' #short_sale' : ''}`)
+        .setDescription(`#stock_gain${shortSale ? ' #short_sale' : ''}`)
         .from(realizedGainAccount)
         .to(unrealizedAccount)
         .post();
@@ -466,7 +466,7 @@ namespace RealizedResultsService {
         .addRemoteId(transaction.getId())
         .setDate(gainDate)
         .setAmount(gain)
-        .setDescription(`#stock_loss${shortsSale ? ' #short_sale' : ''}`)
+        .setDescription(`#stock_loss${shortSale ? ' #short_sale' : ''}`)
         .from(unrealizedAccount)
         .to(realizedLossAccount)
         .post().check();

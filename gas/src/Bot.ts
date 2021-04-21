@@ -16,7 +16,7 @@ const PURCHASE_PRICE_PROP = 'purchase_price';
 const PURCHASE_AMOUNT_PROP = 'purchase_amount';
 const PURCHASE_QUANTITY_PROP = 'purchase_quantity';
 const PARENT_ID = 'parent_id'
-const SHORT_SALES_PROP = 'short_sales';
+const SHORT_SALE_PROP = 'short_sale';
 const GAIN_AMOUNT_PROP = 'gain_amount';
 const ORIGINAL_QUANTITY_PROP = 'original_quantity';
 const ORIGINAL_AMOUNT_PROP = 'original_amount';
@@ -56,7 +56,7 @@ function resetRealizedResults(bookId: string, accountId: string): Summary {
 }
 
 function auditBooks(bookId: string) {
-  BotService.auditBooks(bookId);
+  //BotService.auditBooks(bookId);
 }
 
 
