@@ -363,12 +363,11 @@ namespace RealizedResultsService {
 
     }
 
-    recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, saleTransaction.getDate(), saleTransaction.getDateObject(), salePrice, summary, );
 
     if (soldQuantity.round(stockBook.getFractionDigits()).eq(0)) {
         saleTransaction
-        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
-        .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString())
+        .setProperty(GAIN_AMOUNT_PROP, !gainTotal.round(financialBook.getFractionDigits()).eq(0) ? gainTotal.toString() : null)
+        .setProperty(PURCHASE_AMOUNT_PROP, !purchaseTotal.round(financialBook.getFractionDigits()).eq(0) ? purchaseTotal.toString() : null) 
         .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
         .update().check();
     } else if (soldQuantity.round(stockBook.getFractionDigits()).gt(0)) {
@@ -391,13 +390,16 @@ namespace RealizedResultsService {
         .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
         .setProperty(PARENT_ID, saleTransaction.getId())
         .setProperty(SALE_PRICE_PROP, salePrice.toString())
-        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
-        .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString()) 
-        .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
+        .setProperty(GAIN_AMOUNT_PROP, !gainTotal.round(financialBook.getFractionDigits()).eq(0) ? gainTotal.toString() : null)
+        .setProperty(PURCHASE_AMOUNT_PROP, !purchaseTotal.round(financialBook.getFractionDigits()).eq(0) ? purchaseTotal.toString() : null) 
+        .setProperty(SALE_AMOUNT_PROP, !saleTotal.round(financialBook.getFractionDigits()).eq(0)? saleTotal.toString() : null)
         .post().check()
       }
 
     }
+
+    recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, saleTransaction.getDate(), saleTransaction.getDateObject(), salePrice, summary, );
+
   }
 
   function recordRealizedResult(
