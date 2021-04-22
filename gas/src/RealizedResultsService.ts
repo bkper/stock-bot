@@ -291,10 +291,11 @@ namespace RealizedResultsService {
         }
         if (shortSales) {
           purchaseTransaction
-          .setProperty(SALE_PRICE_PROP, salePrice.toString())
-          .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
-          .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
+          .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
           .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
+          .setProperty(SALE_PRICE_PROP, salePrice.toString())
+          .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
+          .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
           .setProperty(GAIN_AMOUNT_PROP, gain.toString())
           .setProperty(SHORT_SALE_PROP, 'true')
           .update();
@@ -329,14 +330,18 @@ namespace RealizedResultsService {
         .setDescription(purchaseTransaction.getDescription())
         .setProperty(ORDER_PROP, purchaseTransaction.getProperty(ORDER_PROP))
         .setProperty(PARENT_ID, purchaseTransaction.getId())
-        .setProperty(PURCHASE_PRICE_PROP, purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP))
-        .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
-        .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
-        .setProperty(SALE_PRICE_PROP, salePrice.toString())
-        .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
-        .setProperty(GAIN_AMOUNT_PROP, gain.toString())
-        .setProperty(SHORT_SALE_PROP, 'true')
-        .post().check()
+
+        if (shortSales) {
+          splittedTransaction.setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
+          .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
+          .setProperty(SALE_PRICE_PROP, salePrice.toString())
+          .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
+          .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
+          .setProperty(GAIN_AMOUNT_PROP, gain.toString())
+          .setProperty(SHORT_SALE_PROP, 'true')
+        }
+        
+        splittedTransaction.post().check()
 
         if (shortSales) {
           recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedTransaction, gain, splittedTransaction.getDate(), splittedTransaction.getDateObject(), purchasePrice, summary);
@@ -384,11 +389,11 @@ namespace RealizedResultsService {
         .setDebitAccount(saleTransaction.getDebitAccount())
         .setDescription(saleTransaction.getDescription())
         .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
+        .setProperty(PARENT_ID, saleTransaction.getId())
         .setProperty(SALE_PRICE_PROP, salePrice.toString())
         .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString()) 
         .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
-        .setProperty(PARENT_ID, saleTransaction.getId())
         .post().check()
       }
 
