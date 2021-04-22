@@ -1,11 +1,11 @@
 import { Book } from "bkper";
-import { flagStockAccountForRebuildIfNeeded, getStockBook } from "./BotService";
+import { flagStockAccountForRebuildIfNeeded, getStockBook, isStockBook } from "./BotService";
 import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP } from "./constants";
 
 export class InterceptorOrderProcessorDelete {
 
   async intercept(baseBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {
-    if (baseBook.getFractionDigits() == 0) {
+    if (isStockBook(baseBook)) {
       return false;
     }
 

@@ -1,6 +1,15 @@
 import { Account, AccountType, Bkper, Book, Group, Transaction } from 'bkper';
 import { EXC_CODE_PROP, NEEDS_REBUILD_PROP, STOCK_BOOK_PROP, STOCK_EXC_CODE_PROP, STOCK_REALIZED_DATE_PROP } from './constants';
 
+export function isStockBook(book: Book): boolean {
+  if (book.getProperty(STOCK_BOOK_PROP)) {
+    return true;
+  }
+  if (book.getFractionDigits() == 0) {
+    return true;
+  }
+  return false;
+}
 export function getStockBook(book: Book): Book {
   if (book.getCollection() == null) {
     return null;
