@@ -154,6 +154,7 @@ namespace RealizedResultsService {
           tx.remove();
         } else {
           tx.deleteProperty(GAIN_AMOUNT_PROP)
+          .deleteProperty(GAIN_LOG_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
           .deleteProperty(SALE_AMOUNT_PROP)
           .deleteProperty(SHORT_SALE_PROP)
@@ -175,6 +176,7 @@ namespace RealizedResultsService {
           .deleteProperty(SALE_AMOUNT_PROP)
           .deleteProperty(SHORT_SALE_PROP)
           .deleteProperty(GAIN_AMOUNT_PROP)
+          .deleteProperty(GAIN_LOG_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
           .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
           .update();
@@ -237,6 +239,18 @@ namespace RealizedResultsService {
     return 0;
   }
 
+  function log(stockBook: Bkper.Book, quantity: Bkper.Amount, price: Bkper.Amount, date: string): GainLogEntry {
+    return {
+      qt: quantity.toFixed(stockBook.getFractionDigits()).toString(),
+      pr: price.toString(),
+      dt: date,
+    }
+  }
+
+  function isShortSale(purchaseTransaction: Bkper.Transaction, saleTransaction: Bkper.Transaction): boolean {
+    return compareTo(saleTransaction, purchaseTransaction) < 0;
+  }
+
   function processSale(financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary): void {
 
     let salePrice: Bkper.Amount = BkperApp.newAmount(saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP));
@@ -258,22 +272,17 @@ namespace RealizedResultsService {
       unrealizedAccount.create();
       trackAccountCreated(summary, stockExcCode, unrealizedAccount);
     }
+
+    let gainLogEntries: GainLogEntry[] = []
     
     for (const purchaseTransaction of purchaseTransactions) {
 
-      let shortSales = false;
+      let shortSale = isShortSale(purchaseTransaction, saleTransaction);
 
       if (purchaseTransaction.isChecked()) {
         //Only process unchecked ones
         continue;
       }
-
-      //TODO check if does day trade
-      if (purchaseTransaction.getDateValue() > saleTransaction.getDateValue()) {
-        shortSales = true;
-      } else {
-        shortSales = false;
-      }   
 
       let purchasePrice: Bkper.Amount = BkperApp.newAmount(purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP));
       let purchaseQuantity = purchaseTransaction.getAmount();
@@ -284,12 +293,13 @@ namespace RealizedResultsService {
         const saleAmount = (salePrice.times(purchaseQuantity));
         const purchaseAmount = (purchasePrice.times(purchaseQuantity));
         let gain = saleAmount.minus(purchaseAmount); 
-        if (!shortSales) {
+        if (!shortSale) {
           purchaseTotal = purchaseTotal.plus(purchaseAmount);
           saleTotal = saleTotal.plus(saleAmount);
           gainTotal = gainTotal.plus(gain);
+          gainLogEntries.push(log(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getDate()))
         }
-        if (shortSales) {
+        if (shortSale) {
           purchaseTransaction
           .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
           .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
@@ -322,7 +332,7 @@ namespace RealizedResultsService {
         .setAmount(remainingBuyQuantity)
         .update();
 
-        let splittedTransaction = stockBook.newTransaction()
+        let splittedPurchaseTransaction = stockBook.newTransaction()
         .setDate(purchaseTransaction.getDate())
         .setAmount(partialBuyQuantity)
         .setCreditAccount(purchaseTransaction.getCreditAccount())
@@ -331,8 +341,8 @@ namespace RealizedResultsService {
         .setProperty(ORDER_PROP, purchaseTransaction.getProperty(ORDER_PROP))
         .setProperty(PARENT_ID, purchaseTransaction.getId())
 
-        if (shortSales) {
-          splittedTransaction.setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
+        if (shortSale) {
+          splittedPurchaseTransaction.setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
           .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
           .setProperty(SALE_PRICE_PROP, salePrice.toString())
           .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
@@ -341,18 +351,19 @@ namespace RealizedResultsService {
           .setProperty(SHORT_SALE_PROP, 'true')
         }
         
-        splittedTransaction.post().check()
+        splittedPurchaseTransaction.post().check()
 
-        if (shortSales) {
-          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedTransaction, gain, splittedTransaction.getDate(), splittedTransaction.getDateObject(), purchasePrice, summary);
+        if (shortSale) {
+          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, splittedPurchaseTransaction.getDate(), splittedPurchaseTransaction.getDateObject(), purchasePrice, summary);
         }
 
         soldQuantity = soldQuantity.minus(partialBuyQuantity);
         
-        if (!shortSales) {
+        if (!shortSale) {
           purchaseTotal = purchaseTotal.plus(purchaseAmount);
           saleTotal = saleTotal.plus(saleAmount);
           gainTotal = gainTotal.plus(gain);
+          gainLogEntries.push(log(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getDate()))
         }
 
       }
@@ -365,11 +376,15 @@ namespace RealizedResultsService {
 
 
     if (soldQuantity.round(stockBook.getFractionDigits()).eq(0)) {
+      if (gainLogEntries.length > 0) {
         saleTransaction
-        .setProperty(GAIN_AMOUNT_PROP, !gainTotal.round(financialBook.getFractionDigits()).eq(0) ? gainTotal.toString() : null)
-        .setProperty(PURCHASE_AMOUNT_PROP, !purchaseTotal.round(financialBook.getFractionDigits()).eq(0) ? purchaseTotal.toString() : null) 
+        .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString()) 
         .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
-        .update().check();
+        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
+        .setProperty(GAIN_LOG_PROP, JSON.stringify(gainLogEntries))
+        saleTransaction.update()
+      }
+    saleTransaction.check();
     } else if (soldQuantity.round(stockBook.getFractionDigits()).gt(0)) {
 
       let remainingSaleQuantity = saleTransaction.getAmount().minus(soldQuantity);
@@ -381,7 +396,7 @@ namespace RealizedResultsService {
         .setAmount(soldQuantity)
         .update();
 
-        stockBook.newTransaction()
+        let splittedSaleTransaction = stockBook.newTransaction()
         .setDate(saleTransaction.getDate())
         .setAmount(remainingSaleQuantity)
         .setCreditAccount(saleTransaction.getCreditAccount())
@@ -389,11 +404,17 @@ namespace RealizedResultsService {
         .setDescription(saleTransaction.getDescription())
         .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
         .setProperty(PARENT_ID, saleTransaction.getId())
-        .setProperty(SALE_PRICE_PROP, salePrice.toString())
-        .setProperty(GAIN_AMOUNT_PROP, !gainTotal.round(financialBook.getFractionDigits()).eq(0) ? gainTotal.toString() : null)
-        .setProperty(PURCHASE_AMOUNT_PROP, !purchaseTotal.round(financialBook.getFractionDigits()).eq(0) ? purchaseTotal.toString() : null) 
-        .setProperty(SALE_AMOUNT_PROP, !saleTotal.round(financialBook.getFractionDigits()).eq(0)? saleTotal.toString() : null)
-        .post().check()
+        .setProperty(SALE_PRICE_PROP, salePrice.toString());
+
+        if (gainLogEntries.length > 0) {
+          splittedSaleTransaction
+          .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString()) 
+          .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
+          .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
+          .setProperty(GAIN_LOG_PROP, JSON.stringify(gainLogEntries))
+        }
+
+        splittedSaleTransaction.post().check()
       }
 
     }
