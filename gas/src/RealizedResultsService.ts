@@ -363,7 +363,7 @@ namespace RealizedResultsService {
           purchaseTotal = purchaseTotal.plus(purchaseAmount);
           saleTotal = saleTotal.plus(saleAmount);
           gainTotal = gainTotal.plus(gain);
-          gainLogEntries.push(log(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getDate()))
+          gainLogEntries.push(log(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction.getDate()))
         }
 
       }
