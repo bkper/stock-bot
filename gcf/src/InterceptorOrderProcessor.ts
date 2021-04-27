@@ -280,6 +280,8 @@ export class InterceptorOrderProcessor {
     .setProperty(QUANTITY_PROP, quantity.toString())
     .setProperty(PRICE_PROP, baseBook.formatValue(price))
     .setProperty(ORDER_PROP, order)
+    .setProperty(FEES_PROP, fees.toString())
+    .setProperty(INTEREST_PROP, interest.toString())
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
     return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
@@ -303,6 +305,8 @@ export class InterceptorOrderProcessor {
     .setProperty(QUANTITY_PROP, quantity.toString())
     .setProperty(PRICE_PROP, baseBook.formatValue(price))
     .setProperty(ORDER_PROP, order)
+    .setProperty(FEES_PROP, fees.toString())
+    .setProperty(INTEREST_PROP, interest.toString())    
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
     .post();
     return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
