@@ -299,19 +299,21 @@ namespace RealizedResultsService {
           gainTotal = gainTotal.plus(gain);
           gainLogEntries.push(log(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getDate()))
         }
+        purchaseTransaction
+        .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
+        .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
+        
         if (shortSale) {
-          purchaseTransaction
-          .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
-          .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
-          .setProperty(SALE_PRICE_PROP, salePrice.toString())
+          purchaseTransaction.setProperty(SALE_PRICE_PROP, salePrice.toString())
           .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
           .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
           .setProperty(GAIN_AMOUNT_PROP, gain.toString())
           .setProperty(SHORT_SALE_PROP, 'true')
-          .update();
-          
-          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, purchaseTransaction.getDate(), purchaseTransaction.getDateObject(), purchasePrice, summary);
+        }
+        purchaseTransaction.update();
 
+        if (shortSale) {
+          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, purchaseTransaction.getDate(), purchaseTransaction.getDateObject(), purchasePrice, summary);
         }
         
         purchaseTransaction.check();
@@ -340,10 +342,11 @@ namespace RealizedResultsService {
         .setDescription(purchaseTransaction.getDescription())
         .setProperty(ORDER_PROP, purchaseTransaction.getProperty(ORDER_PROP))
         .setProperty(PARENT_ID, purchaseTransaction.getId())
+        .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
+        .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
 
         if (shortSale) {
-          splittedPurchaseTransaction.setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
-          .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
+          splittedPurchaseTransaction
           .setProperty(SALE_PRICE_PROP, salePrice.toString())
           .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
           .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
