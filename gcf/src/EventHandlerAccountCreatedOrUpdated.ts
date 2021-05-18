@@ -23,7 +23,6 @@ export class EventHandlerAccountCreatedOrUpdated extends EventHandlerAccount {
     stockAccount.setGroups([]);
     stockAccount.setName(financialAccount.name)
       .setType(financialAccount.type as AccountType)
-      .setProperties(financialAccount.properties)
       .setArchived(financialAccount.archived);
     if (financialAccount.groups) {
       for (const baseGroupId of financialAccount.groups) {
