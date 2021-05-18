@@ -1,5 +1,5 @@
 import { Account, AccountType, Book } from "bkper";
-import { STOCK_EXC_CODE_PROP } from "./constants";
+import { GROUP_TRADING, STOCK_EXC_CODE_PROP } from "./constants";
 import { EventHandlerAccount } from "./EventHandlerAccount";
 
 export class EventHandlerAccountCreatedOrUpdated extends EventHandlerAccount {
@@ -42,6 +42,13 @@ export class EventHandlerAccountCreatedOrUpdated extends EventHandlerAccount {
         }
       }
     }
+
+    let tradingGroup = await stockBook.getGroup(GROUP_TRADING);
+    if (!tradingGroup) {
+      tradingGroup = await stockBook.newGroup().setName(GROUP_TRADING).create()
+    }
+    stockAccount.addGroup(tradingGroup)
+
   }
 
 }
