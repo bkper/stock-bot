@@ -20,7 +20,9 @@ export abstract class EventHandler {
 
     
     if (stockBook) {
-      console.log(`Stock book ${stockBook.getName()}`)
+      
+      console.log(`Handling ${event.type} event on book ${baseBook.getName()} from user ${event.user.username}...`)
+
       let response = await this.processObject(baseBook, stockBook, event);
       if (response) {
         responses.push(response);
