@@ -1,14 +1,11 @@
 import { Account, AccountType, Amount, Book } from "bkper";
 import { isStockBook } from "./BotService";
-import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, ORDER_PROP, PRICE_PROP, QUANTITY_PROP, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
+import { EXC_BASE_CODE, EXC_BASE_RATE, FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, ORDER_PROP, PRICE_PROP, QUANTITY_PROP, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
 
 export class InterceptorOrderProcessor {
 
   async intercept(baseBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {
 
-    if (event.agent.id == 'exchange-bot') {
-      return false;
-    }
 
     if (isStockBook(baseBook)) {
       return false;
@@ -209,6 +206,15 @@ export class InterceptorOrderProcessor {
       let tradeDate = this.getTradeDate(transactionPayload);
       let feesAccountName = this.getFeesAccountName(exchangeAccount);
       let feesAccount = await this.getFeesAccount(baseBook, feesAccountName);
+
+      let excBaseCode = transactionPayload.properties[EXC_BASE_CODE]
+      if (excBaseCode) {
+        let excBaseRateProp = transactionPayload.properties[EXC_BASE_RATE]
+        let excBaseRate = new Amount(excBaseRateProp);
+        fees = fees.times(excBaseRate)
+      }
+
+
       let tx = await baseBook.newTransaction()
         .setAmount(fees)
         .from(exchangeAccount)
@@ -230,6 +236,14 @@ export class InterceptorOrderProcessor {
     if (!interest.eq(0)) {
       let tradeDate = this.getTradeDate(transactionPayload);
       let interestAccount = await this.getInterestAccount(instrument, baseBook);
+
+      let excBaseCode = transactionPayload.properties[EXC_BASE_CODE]
+      if (excBaseCode) {
+        let excBaseRateProp = transactionPayload.properties[EXC_BASE_RATE]
+        let excBaseRate = new Amount(excBaseRateProp);
+        interest = interest.times(excBaseRate)
+      }
+
       let tx = await baseBook.newTransaction()
         .setAmount(interest)
         .from(exchangeAccount)
@@ -249,6 +263,14 @@ export class InterceptorOrderProcessor {
     if (!interest.eq(0)) {
       let interestAccount = await this.getInterestAccount(instrument, baseBook);
       let tradeDate = this.getTradeDate(transactionPayload);
+
+      let excBaseCode = transactionPayload.properties[EXC_BASE_CODE]
+      if (excBaseCode) {
+        let excBaseRateProp = transactionPayload.properties[EXC_BASE_RATE]
+        let excBaseRate = new Amount(excBaseRateProp);
+        interest = interest.times(excBaseRate)
+      }      
+
       let tx = await baseBook.newTransaction()
         .setAmount(interest)
         .from(interestAccount)
@@ -269,16 +291,29 @@ export class InterceptorOrderProcessor {
     let order = this.getOrder(baseBook, transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
-    const amount = new Amount(transactionPayload.amount).minus(interest).minus(fees);
-    const price = amount.div(quantity);
+    let amount = new Amount(transactionPayload.amount).minus(interest).minus(fees)
+    let price = amount.div(quantity);
+
+    let excBaseCode = transactionPayload.properties[EXC_BASE_CODE]
+    if (excBaseCode) {
+      let excBaseRateProp = transactionPayload.properties[EXC_BASE_RATE]
+      let excBaseRate = new Amount(excBaseRateProp);
+      let convertedFees = fees.times(excBaseRate)
+      let convertedInterest = interest.times(excBaseRate)
+      amount = new Amount(transactionPayload.amount).minus(convertedInterest).minus(convertedFees);
+      price = amount.div(excBaseRate).div(quantity)
+    }
+
     let tx = await baseBook.newTransaction()
     .setAmount(amount)
     .from(exchangeAccount)
     .to(instrumentAccount)
     .setDescription(transactionPayload.description)
     .setDate(tradeDate)
+    .setProperty(EXC_BASE_CODE, transactionPayload.properties[EXC_BASE_CODE])
+    .setProperty(EXC_BASE_RATE, transactionPayload.properties[EXC_BASE_RATE])      
     .setProperty(QUANTITY_PROP, quantity.toString())
-    .setProperty(PRICE_PROP, baseBook.formatValue(price))
+    .setProperty(PRICE_PROP, price.toString())
     .setProperty(ORDER_PROP, order)
     .setProperty(FEES_PROP, fees.toString())
     .setProperty(INTEREST_PROP, interest.toString())
@@ -294,16 +329,29 @@ export class InterceptorOrderProcessor {
     let order = this.getOrder(baseBook, transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
-    const amount = new Amount(transactionPayload.amount).minus(interest).plus(fees);
-    const price = amount.div(quantity);
+    let amount = new Amount(transactionPayload.amount).minus(interest).minus(fees)
+    let price = amount.div(quantity);
+
+    let excBaseCode = transactionPayload.properties[EXC_BASE_CODE]
+    if (excBaseCode) {
+      let excBaseRateProp = transactionPayload.properties[EXC_BASE_RATE]
+      let excBaseRate = new Amount(excBaseRateProp);
+      let convertedFees = fees.times(excBaseRate)
+      let convertedInterest = interest.times(excBaseRate)
+      amount = new Amount(transactionPayload.amount).minus(convertedInterest).minus(convertedFees);
+      price = amount.div(excBaseRate).div(quantity)
+    }
+
     let tx = await baseBook.newTransaction()
     .setAmount(amount)
     .from(instrumentAccount)
     .to(exchangeAccount)
     .setDescription(transactionPayload.description)
     .setDate(tradeDate)
+    .setProperty(EXC_BASE_CODE, transactionPayload.properties[EXC_BASE_CODE])
+    .setProperty(EXC_BASE_RATE, transactionPayload.properties[EXC_BASE_RATE])    
     .setProperty(QUANTITY_PROP, quantity.toString())
-    .setProperty(PRICE_PROP, baseBook.formatValue(price))
+    .setProperty(PRICE_PROP, price.toString())
     .setProperty(ORDER_PROP, order)
     .setProperty(FEES_PROP, fees.toString())
     .setProperty(INTEREST_PROP, interest.toString())    

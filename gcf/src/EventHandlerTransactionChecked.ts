@@ -31,9 +31,17 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
       return null;
     }
 
-    const originalAmount = new Amount(transaction.amount);
+    let amount = new Amount(transaction.amount);
+    let price = amount.div(quantity);
 
-    let price = originalAmount.div(quantity);
+    let excBaseCode = transaction.properties[constants.EXC_BASE_CODE]
+    if (excBaseCode) {
+      let excBaseRateProp = transaction.properties[constants.EXC_BASE_RATE]
+      let excBaseRate = new Amount(excBaseRateProp);
+      amount = amount.div(excBaseRate)
+    }    
+    price = amount.div(quantity)
+
 
     let stockAccount = await this.getConnectedStockAccount(financialBook, stockBook, financialCreditAccount);
 
@@ -55,7 +63,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setProperty(constants.SALE_PRICE_PROP, price.toString())
       .setProperty(constants.ORDER_PROP, transaction.properties[constants.ORDER_PROP])
       .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
-      .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
+      .setProperty(constants.ORIGINAL_AMOUNT_PROP, amount.toString())
       .post()
 
       this.checkLastTxDate(stockAccount, transaction);
@@ -82,7 +90,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
         .setProperty(constants.PURCHASE_PRICE_PROP, price.toString())
         .setProperty(constants.ORDER_PROP, transaction.properties[constants.ORDER_PROP])
         .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
-        .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
+        .setProperty(constants.ORIGINAL_AMOUNT_PROP, amount.toString())
         .post()
 
         this.checkLastTxDate(stockAccount, transaction);

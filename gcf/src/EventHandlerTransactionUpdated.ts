@@ -1,6 +1,6 @@
 import { Amount, Book, Transaction } from "bkper";
 import { flagStockAccountForRebuildIfNeeded, isPurchase, isSale } from "./BotService";
-import { ORIGINAL_AMOUNT_PROP, ORIGINAL_QUANTITY_PROP, PURCHASE_PRICE_PROP, SALE_PRICE_PROP } from "./constants";
+import { EXC_BASE_CODE, EXC_BASE_RATE, ORIGINAL_AMOUNT_PROP, ORIGINAL_QUANTITY_PROP, PURCHASE_PRICE_PROP, SALE_PRICE_PROP } from "./constants";
 import { EventHandlerTransaction } from "./EventHandlerTransaction";
 import { InterceptorOrderProcessor } from "./InterceptorOrderProcessor";
 import { InterceptorOrderProcessorDelete } from "./InterceptorOrderProcessorDelete";
@@ -35,14 +35,21 @@ export class EventHandlerTransactionUpdated extends EventHandlerTransaction {
     }
 
     let price = new Amount(financialTransaction.amount).div(quantity);
-    
-    const originalAmount = new Amount(financialTransaction.amount);
+    let amount = new Amount(financialTransaction.amount);
+
+    let excBaseCode = financialTransaction.properties[EXC_BASE_CODE]
+    if (excBaseCode) {
+      let excBaseRateProp = financialTransaction.properties[EXC_BASE_RATE]
+      let excBaseRate = new Amount(excBaseRateProp);
+      amount =amount.div(excBaseRate)
+    }    
+    price = amount.div(quantity)
 
     stockTransaction.setDate(financialTransaction.date)
     .setAmount(quantity)
     .setDescription(financialTransaction.description)
     .setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(stockBook.getFractionDigits()))
-    .setProperty(ORIGINAL_AMOUNT_PROP, originalAmount.toString())
+    .setProperty(ORIGINAL_AMOUNT_PROP, amount.toString())
     ;
 
     if (await isPurchase(stockTransaction)) {

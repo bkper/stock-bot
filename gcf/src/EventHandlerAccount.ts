@@ -11,7 +11,7 @@ export abstract class EventHandlerAccount extends EventHandler {
     let baseAccount = await financialBook.getAccount(financialAccount.id);
     let stockExcCode = await getStockExchangeCode(baseAccount);
 
-    if (!this.matchStockExchange(stockExcCode, excCode)) {
+    if (!stockExcCode) {
       return null;
     }
 

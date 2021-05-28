@@ -23,7 +23,7 @@ export abstract class EventHandlerTransaction extends EventHandler {
 
     let stockExcCode = await this.getStockExcCodeFromTransaction(financialBook, financialTransaction);
     
-    if (!this.matchStockExchange(stockExcCode, excCode)) {
+    if (!stockExcCode) {
       return null;
     }
 

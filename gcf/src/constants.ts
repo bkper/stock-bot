@@ -29,6 +29,8 @@ export const REALIZED_GAIN_SUFFIX = 'Realized Gain';
 export const REALIZED_LOSS_SUFFIX = 'Realized Loss';
 export const UREALIZED_SUFFIX = 'Unrealized';
 export const GROUP_TRADING = 'Trading';
+export const EXC_BASE_CODE = 'exc_base_code';
+export const EXC_BASE_RATE = 'exc_base_rate';
 
 
 
