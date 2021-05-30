@@ -17,7 +17,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
   protected async connectedTransactionFound(financialBook: Book, stockBook: Book, transaction: bkper.Transaction, connectedTransaction: Transaction, stockExcCode: string): Promise<string> {
     let bookAnchor = super.buildBookAnchor(stockBook);
-    let record = `${connectedTransaction.getDate()} ${connectedTransaction.getAmount()} ${await connectedTransaction.getCreditAccountName()} ${await connectedTransaction.getDebitAccountName()} ${connectedTransaction.getDescription()}`;
+    let record = `${connectedTransaction.getDate()} ${connectedTransaction.getAmount()} ${connectedTransaction.getDescription()}`;
     return `FOUND: ${bookAnchor}: ${record}`;
   }
 
