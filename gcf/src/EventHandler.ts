@@ -18,10 +18,11 @@ export abstract class EventHandler {
     let responses: string[] = [];
     let stockBook = getStockBook(baseBook);
 
-    
+    const logtag = `Handling ${event.type} event on book ${baseBook.getName()} from user ${event.user.username}`;
+
     if (stockBook) {
       
-      console.log(`Handling ${event.type} event on book ${baseBook.getName()} from user ${event.user.username}...`)
+      console.time(logtag)
 
       let response = await this.processObject(baseBook, stockBook, event);
       if (response) {
@@ -30,6 +31,8 @@ export abstract class EventHandler {
     } else {
       return 'No book with 0 decimal places found in the collection'
     }
+
+    console.timeEnd(logtag)
 
     if (responses.length == 0) {
       return false;
