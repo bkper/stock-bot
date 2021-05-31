@@ -28,7 +28,6 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
     let quantity = this.getQuantity(stockBook, transaction);
     if (quantity == null || quantity.eq(0)) {
-      console.log(`No quantity defined.`)
       return null;
     }
 
@@ -40,7 +39,6 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
     
     if (stockAccount) {
-      console.log(`Stock Account: ${stockAccount.getName()}`)
       //Selling
       let stockSellAccount = await stockBook.getAccount(constants.STOCK_SELL_ACCOUNT_NAME);
       if (stockSellAccount == null) {
@@ -68,7 +66,6 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
     } else {
       stockAccount = await this.getConnectedStockAccount(financialBook, stockBook, financialDebitAccount);
       if (stockAccount) {
-        console.log(`Stock Account: ${stockAccount.getName()}`)
 
         //Buying
         let stockBuyAccount = await stockBook.getAccount(constants.STOCK_BUY_ACCOUNT_NAME);
@@ -97,7 +94,6 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
     }
 
-    console.log(`No Stock account found`)
 
     return null;
 

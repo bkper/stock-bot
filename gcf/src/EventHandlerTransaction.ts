@@ -16,7 +16,6 @@ export abstract class EventHandlerTransaction extends EventHandler {
     let financialTransaction = operation.transaction;
 
     if (!financialTransaction.posted) {
-      console.log(`Transaction NOT posted.`)
       return null;
     }
 
@@ -25,7 +24,6 @@ export abstract class EventHandlerTransaction extends EventHandler {
     let stockExcCode = await this.getStockExcCodeFromTransaction(financialBook, financialTransaction);
     
     if (!this.matchStockExchange(stockExcCode, excCode)) {
-      console.log(`Transaction stock exc code ${stockExcCode} do NOT match book exc code ${excCode}`)
       return null;
     }
 
@@ -49,6 +47,8 @@ export abstract class EventHandlerTransaction extends EventHandler {
 
     let financialCreditAccount = fiancialTransaction.creditAccount != null ? await financialBook.getAccount(fiancialTransaction.creditAccount.id) : null;
     let financialDebitAccount = fiancialTransaction.debitAccount != null ? await financialBook.getAccount(fiancialTransaction.debitAccount.id) : null;
+
+    console.log(`${fiancialTransaction.creditAccount.id} - ${fiancialTransaction.debitAccount.id}`)
 
     let stockExcCode = await getStockExchangeCode(financialCreditAccount);
     if (stockExcCode == null) {

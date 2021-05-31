@@ -55,12 +55,14 @@ export async function getStockExchangeCode(account: Account): Promise<string> {
       if (group == null) {
         continue;
       }
+
       let stockExchange = group.getProperty(STOCK_EXC_CODE_PROP);
       if (stockExchange != null && stockExchange.trim() != '') {
         return stockExchange;
       }
     }
   }
+
   return null;
 }
 
