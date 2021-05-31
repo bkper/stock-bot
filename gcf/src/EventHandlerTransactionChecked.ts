@@ -37,8 +37,9 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
     let stockAccount = await this.getConnectedStockAccount(financialBook, stockBook, financialCreditAccount);
 
-
+    
     if (stockAccount) {
+      console.log(`Stock Account: ${stockAccount.getName()}`)
       //Selling
       let stockSellAccount = await stockBook.getAccount(constants.STOCK_SELL_ACCOUNT_NAME);
       if (stockSellAccount == null) {
@@ -66,6 +67,8 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
     } else {
       stockAccount = await this.getConnectedStockAccount(financialBook, stockBook, financialDebitAccount);
       if (stockAccount) {
+        console.log(`Stock Account: ${stockAccount.getName()}`)
+
         //Buying
         let stockBuyAccount = await stockBook.getAccount(constants.STOCK_BUY_ACCOUNT_NAME);
         if (stockBuyAccount == null) {
@@ -92,6 +95,8 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
       }
 
     }
+
+    console.log(`No Stock account found`)
 
     return null;
 
