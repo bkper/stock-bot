@@ -16,6 +16,7 @@ export abstract class EventHandlerTransaction extends EventHandler {
     let financialTransaction = operation.transaction;
 
     if (!financialTransaction.posted) {
+      console.log(`Transaction NOT posted.`)
       return null;
     }
 
@@ -24,6 +25,7 @@ export abstract class EventHandlerTransaction extends EventHandler {
     let stockExcCode = await this.getStockExcCodeFromTransaction(financialBook, financialTransaction);
     
     if (!this.matchStockExchange(stockExcCode, excCode)) {
+      console.log(`Transaction stock exc code ${stockExcCode} do NOT match book exc code ${excCode}`)
       return null;
     }
 

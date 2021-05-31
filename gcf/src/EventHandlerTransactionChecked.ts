@@ -28,6 +28,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
     let quantity = this.getQuantity(stockBook, transaction);
     if (quantity == null || quantity.eq(0)) {
+      console.log(`No quantity defined.`)
       return null;
     }
 
