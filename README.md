@@ -17,14 +17,19 @@ The Instruments Book is identified by a single book in the Collection with the *
 
 The bot interact with the following properties:
 
-### Account Properties
+### Book Properties
 
-- ```stock_fees_account```: The fees account used by the exchange account. The exchange account is identified by having an associated fees account.
+- ```exc_code```: Required - The book exchange code to match the ```stock_exc_code```.
 
 
 ### Group Properties
 
-- ```stock_exc_code```: Defines the exchange code of the instruments that will have quantities mirrored into the stocks book. Only transactions with accounts withing groups with ```stock_exc_code``` set will be mirrored.
+- ```stock_exc_code```: Required - Defines the exchange code of the instruments that will have quantities mirrored into the stocks book. Only transactions with accounts withing groups with ```stock_exc_code``` set will be mirrored.
+
+
+### Account Properties
+
+- ```stock_fees_account```: The fees account used by the exchange account. The exchange account is identified by having an associated fees account.
 
 
 ### Transaction Properties 

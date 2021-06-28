@@ -36,6 +36,7 @@
   "propertiesSchema": {
     "book": {
       "keys": [
+        "exc_code",
         "stock_book"
       ]
     },
