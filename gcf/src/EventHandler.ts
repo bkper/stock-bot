@@ -42,18 +42,6 @@ export abstract class EventHandler {
   }
 
 
-
-  protected matchStockExchange(stockExcCode: string, excCode: string): boolean {
-    if (stockExcCode == null || stockExcCode.trim() == '') {
-      return false;
-    }
-    stockExcCode = stockExcCode.trim();
-    if (excCode != null && stockExcCode != excCode) {
-      return false;
-    }
-    return true;
-  }  
-
   protected buildBookAnchor(book: Book) {
     return `<a href='https://app.bkper.com/b/#transactions:bookId=${book.getId()}'>${book.getName()}</a>`;
   }

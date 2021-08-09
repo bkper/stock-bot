@@ -28,7 +28,7 @@ export function getStockBook(book: Book): Book {
 }
 
 export async function getStockAccount(stockTransaction: Transaction): Promise<Account> {
-  if (await isSale(stockTransaction)) {1
+  if (await isSale(stockTransaction)) {
     return await stockTransaction.getCreditAccount();
   }
   if (await isPurchase(stockTransaction)) {

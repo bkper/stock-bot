@@ -5,13 +5,12 @@ import { EventHandler } from "./EventHandler";
 export abstract class EventHandlerAccount extends EventHandler {
 
   protected async processObject(financialBook: Book, stockBook: Book, event: bkper.Event): Promise<string> {
-    let excCode = getExcCode(financialBook);
     let financialAccount = event.data.object as bkper.Account;
 
     let baseAccount = await financialBook.getAccount(financialAccount.id);
     let stockExcCode = await getStockExchangeCode(baseAccount);
 
-    if (!this.matchStockExchange(stockExcCode, excCode)) {
+    if (!stockExcCode) {
       return null;
     }
 

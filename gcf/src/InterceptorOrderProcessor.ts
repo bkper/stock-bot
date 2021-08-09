@@ -1,14 +1,11 @@
 import { Account, AccountType, Amount, Book } from "bkper";
 import { isStockBook } from "./BotService";
-import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, ORDER_PROP, PRICE_PROP, QUANTITY_PROP, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
+import { EXC_AMOUNT_PROP, EXC_CODE_PROP, EXC_RATE_PROP, FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, ORDER_PROP, PRICE_PROP, QUANTITY_PROP, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
 
 export class InterceptorOrderProcessor {
 
   async intercept(baseBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {
 
-    if (event.agent.id == 'exchange-bot') {
-      return false;
-    }
 
     if (isStockBook(baseBook)) {
       return false;
@@ -204,13 +201,26 @@ export class InterceptorOrderProcessor {
 
 
   protected async postFees(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
-    let fees = this.getFees(baseBook, transactionPayload);
+    const fees = this.getFees(baseBook, transactionPayload);
     if (!fees.eq(0)) {
       let tradeDate = this.getTradeDate(transactionPayload);
       let feesAccountName = this.getFeesAccountName(exchangeAccount);
       let feesAccount = await this.getFeesAccount(baseBook, feesAccountName);
-      let tx = await baseBook.newTransaction()
-        .setAmount(fees)
+
+      let tx = baseBook.newTransaction()
+
+      let excBaseCode = transactionPayload.properties[EXC_CODE_PROP]
+      if (excBaseCode) {
+        let excBaseRateProp = transactionPayload.properties[EXC_RATE_PROP]
+        let excBaseRate = new Amount(excBaseRateProp);
+        tx.setAmount(fees.times(excBaseRate))
+        tx.setProperty(EXC_CODE_PROP, excBaseCode).setProperty(EXC_AMOUNT_PROP, fees.toString());
+      } else {
+        tx.setAmount(fees)
+      }
+      
+        await 
+        tx
         .from(exchangeAccount)
         .to(feesAccount)
         .setDescription(transactionPayload.description)
@@ -225,13 +235,25 @@ export class InterceptorOrderProcessor {
 
   
   protected async postInterestOnPurchase(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
-    let instrument = this.getInstrument(transactionPayload);
-    let interest = this.getInterest(baseBook, transactionPayload);
+    const instrument = this.getInstrument(transactionPayload);
+    const interest = this.getInterest(baseBook, transactionPayload);
     if (!interest.eq(0)) {
       let tradeDate = this.getTradeDate(transactionPayload);
       let interestAccount = await this.getInterestAccount(instrument, baseBook);
-      let tx = await baseBook.newTransaction()
-        .setAmount(interest)
+      let tx = baseBook.newTransaction()
+
+      let excBaseCode = transactionPayload.properties[EXC_CODE_PROP]
+      if (excBaseCode) {
+        let excBaseRateProp = transactionPayload.properties[EXC_RATE_PROP]
+        let excBaseRate = new Amount(excBaseRateProp);
+        tx.setAmount(interest.times(excBaseRate))
+        tx.setProperty(EXC_CODE_PROP, excBaseCode).setProperty(EXC_AMOUNT_PROP, interest.toString());
+      } else {
+        tx.setAmount(interest)
+      }
+
+        await 
+        tx
         .from(exchangeAccount)
         .to(interestAccount)
         .setDescription(transactionPayload.description)
@@ -245,12 +267,24 @@ export class InterceptorOrderProcessor {
 
   protected async postInterestOnSale(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
     let instrument = this.getInstrument(transactionPayload);
-    let interest = this.getInterest(baseBook, transactionPayload);
+    const interest = this.getInterest(baseBook, transactionPayload);
     if (!interest.eq(0)) {
       let interestAccount = await this.getInterestAccount(instrument, baseBook);
       let tradeDate = this.getTradeDate(transactionPayload);
-      let tx = await baseBook.newTransaction()
-        .setAmount(interest)
+
+      let tx = baseBook.newTransaction()
+
+      let excBaseCode = transactionPayload.properties[EXC_CODE_PROP]
+      if (excBaseCode) {
+        let excBaseRateProp = transactionPayload.properties[EXC_RATE_PROP]
+        let excBaseRate = new Amount(excBaseRateProp);
+        tx.setAmount(interest.times(excBaseRate))
+        tx.setProperty(EXC_CODE_PROP, excBaseCode).setProperty(EXC_AMOUNT_PROP, interest.toString());
+      } else {
+        tx.setAmount(interest)
+      }
+
+      await tx
         .from(interestAccount)
         .to(exchangeAccount)
         .setDescription(transactionPayload.description)
@@ -265,20 +299,36 @@ export class InterceptorOrderProcessor {
   protected async postInstrumentTradeOnPurchase(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
     let instrumentAccount = await this.getInstrumentAccount(baseBook, transactionPayload);
     let quantity = this.getQuantity(baseBook, transactionPayload);
-    let fees = this.getFees(baseBook, transactionPayload);
+    const fees = this.getFees(baseBook, transactionPayload);
     let order = this.getOrder(baseBook, transactionPayload);
-    let interest = this.getInterest(baseBook, transactionPayload);
+    const interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
-    const amount = new Amount(transactionPayload.amount).minus(interest).minus(fees);
-    const price = amount.div(quantity);
-    let tx = await baseBook.newTransaction()
-    .setAmount(amount)
+    const amount = new Amount(transactionPayload.amount).minus(interest).minus(fees)
+
+    let tx = baseBook.newTransaction()
+
+    let excBaseCode = transactionPayload.properties[EXC_CODE_PROP]
+    if (excBaseCode) {
+      let excBaseRateProp = transactionPayload.properties[EXC_RATE_PROP]
+      let excBaseRate = new Amount(excBaseRateProp);
+      let convertedFees = fees.times(excBaseRate)
+      let convertedInterest = interest.times(excBaseRate)
+      const convertedAmount = new Amount(transactionPayload.amount).minus(convertedInterest).minus(convertedFees);
+      tx.setAmount(convertedAmount)
+      const originalAmount = convertedAmount.div(excBaseRate);
+      tx.setProperty(EXC_CODE_PROP, excBaseCode).setProperty(EXC_AMOUNT_PROP, originalAmount.toString());
+      const price = originalAmount.div(quantity);
+      tx.setProperty(PRICE_PROP, price.toString())
+    } else {
+      tx.setAmount(amount)
+    }
+
+    await tx
     .from(exchangeAccount)
     .to(instrumentAccount)
     .setDescription(transactionPayload.description)
     .setDate(tradeDate)
     .setProperty(QUANTITY_PROP, quantity.toString())
-    .setProperty(PRICE_PROP, price.toString())
     .setProperty(ORDER_PROP, order)
     .setProperty(FEES_PROP, fees.toString())
     .setProperty(INTEREST_PROP, interest.toString())
@@ -290,20 +340,38 @@ export class InterceptorOrderProcessor {
   protected async postInstrumentTradeOnSale(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
     let instrumentAccount = await this.getInstrumentAccount(baseBook, transactionPayload);
     let quantity = this.getQuantity(baseBook, transactionPayload);
-    let fees = this.getFees(baseBook, transactionPayload);
+    const fees = this.getFees(baseBook, transactionPayload);
     let order = this.getOrder(baseBook, transactionPayload);
-    let interest = this.getInterest(baseBook, transactionPayload);
+    const interest = this.getInterest(baseBook, transactionPayload);
     let tradeDate = this.getTradeDate(transactionPayload);
-    const amount = new Amount(transactionPayload.amount).minus(interest).plus(fees);
-    const price = amount.div(quantity);
-    let tx = await baseBook.newTransaction()
-    .setAmount(amount)
-    .from(instrumentAccount)
+    const amount = new Amount(transactionPayload.amount).minus(interest).minus(fees)
+
+    let tx = baseBook.newTransaction()
+
+    let excBaseCode = transactionPayload.properties[EXC_CODE_PROP]
+    if (excBaseCode) {
+      let excBaseRateProp = transactionPayload.properties[EXC_RATE_PROP]
+      let excBaseRate = new Amount(excBaseRateProp);
+      let convertedFees = fees.times(excBaseRate)
+      let convertedInterest = interest.times(excBaseRate)
+      const convertedAmount = new Amount(transactionPayload.amount).minus(convertedInterest).minus(convertedFees);
+      tx.setAmount(convertedAmount)
+      const originalAmount = convertedAmount.div(excBaseRate);
+      tx.setProperty(EXC_CODE_PROP, excBaseCode).setProperty(EXC_AMOUNT_PROP, originalAmount.toString());
+      const price = originalAmount.div(quantity);
+      tx.setProperty(PRICE_PROP, price.toString())
+    } else {
+      const price = amount.div(quantity);
+      tx.setProperty(PRICE_PROP, price.toString())
+      tx.setAmount(amount);
+    }
+
+    await 
+    tx.from(instrumentAccount)
     .to(exchangeAccount)
     .setDescription(transactionPayload.description)
     .setDate(tradeDate)
     .setProperty(QUANTITY_PROP, quantity.toString())
-    .setProperty(PRICE_PROP, price.toString())
     .setProperty(ORDER_PROP, order)
     .setProperty(FEES_PROP, fees.toString())
     .setProperty(INTEREST_PROP, interest.toString())    

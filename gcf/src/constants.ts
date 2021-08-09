@@ -20,7 +20,6 @@ export const ORIGINAL_AMOUNT_PROP = 'original_amount';
 export const SALE_PRICE_PROP = 'sale_price';
 export const SALE_AMOUNT_PROP = 'sale_amount';
 export const SALE_DATE_PROP = 'sale_date';
-export const EXC_CODE_PROP = 'exc_code';
 export const ORDER_PROP = 'order';
 export const STOCK_REALIZED_DATE_PROP = 'stock_realized_date';
 export const STOCK_SELL_ACCOUNT_NAME = 'Sell';
@@ -29,7 +28,9 @@ export const REALIZED_GAIN_SUFFIX = 'Realized Gain';
 export const REALIZED_LOSS_SUFFIX = 'Realized Loss';
 export const UREALIZED_SUFFIX = 'Unrealized';
 export const GROUP_TRADING = 'Trading';
-
+export const EXC_CODE_PROP = 'exc_code';
+export const EXC_RATE_PROP = 'exc_rate';
+export const EXC_AMOUNT_PROP = 'exc_amount';
 
 
 

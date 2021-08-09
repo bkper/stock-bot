@@ -11,7 +11,6 @@ export interface AmountDescription {
 export abstract class EventHandlerTransaction extends EventHandler {
 
   async processObject(financialBook: Book, stockBook: Book, event: bkper.Event): Promise<string> {
-    let excCode = getExcCode(financialBook);
     let operation = event.data.object as bkper.TransactionOperation;
     let financialTransaction = operation.transaction;
 
@@ -23,7 +22,7 @@ export abstract class EventHandlerTransaction extends EventHandler {
 
     let stockExcCode = await this.getStockExcCodeFromTransaction(financialBook, financialTransaction);
     
-    if (!this.matchStockExchange(stockExcCode, excCode)) {
+    if (!stockExcCode) {
       return null;
     }
 
@@ -47,8 +46,6 @@ export abstract class EventHandlerTransaction extends EventHandler {
 
     let financialCreditAccount = fiancialTransaction.creditAccount != null ? await financialBook.getAccount(fiancialTransaction.creditAccount.id) : null;
     let financialDebitAccount = fiancialTransaction.debitAccount != null ? await financialBook.getAccount(fiancialTransaction.debitAccount.id) : null;
-
-    console.log(`${fiancialTransaction.creditAccount.id} - ${fiancialTransaction.debitAccount.id}`)
 
     let stockExcCode = await getStockExchangeCode(financialCreditAccount);
     if (stockExcCode == null) {
