@@ -8,7 +8,7 @@ namespace BotService {
     });
   }
 
-  export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction): string {
+  export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction, excRateProp: string): string {
     if (baseBook.getProperty(EXC_CODE_PROP) == financialBook.getProperty(EXC_CODE_PROP)) {
       return undefined;
     }
@@ -17,8 +17,8 @@ namespace BotService {
     }
 
     //Already set
-    if (stockTransaction.getProperty(EXC_RATE_PROP)) {
-      return stockTransaction.getProperty(EXC_RATE_PROP)
+    if (stockTransaction.getProperty(excRateProp)) {
+      return stockTransaction.getProperty(excRateProp)
     }
 
     for (const remoteId of stockTransaction.getRemoteIds()) {

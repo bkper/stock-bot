@@ -161,6 +161,8 @@ namespace RealizedResultsService {
           .deleteProperty(SALE_AMOUNT_PROP)
           .deleteProperty(SHORT_SALE_PROP)
           .deleteProperty(PURCHASE_PRICE_PROP)
+          .deleteProperty(PURCHASE_EXC_RATE_PROP)
+          .deleteProperty(SALE_EXC_RATE_PROP)
           .deleteProperty(EXC_RATE_PROP)
           .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
           .update();
@@ -180,8 +182,10 @@ namespace RealizedResultsService {
           .deleteProperty(SHORT_SALE_PROP)
           .deleteProperty(GAIN_AMOUNT_PROP)
           .deleteProperty(GAIN_LOG_PROP)
-          .deleteProperty(EXC_RATE_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
+          .deleteProperty(PURCHASE_EXC_RATE_PROP)
+          .deleteProperty(SALE_EXC_RATE_PROP)
+          .deleteProperty(EXC_RATE_PROP)
           .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
           .update();
           stockAccountPurchaseTransactions.push(tx);
@@ -263,7 +267,8 @@ namespace RealizedResultsService {
     let salePrice: Bkper.Amount = BkperApp.newAmount(saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP));
 
     let soldQuantity = saleTransaction.getAmount();
-    
+    const saleExcRate = BotService.getExcRate(baseBook, financialBook, saleTransaction, SALE_EXC_RATE_PROP)
+
     let purchaseTotal = BkperApp.newAmount(0);
     let saleTotal = BkperApp.newAmount(0);
     let gainTotal = BkperApp.newAmount(0);
@@ -281,6 +286,8 @@ namespace RealizedResultsService {
     }
 
     let gainLogEntries: GainLogEntry[] = []
+
+
     
     for (const purchaseTransaction of purchaseTransactions) {
       
@@ -291,7 +298,7 @@ namespace RealizedResultsService {
 
       let shortSale = isShortSale(purchaseTransaction, saleTransaction);
 
-      const purchaseExcRate = BotService.getExcRate(baseBook, financialBook, purchaseTransaction)
+      const purchaseExcRate = BotService.getExcRate(baseBook, financialBook, purchaseTransaction, PURCHASE_EXC_RATE_PROP)
 
       let purchasePrice: Bkper.Amount = BkperApp.newAmount(purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP));
       let purchaseQuantity = purchaseTransaction.getAmount();
@@ -309,10 +316,11 @@ namespace RealizedResultsService {
         purchaseTransaction
         .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
-        .setProperty(EXC_RATE_PROP, purchaseExcRate)
+        .setProperty(PURCHASE_EXC_RATE_PROP, purchaseExcRate)
         
         if (shortSale) {
           purchaseTransaction.setProperty(SALE_PRICE_PROP, salePrice.toString())
+          .setProperty(SALE_EXC_RATE_PROP, saleExcRate)
           .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
           .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
           .setProperty(GAIN_AMOUNT_PROP, gain.toString())
@@ -339,7 +347,6 @@ namespace RealizedResultsService {
         let gain = saleAmount.minus(purchaseAmount); 
 
         purchaseTransaction
-        .setProperty(EXC_RATE_PROP, purchaseExcRate)
         .setAmount(remainingBuyQuantity)
         .update();
 
@@ -353,10 +360,11 @@ namespace RealizedResultsService {
         .setProperty(PARENT_ID, purchaseTransaction.getId())
         .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
-        .setProperty(EXC_RATE_PROP, purchaseExcRate)
-
+        .setProperty(PURCHASE_EXC_RATE_PROP, purchaseExcRate)
+        
         if (shortSale) {
           splittedPurchaseTransaction
+          .setProperty(SALE_EXC_RATE_PROP, saleExcRate)
           .setProperty(SALE_PRICE_PROP, salePrice.toString())
           .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
           .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
@@ -390,13 +398,12 @@ namespace RealizedResultsService {
 
     if (soldQuantity.round(stockBook.getFractionDigits()).eq(0)) {
       if (gainLogEntries.length > 0) {
-        const saleExcRate = BotService.getExcRate(baseBook, financialBook, saleTransaction)
         saleTransaction
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString()) 
         .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
         .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
         .setProperty(GAIN_LOG_PROP, JSON.stringify(gainLogEntries))
-        .setProperty(EXC_RATE_PROP, saleExcRate)
+        .setProperty(SALE_EXC_RATE_PROP, saleExcRate)
         saleTransaction.update()
       }
       saleTransaction.check();
@@ -406,11 +413,10 @@ namespace RealizedResultsService {
 
       if (!remainingSaleQuantity.eq(0)) {
 
-        const saleExcRate = BotService.getExcRate(baseBook, financialBook, saleTransaction)
 
 
         saleTransaction
-        .setProperty(EXC_RATE_PROP, saleExcRate)
+        .setProperty(SALE_EXC_RATE_PROP, saleExcRate)
         .setAmount(soldQuantity)
         .update();
 
@@ -423,7 +429,7 @@ namespace RealizedResultsService {
         .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
         .setProperty(PARENT_ID, saleTransaction.getId())
         .setProperty(SALE_PRICE_PROP, salePrice.toString())
-        .setProperty(EXC_RATE_PROP, saleExcRate)
+        .setProperty(SALE_EXC_RATE_PROP, saleExcRate)
 
         if (gainLogEntries.length > 0) {
           splittedSaleTransaction
