@@ -1,4 +1,4 @@
-interface GainLogEntry {
+interface PurchaseLogEntry {
   qt: string,
   pr: string,
   dt: string,

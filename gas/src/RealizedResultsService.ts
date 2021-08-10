@@ -156,7 +156,8 @@ namespace RealizedResultsService {
           tx.remove();
         } else {
           tx.deleteProperty(GAIN_AMOUNT_PROP)
-          .deleteProperty(GAIN_LOG_PROP)
+          .deleteProperty('gain_log')
+          .deleteProperty(PURCHASE_LOG_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
           .deleteProperty(SALE_AMOUNT_PROP)
           .deleteProperty(SHORT_SALE_PROP)
@@ -181,7 +182,8 @@ namespace RealizedResultsService {
           .deleteProperty(SALE_AMOUNT_PROP)
           .deleteProperty(SHORT_SALE_PROP)
           .deleteProperty(GAIN_AMOUNT_PROP)
-          .deleteProperty(GAIN_LOG_PROP)
+          .deleteProperty(PURCHASE_LOG_PROP)
+          .deleteProperty('gain_log')
           .deleteProperty(PURCHASE_AMOUNT_PROP)
           .deleteProperty(PURCHASE_EXC_RATE_PROP)
           .deleteProperty(SALE_EXC_RATE_PROP)
@@ -249,7 +251,7 @@ namespace RealizedResultsService {
     return 0;
   }
 
-  function log(stockBook: Bkper.Book, quantity: Bkper.Amount, price: Bkper.Amount, date: string, excRate: string): GainLogEntry {
+  function logPurchase(stockBook: Bkper.Book, quantity: Bkper.Amount, price: Bkper.Amount, date: string, excRate: string): PurchaseLogEntry {
     return {
       qt: quantity.toFixed(stockBook.getFractionDigits()).toString(),
       pr: price.toString(),
@@ -285,7 +287,7 @@ namespace RealizedResultsService {
       trackAccountCreated(summary, stockExcCode, unrealizedAccount);
     }
 
-    let gainLogEntries: GainLogEntry[] = []
+    let purchaseLogEntries: PurchaseLogEntry[] = []
 
 
     
@@ -311,7 +313,7 @@ namespace RealizedResultsService {
           purchaseTotal = purchaseTotal.plus(purchaseAmount);
           saleTotal = saleTotal.plus(saleAmount);
           gainTotal = gainTotal.plus(gain);
-          gainLogEntries.push(log(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
+          purchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
         }
         purchaseTransaction
         .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
@@ -384,7 +386,7 @@ namespace RealizedResultsService {
           purchaseTotal = purchaseTotal.plus(purchaseAmount);
           saleTotal = saleTotal.plus(saleAmount);
           gainTotal = gainTotal.plus(gain);
-          gainLogEntries.push(log(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
+          purchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
         }
 
       }
@@ -397,12 +399,12 @@ namespace RealizedResultsService {
 
 
     if (soldQuantity.round(stockBook.getFractionDigits()).eq(0)) {
-      if (gainLogEntries.length > 0) {
+      if (purchaseLogEntries.length > 0) {
         saleTransaction
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString()) 
         .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
         .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
-        .setProperty(GAIN_LOG_PROP, JSON.stringify(gainLogEntries))
+        .setProperty(PURCHASE_LOG_PROP, JSON.stringify(purchaseLogEntries))
         .setProperty(SALE_EXC_RATE_PROP, saleExcRate)
         saleTransaction.update()
       }
@@ -431,12 +433,12 @@ namespace RealizedResultsService {
         .setProperty(SALE_PRICE_PROP, salePrice.toString())
         .setProperty(SALE_EXC_RATE_PROP, saleExcRate)
 
-        if (gainLogEntries.length > 0) {
+        if (purchaseLogEntries.length > 0) {
           splittedSaleTransaction
           .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString()) 
           .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
           .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
-          .setProperty(GAIN_LOG_PROP, JSON.stringify(gainLogEntries))
+          .setProperty(PURCHASE_LOG_PROP, JSON.stringify(purchaseLogEntries))
         }
 
         splittedSaleTransaction.post().check()
