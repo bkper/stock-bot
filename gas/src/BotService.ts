@@ -26,8 +26,8 @@ namespace BotService {
       const baseIterator = baseBook.getTransactions(`remoteId:${financialTransaction.getId()}`);
       while (baseIterator.hasNext()) {
         const baseTransaction = baseIterator.next();
-        if (baseTransaction.getProperty(EXC_RATE_PROP)) {
-          return baseTransaction.getProperty(EXC_RATE_PROP);
+        if (baseTransaction.getProperty(EXC_RATE_PROP, 'exc_base_rate')) {
+          return baseTransaction.getProperty(EXC_RATE_PROP, 'exc_base_rate');
         }
       }
     }
