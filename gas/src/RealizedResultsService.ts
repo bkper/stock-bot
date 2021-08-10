@@ -99,8 +99,10 @@ namespace RealizedResultsService {
       stockAccountSaleTransactions = stockAccountSaleTransactions.sort(compareTo);
       stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(compareTo);
 
+      const baseBook = BotService.getBaseBook(financialBook);
+
       for (const saleTransaction of stockAccountSaleTransactions) {
-        processSale(financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary);
+        processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary);
       }
 
       checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
@@ -159,6 +161,7 @@ namespace RealizedResultsService {
           .deleteProperty(SALE_AMOUNT_PROP)
           .deleteProperty(SHORT_SALE_PROP)
           .deleteProperty(PURCHASE_PRICE_PROP)
+          .deleteProperty(EXC_RATE_PROP)
           .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
           .update();
           stockAccountSaleTransactions.push(tx);
@@ -177,6 +180,7 @@ namespace RealizedResultsService {
           .deleteProperty(SHORT_SALE_PROP)
           .deleteProperty(GAIN_AMOUNT_PROP)
           .deleteProperty(GAIN_LOG_PROP)
+          .deleteProperty(EXC_RATE_PROP)
           .deleteProperty(PURCHASE_AMOUNT_PROP)
           .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
           .update();
@@ -192,8 +196,10 @@ namespace RealizedResultsService {
       stockAccountSaleTransactions = stockAccountSaleTransactions.sort(compareTo);
       stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(compareTo);
 
+      const baseBook = BotService.getBaseBook(financialBook);
+
       for (const saleTransaction of stockAccountSaleTransactions) {
-        processSale(financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary);
+        processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary);
       }
     }
 
@@ -239,11 +245,12 @@ namespace RealizedResultsService {
     return 0;
   }
 
-  function log(stockBook: Bkper.Book, quantity: Bkper.Amount, price: Bkper.Amount, date: string): GainLogEntry {
+  function log(stockBook: Bkper.Book, quantity: Bkper.Amount, price: Bkper.Amount, date: string, excRate: string): GainLogEntry {
     return {
       qt: quantity.toFixed(stockBook.getFractionDigits()).toString(),
       pr: price.toString(),
       dt: date,
+      rt: excRate
     }
   }
 
@@ -251,7 +258,7 @@ namespace RealizedResultsService {
     return compareTo(saleTransaction, purchaseTransaction) < 0;
   }
 
-  function processSale(financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary): void {
+  function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary): void {
 
     let salePrice: Bkper.Amount = BkperApp.newAmount(saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP));
 
@@ -276,18 +283,18 @@ namespace RealizedResultsService {
     let gainLogEntries: GainLogEntry[] = []
     
     for (const purchaseTransaction of purchaseTransactions) {
-
-      let shortSale = isShortSale(purchaseTransaction, saleTransaction);
-
+      
       if (purchaseTransaction.isChecked()) {
         //Only process unchecked ones
         continue;
       }
 
+      let shortSale = isShortSale(purchaseTransaction, saleTransaction);
+
+      const purchaseExcRate = BotService.getExcRate(baseBook, financialBook, purchaseTransaction)
+
       let purchasePrice: Bkper.Amount = BkperApp.newAmount(purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP));
       let purchaseQuantity = purchaseTransaction.getAmount();
-
-
       
       if (soldQuantity.gte(purchaseQuantity)) {
         const saleAmount = (salePrice.times(purchaseQuantity));
@@ -297,11 +304,12 @@ namespace RealizedResultsService {
           purchaseTotal = purchaseTotal.plus(purchaseAmount);
           saleTotal = saleTotal.plus(saleAmount);
           gainTotal = gainTotal.plus(gain);
-          gainLogEntries.push(log(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getDate()))
+          gainLogEntries.push(log(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
         }
         purchaseTransaction
         .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
+        .setProperty(EXC_RATE_PROP, purchaseExcRate)
         
         if (shortSale) {
           purchaseTransaction.setProperty(SALE_PRICE_PROP, salePrice.toString())
@@ -331,6 +339,7 @@ namespace RealizedResultsService {
         let gain = saleAmount.minus(purchaseAmount); 
 
         purchaseTransaction
+        .setProperty(EXC_RATE_PROP, purchaseExcRate)
         .setAmount(remainingBuyQuantity)
         .update();
 
@@ -344,6 +353,7 @@ namespace RealizedResultsService {
         .setProperty(PARENT_ID, purchaseTransaction.getId())
         .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
+        .setProperty(EXC_RATE_PROP, purchaseExcRate)
 
         if (shortSale) {
           splittedPurchaseTransaction
@@ -366,7 +376,7 @@ namespace RealizedResultsService {
           purchaseTotal = purchaseTotal.plus(purchaseAmount);
           saleTotal = saleTotal.plus(saleAmount);
           gainTotal = gainTotal.plus(gain);
-          gainLogEntries.push(log(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction.getDate()))
+          gainLogEntries.push(log(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
         }
 
       }
@@ -380,22 +390,27 @@ namespace RealizedResultsService {
 
     if (soldQuantity.round(stockBook.getFractionDigits()).eq(0)) {
       if (gainLogEntries.length > 0) {
+        const saleExcRate = BotService.getExcRate(baseBook, financialBook, saleTransaction)
         saleTransaction
         .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString()) 
         .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
         .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
         .setProperty(GAIN_LOG_PROP, JSON.stringify(gainLogEntries))
+        .setProperty(EXC_RATE_PROP, saleExcRate)
         saleTransaction.update()
       }
-    saleTransaction.check();
+      saleTransaction.check();
     } else if (soldQuantity.round(stockBook.getFractionDigits()).gt(0)) {
 
       let remainingSaleQuantity = saleTransaction.getAmount().minus(soldQuantity);
 
       if (!remainingSaleQuantity.eq(0)) {
 
-        saleTransaction
+        const saleExcRate = BotService.getExcRate(baseBook, financialBook, saleTransaction)
 
+
+        saleTransaction
+        .setProperty(EXC_RATE_PROP, saleExcRate)
         .setAmount(soldQuantity)
         .update();
 
@@ -407,7 +422,8 @@ namespace RealizedResultsService {
         .setDescription(saleTransaction.getDescription())
         .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
         .setProperty(PARENT_ID, saleTransaction.getId())
-        .setProperty(SALE_PRICE_PROP, salePrice.toString());
+        .setProperty(SALE_PRICE_PROP, salePrice.toString())
+        .setProperty(EXC_RATE_PROP, saleExcRate)
 
         if (gainLogEntries.length > 0) {
           splittedSaleTransaction
@@ -575,5 +591,6 @@ namespace RealizedResultsService {
 
     return groups;
   }
+
 
 }
