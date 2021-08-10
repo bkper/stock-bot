@@ -10,12 +10,10 @@ namespace BotService {
 
   export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction): string {
     if (baseBook.getProperty(EXC_CODE_PROP) == financialBook.getProperty(EXC_CODE_PROP)) {
-      console.log(`Same property ${baseBook.getProperty(EXC_CODE_PROP)}`)
-      return null;
+      return undefined;
     }
     if (!stockTransaction.getRemoteIds()) {
-      console.log(`No remoteIds`)
-      return null;
+      return undefined;
     }
 
     //Already set
@@ -24,9 +22,7 @@ namespace BotService {
     }
 
     for (const remoteId of stockTransaction.getRemoteIds()) {
-      console.log(`Looking on financial book for ${remoteId}`)
       const financialTransaction = financialBook.getTransaction(remoteId);
-      console.log(`Looking on base book for ${financialTransaction.getId()}`)
       const baseIterator = baseBook.getTransactions(`remoteId:${financialTransaction.getId()}`);
       while (baseIterator.hasNext()) {
         const baseTransaction = baseIterator.next();
@@ -36,9 +32,7 @@ namespace BotService {
       }
     }
 
-    console.log(`Remote transaction not found`)
-
-    return null;
+    return undefined;
   }
 
   export function getBaseBook(book: Bkper.Book): Bkper.Book {
