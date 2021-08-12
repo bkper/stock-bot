@@ -50,7 +50,7 @@ export class InterceptorOrderProcessorDelete {
         if (await stockIterator.hasNext()) {
           let stockTransaction = await stockIterator.next();
           if (stockTransaction.isChecked()) {
-            stockTransaction.uncheck();
+            await stockTransaction.uncheck();
           }
           await flagStockAccountForRebuildIfNeeded(stockTransaction);
           await stockTransaction.remove();
