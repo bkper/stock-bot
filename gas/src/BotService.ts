@@ -8,7 +8,19 @@ namespace BotService {
     });
   }
 
-  export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction, excRateProp: string): string {
+  export function calculateFxGain(purchaseAmount: Bkper.Amount, purchaseRate: Bkper.Amount, saleAmount: Bkper.Amount, saleRate: Bkper.Amount, shortSale: boolean): Bkper.Amount {
+    if (!purchaseRate || !saleRate) {
+      return undefined;
+    }
+    const purchaseConvertedAmountAtInitialRate = purchaseAmount.times(purchaseRate);
+    const saleConvertedAmoutAtInitialRate = saleAmount.times(purchaseRate);
+    const gainFxAtPurchaseRate = saleConvertedAmoutAtInitialRate.minus(purchaseConvertedAmountAtInitialRate);
+    const saleConvertedAmountAtFinalRate = saleAmount.times(saleRate);
+    const gainFxAtSaleRate = saleConvertedAmountAtFinalRate.minus(purchaseConvertedAmountAtInitialRate)
+    return shortSale ? gainFxAtPurchaseRate.minus(gainFxAtSaleRate) : gainFxAtSaleRate.minus(gainFxAtPurchaseRate)
+  }
+
+  export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction, excRateProp: string): Bkper.Amount {
     if (baseBook.getProperty(EXC_CODE_PROP) == financialBook.getProperty(EXC_CODE_PROP)) {
       return undefined;
     }
@@ -18,7 +30,7 @@ namespace BotService {
 
     //Already set
     if (stockTransaction.getProperty(excRateProp)) {
-      return stockTransaction.getProperty(excRateProp)
+      return BkperApp.newAmount(stockTransaction.getProperty(excRateProp))
     }
 
     for (const remoteId of stockTransaction.getRemoteIds()) {
@@ -27,7 +39,7 @@ namespace BotService {
       while (baseIterator.hasNext()) {
         const baseTransaction = baseIterator.next();
         if (baseTransaction.getProperty(EXC_RATE_PROP, 'exc_base_rate')) {
-          return baseTransaction.getProperty(EXC_RATE_PROP, 'exc_base_rate');
+          return BkperApp.newAmount(baseTransaction.getProperty(EXC_RATE_PROP, 'exc_base_rate'));
         }
       }
     }
