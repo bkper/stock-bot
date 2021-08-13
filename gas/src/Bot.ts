@@ -27,6 +27,7 @@ const SALE_DATE_PROP = 'sale_date';
 const EXC_CODE_PROP = 'exc_code';
 const EXC_BASE_PROP = 'exc_base';
 const EXC_RATE_PROP = 'exc_rate';
+const EXC_AMOUNT_PROP = 'exc_amount';
 const EXC_ACCOUNT_PROP = 'exc_account';
 const PURCHASE_EXC_RATE_PROP = 'purchase_exc_rate';
 const SALE_EXC_RATE_PROP = 'sale_exc_rate';

@@ -8,16 +8,26 @@ namespace BotService {
     });
   }
 
-  export function calculateFxGain(purchaseAmount: Bkper.Amount, purchaseRate: Bkper.Amount, saleAmount: Bkper.Amount, saleRate: Bkper.Amount, shortSale: boolean): Bkper.Amount {
+  export function calculateGainBaseNoFX(purchaseAmount: Bkper.Amount, purchaseRate: Bkper.Amount, saleAmount: Bkper.Amount, saleRate: Bkper.Amount, shortSale: boolean): Bkper.Amount {
     if (!purchaseRate || !saleRate) {
-      return undefined;
+      return BkperApp.newAmount(0);
     }
-    const purchaseConvertedAmountAtInitialRate = purchaseAmount.times(purchaseRate);
-    const saleConvertedAmoutAtInitialRate = saleAmount.times(purchaseRate);
-    const gainFxAtPurchaseRate = saleConvertedAmoutAtInitialRate.minus(purchaseConvertedAmountAtInitialRate);
-    const saleConvertedAmountAtFinalRate = saleAmount.times(saleRate);
-    const gainFxAtSaleRate = saleConvertedAmountAtFinalRate.minus(purchaseConvertedAmountAtInitialRate)
-    return shortSale ? gainFxAtPurchaseRate.minus(gainFxAtSaleRate) : gainFxAtSaleRate.minus(gainFxAtPurchaseRate)
+    if (shortSale) {
+      return purchaseAmount.times(saleRate).minus(saleAmount.times(saleRate));
+    } else {
+      return saleAmount.times(purchaseRate).minus(purchaseAmount.times(purchaseRate))
+    }
+  }
+
+  export function calculateGainBaseWithFX(purchaseAmount: Bkper.Amount, purchaseRate: Bkper.Amount, saleAmount: Bkper.Amount, saleRate: Bkper.Amount, shortSale: boolean): Bkper.Amount {
+    if (!purchaseRate || !saleRate) {
+      return BkperApp.newAmount(0);
+    }
+    if (shortSale) {
+      return purchaseAmount.times(purchaseRate).minus(saleAmount.times(saleRate));
+    } else {
+      return saleAmount.times(saleRate).minus(purchaseAmount.times(purchaseRate))
+    }
   }
 
   export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction, excRateProp: string): Bkper.Amount {
