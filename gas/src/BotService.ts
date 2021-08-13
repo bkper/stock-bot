@@ -44,13 +44,17 @@ namespace BotService {
     }
 
     for (const remoteId of stockTransaction.getRemoteIds()) {
-      const financialTransaction = financialBook.getTransaction(remoteId);
-      const baseIterator = baseBook.getTransactions(`remoteId:${financialTransaction.getId()}`);
-      while (baseIterator.hasNext()) {
-        const baseTransaction = baseIterator.next();
-        if (baseTransaction.getProperty(EXC_RATE_PROP, 'exc_base_rate')) {
-          return BkperApp.newAmount(baseTransaction.getProperty(EXC_RATE_PROP, 'exc_base_rate'));
+      try {
+        const financialTransaction = financialBook.getTransaction(remoteId);
+        const baseIterator = baseBook.getTransactions(`remoteId:${financialTransaction.getId()}`);
+        while (baseIterator.hasNext()) {
+          const baseTransaction = baseIterator.next();
+          if (baseTransaction.getProperty(EXC_RATE_PROP, 'exc_base_rate')) {
+            return BkperApp.newAmount(baseTransaction.getProperty(EXC_RATE_PROP, 'exc_base_rate'));
+          }
         }
+      } catch (err) {
+        Logger.log(err)
       }
     }
 
