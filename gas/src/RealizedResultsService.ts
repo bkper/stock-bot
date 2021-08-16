@@ -520,7 +520,7 @@ namespace RealizedResultsService {
         .setDate(gainDate)
         .setAmount(gain)
         .setDescription(`#stock_gain`)
-        .setProperty(EXC_AMOUNT_PROP, gainBaseNoFX.toString())
+        // .setProperty(EXC_AMOUNT_PROP, gainBaseNoFX.toString())
         .from(realizedGainAccount)
         .to(unrealizedAccount)
         .post();
@@ -551,7 +551,7 @@ namespace RealizedResultsService {
         .setDate(gainDate)
         .setAmount(gain)
         .setDescription(`#stock_loss`)
-        .setProperty(EXC_AMOUNT_PROP, gainBaseNoFX.toString())
+        // .setProperty(EXC_AMOUNT_PROP, gainBaseNoFX.toString())
         .from(unrealizedAccount)
         .to(realizedLossAccount)
         .post().check();
@@ -645,79 +645,79 @@ namespace RealizedResultsService {
     summary: Summary 
     ): void {
 
-    if (!gainBaseWithFx) {
-      console.log('Missing gain with FX')
-      return;
-    }
+    // if (!gainBaseWithFx) {
+    //   console.log('Missing gain with FX')
+    //   return;
+    // }
 
-    if (!gainBaseNoFx) {
-      console.log('Missing gain no FX')
-      return;
-    }
+    // if (!gainBaseNoFx) {
+    //   console.log('Missing gain no FX')
+    //   return;
+    // }
 
-    const gain = gainBaseWithFx.minus(gainBaseNoFx);
+    // const gain = gainBaseWithFx.minus(gainBaseNoFx);
 
-    if (gain.round(baseBook.getFractionDigits()).gt(0)) {
+    // if (gain.round(baseBook.getFractionDigits()).gt(0)) {
 
-      let realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
-      let realizedGainAccount = baseBook.getAccount(realizedGainAccountName);
+    //   let realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
+    //   let realizedGainAccount = baseBook.getAccount(realizedGainAccountName);
 
-      if (realizedGainAccount == null) {
-        //Fallback to old XXX Gain default
-        realizedGainAccount = baseBook.getAccount(`${stockAccount.getName()} Realized Gain`);
-      }
+    //   if (realizedGainAccount == null) {
+    //     //Fallback to old XXX Gain default
+    //     realizedGainAccount = baseBook.getAccount(`${stockAccount.getName()} Realized Gain`);
+    //   }
 
 
-      if (realizedGainAccount == null) {
-        realizedGainAccount = baseBook.newAccount()
-          .setName(realizedGainAccountName)
-          .setType(BkperApp.AccountType.INCOMING);
-        let groups = getAccountGroups(baseBook, REALIZED_SUFFIX);
-        groups.forEach(group => realizedGainAccount.addGroup(group));
-        realizedGainAccount.create();
-        trackAccountCreated(summary, stockExcCode, realizedGainAccount);
-      }
+    //   if (realizedGainAccount == null) {
+    //     realizedGainAccount = baseBook.newAccount()
+    //       .setName(realizedGainAccountName)
+    //       .setType(BkperApp.AccountType.INCOMING);
+    //     let groups = getAccountGroups(baseBook, REALIZED_SUFFIX);
+    //     groups.forEach(group => realizedGainAccount.addGroup(group));
+    //     realizedGainAccount.create();
+    //     trackAccountCreated(summary, stockExcCode, realizedGainAccount);
+    //   }
 
-      baseBook.newTransaction()
-        .addRemoteId(`fx_` + transaction.getId())
-        .setDate(gainDate)
-        .setAmount(gain)
-        .setDescription(`#stock_gain`)
-        .setProperty(EXC_AMOUNT_PROP, '0')
-        .from(realizedGainAccount)
-        .to(unrealizedAccount)
-        .post();
+    //   baseBook.newTransaction()
+    //     .addRemoteId(`fx_` + transaction.getId())
+    //     .setDate(gainDate)
+    //     .setAmount(gain)
+    //     .setDescription(`#stock_gain`)
+    //     .setProperty(EXC_AMOUNT_PROP, '0')
+    //     .from(realizedGainAccount)
+    //     .to(unrealizedAccount)
+    //     .post();
 
-    } else if (gain.round(baseBook.getFractionDigits()).lt(0)) {
+    // } else if (gain.round(baseBook.getFractionDigits()).lt(0)) {
 
-      let realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
-      let realizedLossAccount = baseBook.getAccount(realizedLossAccountName);
+    //   let realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
+    //   let realizedLossAccount = baseBook.getAccount(realizedLossAccountName);
 
-      if (realizedLossAccount == null) {
-        //Fallback to old XXX Loss account
-        realizedLossAccount = baseBook.getAccount(`${stockAccount.getName()} Realized Loss`);
-      }
-      if (realizedLossAccount == null) {
-        realizedLossAccount = baseBook.newAccount()
-          .setName(realizedLossAccountName)
-          .setType(BkperApp.AccountType.OUTGOING);
-        let groups = getAccountGroups(baseBook, REALIZED_SUFFIX);
-        groups.forEach(group => realizedLossAccount.addGroup(group));
-        realizedLossAccount.create();
-        trackAccountCreated(summary, stockExcCode, realizedLossAccount);
-      }
+    //   if (realizedLossAccount == null) {
+    //     //Fallback to old XXX Loss account
+    //     realizedLossAccount = baseBook.getAccount(`${stockAccount.getName()} Realized Loss`);
+    //   }
+    //   if (realizedLossAccount == null) {
+    //     realizedLossAccount = baseBook.newAccount()
+    //       .setName(realizedLossAccountName)
+    //       .setType(BkperApp.AccountType.OUTGOING);
+    //     let groups = getAccountGroups(baseBook, REALIZED_SUFFIX);
+    //     groups.forEach(group => realizedLossAccount.addGroup(group));
+    //     realizedLossAccount.create();
+    //     trackAccountCreated(summary, stockExcCode, realizedLossAccount);
+    //   }
 
-      baseBook.newTransaction()
-        .addRemoteId(`fx_` + transaction.getId())
-        .setDate(gainDate)
-        .setAmount(gain)
-        .setDescription(`#stock_loss`)
-        .setProperty(EXC_AMOUNT_PROP, '0')
-        .from(unrealizedAccount)
-        .to(realizedLossAccount)
-        .post().check();
+    //   baseBook.newTransaction()
+    //     .addRemoteId(`fx_` + transaction.getId())
+    //     .setDate(gainDate)
+    //     .setAmount(gain)
+    //     .setDescription(`#stock_loss`)
+    //     .setProperty(EXC_AMOUNT_PROP, '0')
+    //     .from(unrealizedAccount)
+    //     .to(realizedLossAccount)
+    //     .post().check();
 
-    }
+    // }
 
   }
 
