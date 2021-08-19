@@ -311,7 +311,7 @@ namespace RealizedResultsService {
         const saleAmount = (salePrice.times(purchaseQuantity));
         const purchaseAmount = (purchasePrice.times(purchaseQuantity));
         let gain = saleAmount.minus(purchaseAmount); 
-        let gainBaseNoFX = BotService.calculateGainBaseNoFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate, shortSale);
+        let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
         let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate, shortSale);
         if (!shortSale) {
           purchaseTotal = purchaseTotal.plus(purchaseAmount);
@@ -337,8 +337,8 @@ namespace RealizedResultsService {
         purchaseTransaction.update();
 
         if (shortSale) {
-          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, gainBaseNoFX, purchaseTransaction.getDate(), purchaseTransaction.getDateObject(), purchasePrice, summary);
-          recordFxGain(stockAccount, stockExcCode, baseBook, unrealizedBaseAccount, purchaseTransaction, gainBaseWithFX, gainBaseNoFX, purchaseTransaction.getDate(), summary)
+          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, purchaseTransaction.getDate(), purchaseTransaction.getDateObject(), purchasePrice, summary);
+          recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, purchaseTransaction, gainBaseWithFX, gainBaseNoFX, purchaseTransaction.getDate(), summary)
         }
         
         purchaseTransaction.check();
@@ -354,7 +354,7 @@ namespace RealizedResultsService {
         const saleAmount = salePrice.times(partialBuyQuantity);
         const purchaseAmount = purchasePrice.times(partialBuyQuantity);
         let gain = saleAmount.minus(purchaseAmount); 
-        let gainBaseNoFX = BotService.calculateGainBaseNoFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate, shortSale);
+        let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
         let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate, shortSale);
 
         purchaseTransaction
@@ -386,8 +386,8 @@ namespace RealizedResultsService {
         splittedPurchaseTransaction.post().check()
 
         if (shortSale) {
-          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, gainBaseNoFX, splittedPurchaseTransaction.getDate(), splittedPurchaseTransaction.getDateObject(), purchasePrice, summary);
-          recordFxGain(stockAccount, stockExcCode, baseBook, unrealizedBaseAccount, splittedPurchaseTransaction, gainBaseWithFX, gainBaseNoFX, splittedPurchaseTransaction.getDate(), summary)
+          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, splittedPurchaseTransaction.getDate(), splittedPurchaseTransaction.getDateObject(), purchasePrice, summary);
+          recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, splittedPurchaseTransaction, gainBaseWithFX, gainBaseNoFX, splittedPurchaseTransaction.getDate(), summary)
         }
 
         soldQuantity = soldQuantity.minus(partialBuyQuantity);
@@ -458,8 +458,8 @@ namespace RealizedResultsService {
 
     }
 
-    recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, gainBaseNoFxTotal, saleTransaction.getDate(), saleTransaction.getDateObject(), salePrice, summary);
-    recordFxGain(stockAccount, stockExcCode, baseBook, unrealizedBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, saleTransaction.getDate(), summary)
+    recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, saleTransaction.getDate(), saleTransaction.getDateObject(), salePrice, summary);
+    recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, saleTransaction.getDate(), summary)
 
   }
 
@@ -487,7 +487,6 @@ namespace RealizedResultsService {
     unrealizedAccount: Bkper.Account, 
     transaction: Bkper.Transaction, 
     gain: Bkper.Amount, 
-    gainBaseNoFX: Bkper.Amount, 
     gainDate: string, 
     gainDateObject: Date, 
     price: Bkper.Amount,
@@ -634,7 +633,6 @@ namespace RealizedResultsService {
 
 
   function recordFxGain(
-    stockAccount: Bkper.Account, 
     stockExcCode: string, 
     baseBook: Bkper.Book, 
     unrealizedAccount: Bkper.Account, 
@@ -645,81 +643,124 @@ namespace RealizedResultsService {
     summary: Summary 
     ): void {
 
-    // if (!gainBaseWithFx) {
-    //   console.log('Missing gain with FX')
-    //   return;
-    // }
+    if (!gainBaseWithFx) {
+      console.log('Missing gain with FX')
+      return;
+    }
 
-    // if (!gainBaseNoFx) {
-    //   console.log('Missing gain no FX')
-    //   return;
-    // }
+    if (!gainBaseNoFx) {
+      console.log('Missing gain no FX')
+      return;
+    }
 
-    // const gain = gainBaseWithFx.minus(gainBaseNoFx);
+    let excAccountName = getExcAccountName(unrealizedAccount, stockExcCode);
 
-    // if (gain.round(baseBook.getFractionDigits()).gt(0)) {
+    //Verify Exchange account created
+    let excAccount = baseBook.getAccount(excAccountName);
+    if (excAccount == null) {
+      excAccount = baseBook.newAccount()
+      .setName(excAccountName);
+      let groups = getExcAccountGroups(baseBook);
+      groups.forEach(group => excAccount.addGroup(group));  
+      let type = getExcAccountType(baseBook);          
+      excAccount.setType(type);
+      excAccount.create();
+      trackAccountCreated(summary, stockExcCode, excAccount);
+    }    
 
-    //   let realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
-    //   let realizedGainAccount = baseBook.getAccount(realizedGainAccountName);
+    const fxGain = gainBaseWithFx.minus(gainBaseNoFx);
 
-    //   if (realizedGainAccount == null) {
-    //     //Fallback to old XXX Gain default
-    //     realizedGainAccount = baseBook.getAccount(`${stockAccount.getName()} Realized Gain`);
-    //   }
+    if (fxGain.round(baseBook.getFractionDigits()).gt(0)) {
 
+      baseBook.newTransaction()
+        .addRemoteId(`fx_` + transaction.getId())
+        .setDate(gainDate)
+        .setAmount(fxGain)
+        .setDescription(`#exchange_gain`)
+        .setProperty(EXC_AMOUNT_PROP, '0')
+        .from(excAccount)
+        .to(unrealizedAccount)
+        .post();
 
-    //   if (realizedGainAccount == null) {
-    //     realizedGainAccount = baseBook.newAccount()
-    //       .setName(realizedGainAccountName)
-    //       .setType(BkperApp.AccountType.INCOMING);
-    //     let groups = getAccountGroups(baseBook, REALIZED_SUFFIX);
-    //     groups.forEach(group => realizedGainAccount.addGroup(group));
-    //     realizedGainAccount.create();
-    //     trackAccountCreated(summary, stockExcCode, realizedGainAccount);
-    //   }
+    } else if (fxGain.round(baseBook.getFractionDigits()).lt(0)) {
 
-    //   baseBook.newTransaction()
-    //     .addRemoteId(`fx_` + transaction.getId())
-    //     .setDate(gainDate)
-    //     .setAmount(gain)
-    //     .setDescription(`#stock_gain`)
-    //     .setProperty(EXC_AMOUNT_PROP, '0')
-    //     .from(realizedGainAccount)
-    //     .to(unrealizedAccount)
-    //     .post();
+      baseBook.newTransaction()
+        .addRemoteId(`fx_` + transaction.getId())
+        .setDate(gainDate)
+        .setAmount(fxGain)
+        .setDescription(`#exchange_loss`)
+        .setProperty(EXC_AMOUNT_PROP, '0')
+        .from(unrealizedAccount)
+        .to(excAccount)
+        .post();
 
-    // } else if (gain.round(baseBook.getFractionDigits()).lt(0)) {
-
-    //   let realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
-    //   let realizedLossAccount = baseBook.getAccount(realizedLossAccountName);
-
-    //   if (realizedLossAccount == null) {
-    //     //Fallback to old XXX Loss account
-    //     realizedLossAccount = baseBook.getAccount(`${stockAccount.getName()} Realized Loss`);
-    //   }
-    //   if (realizedLossAccount == null) {
-    //     realizedLossAccount = baseBook.newAccount()
-    //       .setName(realizedLossAccountName)
-    //       .setType(BkperApp.AccountType.OUTGOING);
-    //     let groups = getAccountGroups(baseBook, REALIZED_SUFFIX);
-    //     groups.forEach(group => realizedLossAccount.addGroup(group));
-    //     realizedLossAccount.create();
-    //     trackAccountCreated(summary, stockExcCode, realizedLossAccount);
-    //   }
-
-    //   baseBook.newTransaction()
-    //     .addRemoteId(`fx_` + transaction.getId())
-    //     .setDate(gainDate)
-    //     .setAmount(gain)
-    //     .setDescription(`#stock_loss`)
-    //     .setProperty(EXC_AMOUNT_PROP, '0')
-    //     .from(unrealizedAccount)
-    //     .to(realizedLossAccount)
-    //     .post().check();
-
-    // }
+    }
 
   }
+
+
+  function getExcAccountName(connectedAccount: Bkper.Account, connectedCode: string): string {
+    let groups = connectedAccount.getGroups(); 
+    if (groups) {
+      for (const group of groups) {
+        let excAccount = group.getProperty(EXC_ACCOUNT_PROP)
+        if (excAccount) {
+          return excAccount;
+        }
+      }
+    }
+    return `Exchange_${connectedCode}`;
+  }
+
+  export function getExcAccountGroups(book: Bkper.Book): Set<Bkper.Group> {
+    let accountNames = new Set<string>();
+
+    book.getAccounts().forEach(account => {
+      let accountName = account.getProperty(EXC_ACCOUNT_PROP);
+      if (accountName) {
+        accountNames.add(accountName);
+      }
+      if (account.getName().startsWith('Exchange_')) {
+        accountNames.add(account.getName());
+      }
+    });
+
+    let groups = new Set<Bkper.Group>();
+
+    accountNames.forEach(accountName => {
+      let account = book.getAccount(accountName);
+      if (account && account.getGroups()) {
+        account.getGroups().forEach(group => {groups.add(group)})
+      }
+    })
+
+    return groups;
+  }
+
+  export function getExcAccountType(book: Bkper.Book): Bkper.AccountType {
+    let accountNames = new Set<string>();
+
+    book.getAccounts().forEach(account => {
+      let accountName = account.getProperty(EXC_ACCOUNT_PROP);
+      if (accountName) {
+        console.log(`Adding: ${accountName}`)
+        accountNames.add(accountName);
+      }
+      if (account.getName().startsWith('Exchange_')) {
+        console.log(`Adding: ${account.getName()}`)
+        accountNames.add(account.getName());
+      }
+    });
+
+    for (const accountName of accountNames) {
+      let account = book.getAccount(accountName);
+      if (account) {
+        return account.getType();
+      }
+    }
+    
+    return BkperApp.AccountType.LIABILITY;
+  }  
 
 
 }

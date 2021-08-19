@@ -8,14 +8,14 @@ namespace BotService {
     });
   }
 
-  export function calculateGainBaseNoFX(purchaseAmount: Bkper.Amount, purchaseRate: Bkper.Amount, saleAmount: Bkper.Amount, saleRate: Bkper.Amount, shortSale: boolean): Bkper.Amount {
+  export function calculateGainBaseNoFX(gainLocal: Bkper.Amount, purchaseRate: Bkper.Amount, saleRate: Bkper.Amount, shortSale: boolean): Bkper.Amount {
     if (!purchaseRate || !saleRate) {
       return BkperApp.newAmount(0);
     }
     if (shortSale) {
-      return purchaseAmount.times(saleRate).minus(saleAmount.times(saleRate));
+      return gainLocal.times(purchaseRate);
     } else {
-      return saleAmount.times(purchaseRate).minus(purchaseAmount.times(purchaseRate))
+      return gainLocal.times(saleRate)
     }
   }
 
