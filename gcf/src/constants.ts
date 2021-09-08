@@ -8,6 +8,7 @@ export const INSTRUMENT_PROP = 'instrument';
 export const QUANTITY_PROP = 'quantity';
 export const OPEN_QUANTITY_PROP = 'open_quantity';
 export const FEES_PROP = 'fees';
+export const SETTLEMENT_DATE = 'settlement_date';
 export const INTEREST_PROP = 'interest';
 export const NEEDS_REBUILD_PROP = 'needs_rebuild';
 export const PRICE_PROP = 'price'

@@ -1,6 +1,6 @@
 import { Account, AccountType, Amount, Book } from "bkper";
 import { isStockBook } from "./BotService";
-import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, ORDER_PROP, PRICE_PROP, QUANTITY_PROP, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
+import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, ORDER_PROP, PRICE_PROP, QUANTITY_PROP, SETTLEMENT_DATE, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
 
 export class InterceptorOrderProcessor {
 
@@ -280,6 +280,7 @@ export class InterceptorOrderProcessor {
     .setProperty(QUANTITY_PROP, quantity.toString())
     .setProperty(PRICE_PROP, price.toString())
     .setProperty(ORDER_PROP, order)
+    .setProperty(SETTLEMENT_DATE, transactionPayload.date)
     .setProperty(FEES_PROP, fees.toString())
     .setProperty(INTEREST_PROP, interest.toString())
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
@@ -305,6 +306,7 @@ export class InterceptorOrderProcessor {
     .setProperty(QUANTITY_PROP, quantity.toString())
     .setProperty(PRICE_PROP, price.toString())
     .setProperty(ORDER_PROP, order)
+    .setProperty(SETTLEMENT_DATE, transactionPayload.date)
     .setProperty(FEES_PROP, fees.toString())
     .setProperty(INTEREST_PROP, interest.toString())    
     .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
