@@ -46,7 +46,7 @@ export async function flagStockAccountForRebuildIfNeeded(stockTransaction: Trans
 }
 
 export async function getStockExchangeCode(account: Account): Promise<string> {
-  if (account == null || account.getType() != AccountType.ASSET) {
+  if (account == null || account.getType() == AccountType.INCOMING || account.getType() == AccountType.OUTGOING) {
     return null;
   }
   let groups = await account.getGroups();
