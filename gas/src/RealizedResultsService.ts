@@ -337,7 +337,7 @@ namespace RealizedResultsService {
         purchaseTransaction.update();
 
         if (shortSale) {
-          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, purchaseTransaction.getDate(), purchaseTransaction.getDateObject(), purchasePrice, summary);
+          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, purchaseTransaction.getDate(), purchaseTransaction.getDateObject(), gainBaseNoFX, purchasePrice, summary);
           recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, purchaseTransaction, gainBaseWithFX, gainBaseNoFX, purchaseTransaction.getDate(), summary)
         }
         
@@ -386,7 +386,7 @@ namespace RealizedResultsService {
         splittedPurchaseTransaction.post().check()
 
         if (shortSale) {
-          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, splittedPurchaseTransaction.getDate(), splittedPurchaseTransaction.getDateObject(), purchasePrice, summary);
+          recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, splittedPurchaseTransaction.getDate(), splittedPurchaseTransaction.getDateObject(), gainBaseNoFX, purchasePrice, summary);
           recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, splittedPurchaseTransaction, gainBaseWithFX, gainBaseNoFX, splittedPurchaseTransaction.getDate(), summary)
         }
 
@@ -458,7 +458,7 @@ namespace RealizedResultsService {
 
     }
 
-    recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, saleTransaction.getDate(), saleTransaction.getDateObject(), salePrice, summary);
+    recordRealizedResult(stockBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, saleTransaction.getDate(), saleTransaction.getDateObject(), gainBaseNoFxTotal, salePrice, summary);
     recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, saleTransaction.getDate(), summary)
 
   }
@@ -489,6 +489,7 @@ namespace RealizedResultsService {
     gain: Bkper.Amount, 
     gainDate: string, 
     gainDateObject: Date, 
+    gainBaseNoFX: Bkper.Amount,
     price: Bkper.Amount,
     summary: Summary 
     ) {
@@ -519,7 +520,7 @@ namespace RealizedResultsService {
         .setDate(gainDate)
         .setAmount(gain)
         .setDescription(`#stock_gain`)
-        // .setProperty(EXC_AMOUNT_PROP, gainBaseNoFX.toString())
+        .setProperty(EXC_AMOUNT_PROP, gainBaseNoFX.abs().toString())
         .from(realizedGainAccount)
         .to(unrealizedAccount)
         .post();
@@ -550,7 +551,7 @@ namespace RealizedResultsService {
         .setDate(gainDate)
         .setAmount(gain)
         .setDescription(`#stock_loss`)
-        // .setProperty(EXC_AMOUNT_PROP, gainBaseNoFX.toString())
+        .setProperty(EXC_AMOUNT_PROP, gainBaseNoFX.abs().toString())
         .from(unrealizedAccount)
         .to(realizedLossAccount)
         .post().check();
