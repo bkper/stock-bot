@@ -39,9 +39,11 @@ export async function getStockAccount(stockTransaction: Transaction): Promise<Ac
 
 export async function flagStockAccountForRebuildIfNeeded(stockTransaction: Transaction) {
   let stockAccount = await getStockAccount(stockTransaction);
-  let lastTxDate = stockAccount.getProperty(STOCK_REALIZED_DATE_PROP);
-  if (lastTxDate != null && stockTransaction.getDateValue() <= +lastTxDate) {
-    await stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
+  if (stockAccount) {
+    let lastTxDate = stockAccount.getProperty(STOCK_REALIZED_DATE_PROP);
+    if (lastTxDate != null && stockTransaction.getDateValue() <= +lastTxDate) {
+      await stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
+    }
   }
 }
 
