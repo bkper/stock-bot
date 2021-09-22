@@ -114,7 +114,7 @@ namespace BotService {
 
 
   export function getStockExchangeCode(account: Bkper.Account): string {
-    if (account == null || account.getType() != BkperApp.AccountType.ASSET) {
+    if (account == null || account.getType() == BkperApp.AccountType.INCOMING || account.getType() == BkperApp.AccountType.OUTGOING) {
       return null;
     }
     let groups = account.getGroups();
