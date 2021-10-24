@@ -25,8 +25,8 @@ export class EventHandlerAccountCreatedOrUpdated extends EventHandlerAccount {
       .setType(financialAccount.type as AccountType)
       .setArchived(financialAccount.archived);
     if (financialAccount.groups) {
-      for (const baseGroupId of financialAccount.groups) {
-        let baseGroup = await financialBook.getGroup(baseGroupId);
+      for (const g of financialAccount.groups) {
+        let baseGroup = await financialBook.getGroup(g.id);
         if (baseGroup) {
           let connectedGroup = await stockBook.getGroup(baseGroup.getName());
           let stockExcCode = baseGroup.getProperty(STOCK_EXC_CODE_PROP);
