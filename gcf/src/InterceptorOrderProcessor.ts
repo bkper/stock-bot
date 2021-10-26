@@ -25,11 +25,11 @@ export class InterceptorOrderProcessor {
       return false;
     }
 
-    if (await this.isPurchase(baseBook, transactionPayload)) {
+    if (this.isPurchase(baseBook, transactionPayload)) {
       return this.processPurchase(baseBook, transactionPayload);
     }
     
-    if (await this.isSale(baseBook, transactionPayload)) {
+    if (this.isSale(baseBook, transactionPayload)) {
       return this.processSale(baseBook, transactionPayload);
     }
 
@@ -81,7 +81,7 @@ export class InterceptorOrderProcessor {
     return responses;
   }
 
-  protected async isPurchase(baseBook: Book, transactionPayload: bkper.Transaction): Promise<boolean> {
+  protected isPurchase(baseBook: Book, transactionPayload: bkper.Transaction): boolean {
 
     if (this.getInstrument(transactionPayload) == null) {
       return false;
@@ -91,7 +91,7 @@ export class InterceptorOrderProcessor {
       return false;
     }
 
-    let exchangeAccount = await this.getExchangeAccountOnPurchase(baseBook, transactionPayload);
+    let exchangeAccount = transactionPayload.debitAccount;
 
     if (this.getFeesAccountName(exchangeAccount) == null) {
       return false;
@@ -101,7 +101,7 @@ export class InterceptorOrderProcessor {
   }
 
 
-  protected async isSale(baseBook: Book, transactionPayload: bkper.Transaction): Promise<boolean> {
+  protected isSale(baseBook: Book, transactionPayload: bkper.Transaction): boolean {
 
     if (this.getInstrument(transactionPayload) == null) {
       return false;
@@ -111,7 +111,7 @@ export class InterceptorOrderProcessor {
       return false;
     }
 
-    let exchangeAccount = await this.getExchangeAccountOnSale(baseBook, transactionPayload);
+    let exchangeAccount = transactionPayload.creditAccount;
     if (this.getFeesAccountName(exchangeAccount) == null) {
       return false;
     }
@@ -181,8 +181,8 @@ export class InterceptorOrderProcessor {
     return insterest;
   }
 
-  protected getFeesAccountName(exchangeAccount: Account): string {
-    return exchangeAccount.getProperty(STOCK_FEES_ACCOUNT_PROP);
+  protected getFeesAccountName(exchangeAccount: bkper.Account): string {
+    return exchangeAccount.properties[STOCK_FEES_ACCOUNT_PROP];
   }
 
   protected async getFeesAccount(baseBook: Book, feesAccountName: string): Promise<Account> {
@@ -207,7 +207,7 @@ export class InterceptorOrderProcessor {
     let fees = this.getFees(baseBook, transactionPayload);
     if (!fees.eq(0)) {
       let tradeDate = this.getTradeDate(transactionPayload);
-      let feesAccountName = this.getFeesAccountName(exchangeAccount);
+      let feesAccountName = this.getFeesAccountName(exchangeAccount.json());
       let feesAccount = await this.getFeesAccount(baseBook, feesAccountName);
       let tx = await baseBook.newTransaction()
         .setAmount(fees)
