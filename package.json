@@ -1,6 +1,6 @@
 {
   "name": "stock-bot",
-  "version": "2.3.1",
+  "version": "2.3.2",
   "license": "MIT",
   "scripts": {
     "bkper:sync": "bkper app -u",
