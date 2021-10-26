@@ -8,8 +8,8 @@ export abstract class EventHandlerAccount extends EventHandler {
     let excCode = getExcCode(financialBook);
     let financialAccount = event.data.object as bkper.Account;
 
-    let baseAccount = await financialBook.getAccount(financialAccount.id);
-    let stockExcCode = await getStockExchangeCode(baseAccount);
+    let baseAccount = financialAccount;
+    let stockExcCode = getStockExchangeCode(baseAccount);
 
     if (!this.matchStockExchange(stockExcCode, excCode)) {
       return null;

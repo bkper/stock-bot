@@ -22,8 +22,8 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
   }
 
   protected async connectedTransactionNotFound(financialBook: Book, stockBook: Book, transaction: bkper.Transaction, stockExcCode: string): Promise<string> {
-    let financialCreditAccount = await financialBook.getAccount(transaction.creditAccount.id);
-    let financialDebitAccount = await financialBook.getAccount(transaction.debitAccount.id);
+    let financialCreditAccount = transaction.creditAccount;
+    let financialDebitAccount = transaction.debitAccount;
     let stockBookAnchor = super.buildBookAnchor(stockBook);
 
     let quantity = this.getQuantity(stockBook, transaction);
@@ -106,26 +106,26 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
     }
   }
 
-  private async getConnectedStockAccount(financialBook: Book, stockBook: Book, financialAccount: Account): Promise<Account> {
-    let stockExchangeCode = await getStockExchangeCode(financialAccount);
+  private async getConnectedStockAccount(financialBook: Book, stockBook: Book, financialAccount: bkper.Account): Promise<Account> {
+    let stockExchangeCode = getStockExchangeCode(financialAccount);
     if (stockExchangeCode != null) {
-      let stockAccount = await stockBook.getAccount(financialAccount.getName());
+      let stockAccount = await stockBook.getAccount(financialAccount.name);
       if (stockAccount == null) {
         stockAccount = stockBook.newAccount()
-          .setName(financialAccount.getName())
-          .setType(financialAccount.getType())
-          .setProperties(financialAccount.getProperties())
-          .setArchived(financialAccount.isArchived());
-        if (await financialAccount.getGroups()) {
-          for (const financialGroup of await financialAccount.getGroups()) {
+          .setName(financialAccount.name)
+          .setType(financialAccount.type as AccountType)
+          .setProperties(financialAccount.properties)
+          .setArchived(financialAccount.archived);
+        if (financialAccount.groups) {
+          for (const financialGroup of financialAccount.groups) {
             if (financialGroup) {
-              let stockGroup = await stockBook.getGroup(financialGroup.getName());
-              let stockExcCode = financialGroup.getProperty(constants.STOCK_EXC_CODE_PROP);
+              let stockGroup = await stockBook.getGroup(financialGroup.name);
+              let stockExcCode = financialGroup.properties[constants.STOCK_EXC_CODE_PROP];
               if (stockGroup == null && stockExcCode != null && stockExcCode.trim() != '') {
                 stockGroup = await stockBook.newGroup()
-                  .setHidden(financialGroup.isHidden())
-                  .setName(financialGroup.getName())
-                  .setProperties(financialGroup.getProperties())
+                  .setHidden(financialGroup.hidden)
+                  .setName(financialGroup.name)
+                  .setProperties(financialGroup.properties)
                   .create();
               }
               stockAccount.addGroup(stockGroup);

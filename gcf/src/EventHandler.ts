@@ -18,11 +18,9 @@ export abstract class EventHandler {
     let stockBook = getStockBook(baseBook);
 
     const logtag = `Handling ${event.type} event on book ${baseBook.getName()} from user ${event.user.username}`;
+    console.time(logtag)
 
     if (stockBook) {
-      
-      console.time(logtag)
-
       let response = await this.processObject(baseBook, stockBook, event);
       if (response) {
         responses.push(response);

@@ -47,18 +47,18 @@ export async function flagStockAccountForRebuildIfNeeded(stockTransaction: Trans
   }
 }
 
-export async function getStockExchangeCode(account: Account): Promise<string> {
-  if (account == null || account.getType() == AccountType.INCOMING || account.getType() == AccountType.OUTGOING) {
+export function getStockExchangeCode(account: bkper.Account): string {
+  if (account == null || account.type == AccountType.INCOMING || account.type == AccountType.OUTGOING) {
     return null;
   }
-  let groups = await account.getGroups();
+  let groups = account.groups;
   if (groups != null) {
     for (const group of groups) {
       if (group == null) {
         continue;
       }
 
-      let stockExchange = group.getProperty(STOCK_EXC_CODE_PROP);
+      let stockExchange = group.properties[STOCK_EXC_CODE_PROP];
       if (stockExchange != null && stockExchange.trim() != '') {
         return stockExchange;
       }

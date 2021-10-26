@@ -45,14 +45,14 @@ export abstract class EventHandlerTransaction extends EventHandler {
 
   private async getStockExcCodeFromTransaction(financialBook: Book, fiancialTransaction: bkper.Transaction) {
 
-    let financialCreditAccount = fiancialTransaction.creditAccount != null ? await financialBook.getAccount(fiancialTransaction.creditAccount.id) : null;
-    let financialDebitAccount = fiancialTransaction.debitAccount != null ? await financialBook.getAccount(fiancialTransaction.debitAccount.id) : null;
+    let financialCreditAccount = fiancialTransaction.creditAccount;
+    let financialDebitAccount = fiancialTransaction.debitAccount;
 
     console.log(`${fiancialTransaction.creditAccount.id} - ${fiancialTransaction.debitAccount.id}`)
 
-    let stockExcCode = await getStockExchangeCode(financialCreditAccount);
+    let stockExcCode = getStockExchangeCode(financialCreditAccount);
     if (stockExcCode == null) {
-      stockExcCode = await getStockExchangeCode(financialDebitAccount);
+      stockExcCode = getStockExchangeCode(financialDebitAccount);
     }
     return stockExcCode;
   }
