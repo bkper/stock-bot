@@ -8,7 +8,7 @@ export abstract class EventHandler {
   protected async intercept(baseBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {return false}
 
   async handleEvent(event: bkper.Event): Promise<string[] | string | boolean> {
-    let baseBook = Bkper.newBook(event.book);
+    let baseBook = new Book(event.book);
 
     let interceptionResponse = await this.intercept(baseBook, event);
     if (interceptionResponse) {
