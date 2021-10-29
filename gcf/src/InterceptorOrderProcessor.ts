@@ -38,46 +38,29 @@ export class InterceptorOrderProcessor {
   }
 
   protected async processSale(baseBook: Book, transactionPayload: bkper.Transaction): Promise<string[]> {
-    let responses: string[] = [];
-    let exchangeAccount = await this.getExchangeAccountOnSale(baseBook, transactionPayload);
-    let feesResponse = await this.postFees(baseBook, exchangeAccount, transactionPayload);
-    if (feesResponse) {
-      responses.push(feesResponse);
-    }
+    let exchangeAccount = this.getExchangeAccountOnSale(baseBook, transactionPayload);
+    
+    let responses: string[] = await Promise.all(
+      [ 
+        this.postFees(baseBook, exchangeAccount, transactionPayload),
+        this.postInterestOnSale(baseBook, exchangeAccount, transactionPayload),
+        this.postInstrumentTradeOnSale(baseBook, exchangeAccount, transactionPayload)
+      ]);
 
-    let interestResponse = await this.postInterestOnSale(baseBook, exchangeAccount, transactionPayload);
-    if (interestResponse) {
-      responses.push(interestResponse);
-    }
-
-    let instrumentResponse = await this.postInstrumentTradeOnSale(baseBook, exchangeAccount, transactionPayload);
-    if (instrumentResponse) {
-      responses.push(instrumentResponse);
-    }
+      responses = responses.filter(r => r != null).filter(r => typeof r === "string")
 
     return responses;    
   }
 
   protected async processPurchase(baseBook: Book, transactionPayload: bkper.Transaction): Promise<string[]> {
-    let responses: string[] = [];
-
-    let exchangeAccount = await this.getExchangeAccountOnPurchase(baseBook, transactionPayload);
-
-    let feesResponse = await this.postFees(baseBook, exchangeAccount, transactionPayload);
-    if (feesResponse) {
-      responses.push(feesResponse);
-    }
-
-    let interestResponse = await this.postInterestOnPurchase(baseBook, exchangeAccount, transactionPayload);
-    if (interestResponse) {
-      responses.push(interestResponse);
-    }
-
-    let instrumentResponse = await this.postInstrumentTradeOnPurchase(baseBook, exchangeAccount, transactionPayload);
-    if (instrumentResponse) {
-      responses.push(instrumentResponse);
-    }
-
+    let exchangeAccount = this.getExchangeAccountOnPurchase(baseBook, transactionPayload);
+    let responses: string[] = await Promise.all(
+      [ 
+        this.postFees(baseBook, exchangeAccount, transactionPayload),
+        this.postInterestOnPurchase(baseBook, exchangeAccount, transactionPayload),
+        this.postInstrumentTradeOnPurchase(baseBook, exchangeAccount, transactionPayload)
+      ]);    
+      responses = responses.filter(r => r != null).filter(r => typeof r === "string")
     return responses;
   }
 
@@ -120,12 +103,12 @@ export class InterceptorOrderProcessor {
   }
 
 
-  private getExchangeAccountOnSale(baseBook: Book, transactionPayload: bkper.Transaction) {
-    return baseBook.getAccount(transactionPayload.creditAccount.id);
+  private getExchangeAccountOnSale(baseBook: Book, transactionPayload: bkper.Transaction): bkper.Account {
+    return transactionPayload.creditAccount;
   }
 
-  private getExchangeAccountOnPurchase(baseBook: Book, transactionPayload: bkper.Transaction) {
-    return baseBook.getAccount(transactionPayload.debitAccount.id);
+  private getExchangeAccountOnPurchase(baseBook: Book, transactionPayload: bkper.Transaction): bkper.Account {
+    return transactionPayload.debitAccount;
   }
 
   protected async getInstrumentAccount(baseBook: Book, transactionPayload: bkper.Transaction): Promise<Account> {
@@ -203,11 +186,11 @@ export class InterceptorOrderProcessor {
   }
 
 
-  protected async postFees(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
+  protected async postFees(baseBook: Book, exchangeAccount: bkper.Account, transactionPayload: bkper.Transaction): Promise<string> {
     let fees = this.getFees(baseBook, transactionPayload);
     if (!fees.eq(0)) {
       let tradeDate = this.getTradeDate(transactionPayload);
-      let feesAccountName = this.getFeesAccountName(exchangeAccount.json());
+      let feesAccountName = this.getFeesAccountName(exchangeAccount);
       let feesAccount = await this.getFeesAccount(baseBook, feesAccountName);
       let tx = await baseBook.newTransaction()
         .setAmount(fees)
@@ -224,7 +207,7 @@ export class InterceptorOrderProcessor {
   }
 
   
-  protected async postInterestOnPurchase(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
+  protected async postInterestOnPurchase(baseBook: Book, exchangeAccount: bkper.Account, transactionPayload: bkper.Transaction): Promise<string> {
     let instrument = this.getInstrument(transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
     if (!interest.eq(0)) {
@@ -243,7 +226,7 @@ export class InterceptorOrderProcessor {
     return null;
   }
 
-  protected async postInterestOnSale(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
+  protected async postInterestOnSale(baseBook: Book, exchangeAccount: bkper.Account, transactionPayload: bkper.Transaction): Promise<string> {
     let instrument = this.getInstrument(transactionPayload);
     let interest = this.getInterest(baseBook, transactionPayload);
     if (!interest.eq(0)) {
@@ -262,7 +245,7 @@ export class InterceptorOrderProcessor {
     return null;
   }
 
-  protected async postInstrumentTradeOnPurchase(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
+  protected async postInstrumentTradeOnPurchase(baseBook: Book, exchangeAccount: bkper.Account, transactionPayload: bkper.Transaction): Promise<string> {
     let instrumentAccount = await this.getInstrumentAccount(baseBook, transactionPayload);
     let quantity = this.getQuantity(baseBook, transactionPayload);
     let fees = this.getFees(baseBook, transactionPayload);
@@ -288,7 +271,7 @@ export class InterceptorOrderProcessor {
     return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
   }
 
-  protected async postInstrumentTradeOnSale(baseBook: Book, exchangeAccount: Account, transactionPayload: bkper.Transaction): Promise<string> {
+  protected async postInstrumentTradeOnSale(baseBook: Book, exchangeAccount: bkper.Account, transactionPayload: bkper.Transaction): Promise<string> {
     let instrumentAccount = await this.getInstrumentAccount(baseBook, transactionPayload);
     let quantity = this.getQuantity(baseBook, transactionPayload);
     let fees = this.getFees(baseBook, transactionPayload);
