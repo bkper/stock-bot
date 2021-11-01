@@ -21,7 +21,7 @@ export abstract class EventHandlerTransaction extends EventHandler {
 
     let iterator = stockBook.getTransactions(this.getTransactionQuery(financialTransaction));
 
-    let stockExcCode = await this.getStockExcCodeFromTransaction(financialBook, financialTransaction);
+    let stockExcCode = this.getStockExcCodeFromTransaction(financialBook, financialTransaction);
     
     if (!this.matchStockExchange(stockExcCode, excCode)) {
       return null;
@@ -43,7 +43,7 @@ export abstract class EventHandlerTransaction extends EventHandler {
     return stockBook.parseValue(quantityStr).abs();
   }
 
-  private async getStockExcCodeFromTransaction(financialBook: Book, fiancialTransaction: bkper.Transaction) {
+  private getStockExcCodeFromTransaction(financialBook: Book, fiancialTransaction: bkper.Transaction) {
 
     let financialCreditAccount = fiancialTransaction.creditAccount;
     let financialDebitAccount = fiancialTransaction.debitAccount;
