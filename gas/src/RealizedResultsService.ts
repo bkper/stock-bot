@@ -521,6 +521,7 @@ namespace RealizedResultsService {
         .setAmount(gain)
         .setDescription(`#stock_gain`)
         .setProperty(EXC_AMOUNT_PROP, isBaseBook ? null : gainBaseNoFX.abs().toString())
+        .setProperty(EXC_CODE_PROP, isBaseBook ? null : BotService.getExcCode(baseBook))
         .from(realizedGainAccount)
         .to(unrealizedAccount)
         .post();
@@ -550,6 +551,7 @@ namespace RealizedResultsService {
         .setAmount(gain)
         .setDescription(`#stock_loss`)
         .setProperty(EXC_AMOUNT_PROP, isBaseBook ? null : gainBaseNoFX.abs().toString())
+        .setProperty(EXC_CODE_PROP, isBaseBook ? null : BotService.getExcCode(baseBook))
         .from(unrealizedAccount)
         .to(realizedLossAccount)
         .post().check();
