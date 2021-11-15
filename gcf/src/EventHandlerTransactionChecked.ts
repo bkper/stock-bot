@@ -56,6 +56,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
       .setProperty(constants.ORDER_PROP, transaction.properties[constants.ORDER_PROP])
       .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
       .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
+      .setProperty(constants.STOCK_EXC_CODE_PROP, stockExcCode)
       .post()
 
       this.checkLastTxDate(stockAccount, transaction);
@@ -84,6 +85,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
         .setProperty(constants.ORDER_PROP, transaction.properties[constants.ORDER_PROP])
         .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
         .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
+        .setProperty(constants.STOCK_EXC_CODE_PROP, stockExcCode)
         .post()
 
         this.checkLastTxDate(stockAccount, transaction);
