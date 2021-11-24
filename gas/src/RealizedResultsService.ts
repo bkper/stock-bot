@@ -201,8 +201,8 @@ namespace RealizedResultsService {
           let purchasePriceProp = tx.getProperty(PURCHASE_PRICE_PROP)
           
           if (originalAmountProp && originalQuantityProp && !purchasePriceProp) {
-            let salePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
-            tx.setProperty(PURCHASE_PRICE_PROP, salePrice.toString())
+            let purchasePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
+            tx.setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
           }
 
           tx
