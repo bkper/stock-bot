@@ -164,6 +164,16 @@ namespace RealizedResultsService {
         if (tx.getProperty(ORIGINAL_QUANTITY_PROP) == null) {
           tx.remove();
         } else {
+
+          let originalAmountProp = tx.getProperty(ORIGINAL_AMOUNT_PROP)
+          let originalQuantityProp = tx.getProperty(ORIGINAL_QUANTITY_PROP)
+          let salePriceProp = tx.getProperty(SALE_PRICE_PROP)
+
+          if (originalAmountProp && originalQuantityProp && !salePriceProp) {
+            let salePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
+            tx.setProperty(SALE_PRICE_PROP, salePrice.toString())
+          }
+
           tx.deleteProperty(GAIN_AMOUNT_PROP)
           .deleteProperty('gain_log')
           .deleteProperty(PURCHASE_LOG_PROP)
@@ -174,7 +184,7 @@ namespace RealizedResultsService {
           .deleteProperty(PURCHASE_EXC_RATE_PROP)
           .deleteProperty(SALE_EXC_RATE_PROP)
           .deleteProperty(EXC_RATE_PROP)
-          .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
+          .setAmount(originalQuantityProp)
           .update();
           stockAccountSaleTransactions.push(tx);
         }
@@ -185,6 +195,16 @@ namespace RealizedResultsService {
         if (tx.getProperty(ORIGINAL_QUANTITY_PROP) == null) {
           tx.remove()
         } else {
+
+          let originalAmountProp = tx.getProperty(ORIGINAL_AMOUNT_PROP)
+          let originalQuantityProp = tx.getProperty(ORIGINAL_QUANTITY_PROP)
+          let purchasePriceProp = tx.getProperty(PURCHASE_PRICE_PROP)
+          
+          if (originalAmountProp && originalQuantityProp && !purchasePriceProp) {
+            let salePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
+            tx.setProperty(PURCHASE_PRICE_PROP, salePrice.toString())
+          }
+
           tx
           .deleteProperty(SALE_DATE_PROP)
           .deleteProperty(SALE_PRICE_PROP)
@@ -197,7 +217,7 @@ namespace RealizedResultsService {
           .deleteProperty(PURCHASE_EXC_RATE_PROP)
           .deleteProperty(SALE_EXC_RATE_PROP)
           .deleteProperty(EXC_RATE_PROP)
-          .setAmount(tx.getProperty(ORIGINAL_QUANTITY_PROP))
+          .setAmount(originalQuantityProp)
           .update();
           stockAccountPurchaseTransactions.push(tx);
         }
