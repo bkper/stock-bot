@@ -46,15 +46,15 @@ namespace RealizedResultsService {
 
     return template.evaluate().setTitle('Stock Bot');
   }
-  export function resetRealizedResults(stockBookId: string, stockAccountId: string): Summary {
+  export function resetRealizedResults(stockBookId: string, stockAccountId: string, autoMtM: boolean): Summary {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
 
-    revertRealizedResultsForAccount(stockBook, stockAccount, false);
+    revertRealizedResultsForAccount(stockBook, stockAccount, false, autoMtM);
 
     return {accountId: stockAccount.getId(), result: 'Done.'};
   }
-  export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string): Summary {
+  export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string, autoMtM: boolean): Summary {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
 
@@ -65,7 +65,7 @@ namespace RealizedResultsService {
 
 
     if (needsRebuild(stockAccount)) {
-      revertRealizedResultsForAccount(stockBook, stockAccount, true);
+      revertRealizedResultsForAccount(stockBook, stockAccount, true, autoMtM);
     } else {
       let stockExcCode = BotService.getStockExchangeCode(stockAccount);
       let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
@@ -102,7 +102,7 @@ namespace RealizedResultsService {
       const baseBook = BotService.getBaseBook(financialBook);
 
       for (const saleTransaction of stockAccountSaleTransactions) {
-        processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary);
+        processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM);
       }
 
       checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
@@ -113,7 +113,7 @@ namespace RealizedResultsService {
 
   }
 
-  export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account, recalculate: boolean): Summary {
+  export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account, recalculate: boolean, autoMtM: boolean): Summary {
     let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}'`);
     let summary: Summary = {
       accountId: stockAccount.getId(),
@@ -234,7 +234,7 @@ namespace RealizedResultsService {
       const baseBook = BotService.getBaseBook(financialBook);
 
       for (const saleTransaction of stockAccountSaleTransactions) {
-        processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary);
+        processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM);
       }
     }
 
@@ -293,7 +293,7 @@ namespace RealizedResultsService {
     return compareTo(saleTransaction, purchaseTransaction) < 0;
   }
 
-  function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary): void {
+  function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean): void {
 
     let salePrice: Bkper.Amount = BkperApp.newAmount(saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP));
 
@@ -357,8 +357,11 @@ namespace RealizedResultsService {
         purchaseTransaction.update();
 
         if (shortSale) {
-          recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, purchaseTransaction.getDate(), gainBaseNoFX, summary);
+          recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, purchaseTransaction.getDate(), purchasePrice, summary);
           recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, purchaseTransaction, gainBaseWithFX, gainBaseNoFX, purchaseTransaction.getDate(), summary)
+          if (autoMtM) {
+            markToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchaseTransaction.getDateObject(), gainBaseNoFX, purchasePrice)
+          }
         }
         
         purchaseTransaction.check();
@@ -406,8 +409,11 @@ namespace RealizedResultsService {
         splittedPurchaseTransaction.post().check()
 
         if (shortSale) {
-          recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, splittedPurchaseTransaction.getDate(), gainBaseNoFX, summary);
+          recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, splittedPurchaseTransaction.getDate(), purchasePrice, summary);
           recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, splittedPurchaseTransaction, gainBaseWithFX, gainBaseNoFX, splittedPurchaseTransaction.getDate(), summary)
+          if (autoMtM) {
+            markToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, splittedPurchaseTransaction.getDateObject(), gainBaseNoFX, purchasePrice)
+          }
         }
 
         soldQuantity = soldQuantity.minus(partialBuyQuantity);
@@ -478,8 +484,11 @@ namespace RealizedResultsService {
 
     }
 
-    recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, saleTransaction.getDate(), gainBaseNoFxTotal, summary);
+    recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, saleTransaction.getDate(), salePrice, summary);
     recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, saleTransaction.getDate(), summary)
+    if (autoMtM) {
+      markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, saleTransaction.getDateObject(), gainBaseNoFxTotal, salePrice)
+    }
 
   }
 
@@ -585,6 +594,65 @@ namespace RealizedResultsService {
     }
     summary.result[stockExcCode].push(account.getName());
   }
+
+  function markToMarket(
+    stockBook: Bkper.Book,
+    transaction: Bkper.Transaction,
+    stockAccount: Bkper.Account,
+    financialBook: Bkper.Book,
+    unrealizedAccount: Bkper.Account,
+    date: Date,
+    gain: Bkper.Amount, 
+    price: Bkper.Amount
+    ): void {
+
+    if (gain.round(financialBook.getFractionDigits()).eq(0)) {
+      return
+    }
+
+    let total_quantity = getAccountBalance(stockBook, stockAccount, date);
+    let financialInstrument = financialBook.getAccount(stockAccount.getName());
+    let balance = getAccountBalance(financialBook, financialInstrument, date);
+    let newBalance = total_quantity.times(price);
+
+    let amount = newBalance.minus(balance);
+
+    if (amount.round(financialBook.getFractionDigits()).gt(0)) {
+
+      financialBook.newTransaction()
+      .setDate(date)
+      .setAmount(amount)
+      .setDescription(`#mtm`)
+      .setProperty(PRICE_PROP, financialBook.formatValue(price))
+      .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(stockBook.getFractionDigits()))
+      .from(unrealizedAccount)
+      .to(financialInstrument)
+      .addRemoteId(`mtm_${transaction.getId()}`)
+      .post().check();
+
+    } else if (amount.round(financialBook.getFractionDigits()).lt(0)) {
+      financialBook.newTransaction()
+      .setDate(date)
+      .setAmount(amount)
+      .setDescription(`#mtm`)
+      .setProperty(PRICE_PROP, financialBook.formatValue(price))
+      .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(stockBook.getFractionDigits()))      
+      .from(financialInstrument)
+      .to(unrealizedAccount)
+      .addRemoteId(`mtm_${transaction.getId()}`)
+      .post().check();
+    }
+  }
+
+  function getAccountBalance(book: Bkper.Book, account: Bkper.Account, date: Date): Bkper.Amount {
+    let balances = book.getBalancesReport(`account:"${account.getName()}" on:${book.formatDate(date)}`);
+    let containers = balances.getBalancesContainers();
+    if (containers == null || containers.length == 0) {
+      return BkperApp.newAmount(0);
+    }
+    return containers[0].getCumulativeBalance();
+  }
+
 
 
   function getAccountGroups(book: Bkper.Book, gainLossSuffix: string): Set<Bkper.Group> {

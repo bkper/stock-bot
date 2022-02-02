@@ -48,17 +48,17 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   return RealizedResultsService.getBotViewTemplate(bookId, accountId);
 }
 
-function calculateRealizedResults(bookId: string, accountId: string): Summary {
+function calculateRealizedResults(bookId: string, accountId: string, autoMtM: boolean): Summary {
   if (accountId) {
-    let summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId);
+    let summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId, autoMtM);
     summary.result = JSON.stringify(summary.result);
     return summary;
   }
 }
 
-function resetRealizedResults(bookId: string, accountId: string): Summary {
+function resetRealizedResults(bookId: string, accountId: string, autoMtM: boolean): Summary {
   if (accountId) {
-    return RealizedResultsService.resetRealizedResults(bookId, accountId);
+    return RealizedResultsService.resetRealizedResults(bookId, accountId, autoMtM);
   }
 }
 
