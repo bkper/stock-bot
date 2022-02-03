@@ -58,7 +58,8 @@ function calculateRealizedResults(bookId: string, accountId: string, autoMtM: bo
 
 function resetRealizedResults(bookId: string, accountId: string, autoMtM: boolean): Summary {
   if (accountId) {
-    return RealizedResultsService.resetRealizedResults(bookId, accountId, autoMtM);
+    let summary = RealizedResultsService.resetRealizedResults(bookId, accountId, autoMtM);
+    return summary;
   }
 }
 
