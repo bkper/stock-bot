@@ -70,7 +70,7 @@ namespace RealizedResultsService {
       let stockExcCode = BotService.getStockExchangeCode(stockAccount);
       let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
       if (financialBook == null) {
-        return; //Skip
+        return summary; //Skip
       }
 
       let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}'`);
@@ -124,6 +124,10 @@ namespace RealizedResultsService {
 
     let stockExcCode = BotService.getStockExchangeCode(stockAccount);
     let financialBook = BotService.getFinancialBook(stockBook, stockExcCode)
+    if (financialBook == null) {
+      return;
+    }
+
     const baseBook = BotService.getBaseBook(financialBook);
 
 
