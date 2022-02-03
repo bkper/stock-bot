@@ -65,7 +65,7 @@
           <? } ?>
       </div>        
       <div class='options-panel'>
-        <input type="checkbox" id="autoMtM" name="Auto Mark to Market?">
+        <input type="checkbox" id="autoMtM" name="Auto Mark to Market?">Auto Mark to Market?</input>
       </div>
     </div>
 
@@ -94,15 +94,29 @@
   }
 
   async function fireRealizedResultsForAll() {
+    // Verify checkbox condition here
+    let checkbox = document.getElementById("autoMtM");
+    let autoMtM = false;
+    if (checkbox.checked) {
+      autoMtM = true;
+    };
+    // Pass autoMtM variable to promiseRun
     <? for (var i = 0; i < accounts.length; i++) { ?>
-      await promiseRun('calculateRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting)
+      await promiseRun('calculateRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', autoMtM).then(hideAccountWaiting)
     <? } ?>
   }
 
   async function resetRealizedResults() {
     disableButtons(true)
     showAccountWaiting('<?!= account.id ?>');
-    await promiseRun('resetRealizedResults' , '<?!= book.id ?>', '<?!= account.id ?>').then(hideAccountWaiting)
+    // Verify checkbox condition here
+    let checkbox = document.getElementById("autoMtM");
+    let autoMtM = false;
+    if (checkbox.checked) {
+      autoMtM = true;
+    };
+    // Pass autoMtM variable to promiseRun
+    await promiseRun('resetRealizedResults' , '<?!= book.id ?>', '<?!= account.id ?>', autoMtM).then(hideAccountWaiting)
     disableButtons(false)
   }
 
