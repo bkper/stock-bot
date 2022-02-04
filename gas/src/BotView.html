@@ -9,24 +9,37 @@
         font-family:  Arial, sans-serif !important;
         font-size: 10pt;
       }
+
       .header, .body , .footer{
         padding: 20px;
       }
+
       .header {
         font-size: 120%;
         background-color: #f5f5f5;
         text-align: center;
       }
+
       .body #sub-header {
         display: flex;
         height: 40px;
+        font-size: 14px;
         align-items: center;
         justify-content: center;
+      }
+
+      #account-list {
+        font-weight: bold;
+        padding-bottom: 10px;
       }
 
       .footer, .accounts-panel .account {
         display: flex;
         align-items: center;
+      }
+
+      .account {
+        margin: 5px 0;
       }
 
       .accounts-panel .account div {
@@ -35,6 +48,11 @@
 
       .accounts-panel .account div img {
         height: 12px;
+      }
+
+      .options-panel {
+        font-weight: bold;
+        padding-top: 10px;
       }
 
       .footer {
@@ -57,6 +75,9 @@
       </div>
   
       <div class='accounts-panel'>
+        <div id='account-list'>
+          Account List:
+        </div>
           <? for (var i = 0; i < accounts.length; i++) { ?>
             <div class='account'>
               <div><?!= accounts[i].name ?></div>
