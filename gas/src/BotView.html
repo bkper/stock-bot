@@ -76,7 +76,13 @@
   
       <div class='accounts-panel'>
         <div id='account-list'>
-          Account List:
+          <? if (group.name) { ?>
+            <?!= `Accounts from group ${group.name}:` ?>
+          <? } else if (accounts.length == 1) { ?>
+            <?!= `Account:` ?>
+          <? } else { ?>
+            <?!= `All accounts:` ?>
+          <? } ?>
         </div>
           <? for (var i = 0; i < accounts.length; i++) { ?>
             <div class='account'>

@@ -22,6 +22,7 @@ namespace RealizedResultsService {
     }
 
     template.accounts = [];
+    template.group = {}
     
     if (baseAccount) {
       let stockAccount = stockBook.getAccount(baseAccount.getName());
@@ -29,6 +30,10 @@ namespace RealizedResultsService {
     } else if (baseGroup) {
       let stockGroup = stockBook.getGroup(baseGroup.getName());
       if (stockGroup) {
+        template.group = {
+          id: baseGroup.getId(),
+          name: baseGroup.getName()
+        }
         for (const account of stockGroup.getAccounts()) {
           addAccount(account);
         }
