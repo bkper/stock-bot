@@ -144,7 +144,7 @@
 
   async function resetRealizedResultsForAll() {
     <? for (var i = 0; i < accounts.length; i++) { ?>
-      await promiseRun('resetRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', getAutoMtM()).then(hideAccountWaiting)
+      await promiseRun('resetRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting)
     <? } ?>
   }
 

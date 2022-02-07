@@ -63,11 +63,11 @@ namespace RealizedResultsService {
 
     return template.evaluate().setTitle('Stock Bot');
   }
-  export function resetRealizedResults(stockBookId: string, stockAccountId: string, autoMtM: boolean): Summary {
+  export function resetRealizedResults(stockBookId: string, stockAccountId: string): Summary {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
 
-    revertRealizedResultsForAccount(stockBook, stockAccount, false, autoMtM);
+    revertRealizedResultsForAccount(stockBook, stockAccount, false, false);
 
     return {accountId: stockAccount.getId(), result: 'Done.'};
   }
