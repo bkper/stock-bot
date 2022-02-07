@@ -44,8 +44,10 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   let bookId = e.parameter.bookId;
   //@ts-ignore
   let accountId = e.parameter.accountId;
+  //@ts-ignore
+  let groupId = e.parameter.groupId;
 
-  return RealizedResultsService.getBotViewTemplate(bookId, accountId);
+  return RealizedResultsService.getBotViewTemplate(bookId, accountId, groupId);
 }
 
 function calculateRealizedResults(bookId: string, accountId: string, autoMtM: boolean): Summary {
@@ -66,7 +68,3 @@ function resetRealizedResults(bookId: string, accountId: string, autoMtM: boolea
 function auditBooks(bookId: string) {
   //BotService.auditBooks(bookId);
 }
-
-
-
-

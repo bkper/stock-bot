@@ -92,7 +92,7 @@
 
 
     <div class="footer" id='footer-panel'>
-      <?!= account.name ? "<button id='reset-button' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
+      <?!= enableReset ? "<button id='reset-button' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
       <button id="calculate-button" onclick="calculateRealizedResults()">Calculate</button>
       <button id="close-button" onclick="closeWindow()">Close</button>
     </div>
@@ -104,41 +104,42 @@
 
 <script>
 
-  async function calculateRealizedResults() {
-    disableButtons(true)
+  function showAllAccountsWaiting() {
     <? for (var i = 0; i < accounts.length; i++) { ?>
       showAccountWaiting('<?!= accounts[i].id ?>')
     <? } ?>
+  }
+
+  function getAutoMtM() {
+    return document.getElementById("autoMtM").checked;
+  }
+
+  async function calculateRealizedResults() {
+    disableButtons(true)
+    showAllAccountsWaiting()
     await fireRealizedResultsForAll().catch(showError)
-    promiseRun('auditBooks' , '<?!= book.id ?>')
+    promiseRun('auditBooks', '<?!= book.id ?>')
     disableButtons(false)
   }
 
   async function fireRealizedResultsForAll() {
-    // Verify checkbox condition here
-    let checkbox = document.getElementById("autoMtM");
-    let autoMtM = false;
-    if (checkbox.checked) {
-      autoMtM = true;
-    };
-    // Pass autoMtM variable to promiseRun
     <? for (var i = 0; i < accounts.length; i++) { ?>
-      await promiseRun('calculateRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', autoMtM).then(hideAccountWaiting)
+      await promiseRun('calculateRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', getAutoMtM()).then(hideAccountWaiting)
     <? } ?>
   }
 
   async function resetRealizedResults() {
     disableButtons(true)
-    showAccountWaiting('<?!= account.id ?>');
-    // Verify checkbox condition here
-    let checkbox = document.getElementById("autoMtM");
-    let autoMtM = false;
-    if (checkbox.checked) {
-      autoMtM = true;
-    };
-    // Pass autoMtM variable to promiseRun
-    await promiseRun('resetRealizedResults' , '<?!= book.id ?>', '<?!= account.id ?>', autoMtM).then(hideAccountWaiting)
+    showAllAccountsWaiting()
+    await resetRealizedResultsForAll().catch(showError)
+    promiseRun('auditBooks' , '<?!= book.id ?>')
     disableButtons(false)
+  }
+
+  async function resetRealizedResultsForAll() {
+    <? for (var i = 0; i < accounts.length; i++) { ?>
+      await promiseRun('resetRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', getAutoMtM()).then(hideAccountWaiting)
+    <? } ?>
   }
 
 

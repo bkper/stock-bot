@@ -1,9 +1,10 @@
 namespace RealizedResultsService {
 
-  export function getBotViewTemplate(baseBookId: string, baseAccountId: string): GoogleAppsScript.HTML.HtmlOutput {
+  export function getBotViewTemplate(baseBookId: string, baseAccountId: string, baseGroupId: string): GoogleAppsScript.HTML.HtmlOutput {
 
     let baseBook = BkperApp.getBook(baseBookId);
     let baseAccount = baseBook.getAccount(baseAccountId);
+    let baseGroup = baseBook.getGroup(baseGroupId);
 
     let stockBook = BotService.getStockBook(baseBook);
 
@@ -12,6 +13,8 @@ namespace RealizedResultsService {
     }
 
     const template = HtmlService.createTemplateFromFile('BotView');
+
+    template.enableReset = true;
   
     template.book = {
       id: stockBook.getId(),
@@ -19,28 +22,37 @@ namespace RealizedResultsService {
     }
 
     template.accounts = [];
+    
+    if (baseAccount) {
+      let stockAccount = stockBook.getAccount(baseAccount.getName());
+      addAccount(stockAccount);
+    } else if (baseGroup) {
+      let stockGroup = stockBook.getGroup(baseGroup.getName());
+      if (stockGroup) {
+        for (const account of stockGroup.getAccounts()) {
+          addAccount(account);
+        }
+      }
+    } else {
+      for (const account of stockBook.getAccounts()) {
+        addAccount(account);
+      }
+      template.enableReset = false;
+    }
 
-    for (const account of stockBook.getAccounts()) {
+    function addAccount(account: Bkper.Account) {
+      if (!account) {
+        return;
+      }
       if (!account.isPermanent() || account.isArchived() || !BotService.getStockExchangeCode(account)) {
         //bypass non permanent accounts
-        continue;
+        return;
       }
       if (baseAccount == null || (baseAccount != null && baseAccount.getNormalizedName() == account.getNormalizedName())) {
         template.accounts.push({
           id: account.getId(),
           name: account.getName()
-        })
-      }
-    }
-
-    let stockAccount = baseAccount != null ? stockBook.getAccount(baseAccount.getName()) : null;
-
-    template.account = {}
-
-    if (stockAccount != null) {
-      template.account = {
-        id: stockAccount.getId(),
-        name: stockAccount.getName()
+        });
       }
     }
 
