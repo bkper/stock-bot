@@ -381,7 +381,7 @@ namespace RealizedResultsService {
           recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, purchaseTransaction.getDate(), gainBaseNoFX, summary);
           recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, purchaseTransaction, gainBaseWithFX, gainBaseNoFX, purchaseTransaction.getDate(), summary)
           if (autoMtM) {
-            markToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchaseTransaction.getDateObject(), gainBaseNoFX, purchasePrice)
+            markToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchaseTransaction.getDateObject(), purchasePrice)
           }
         }
         
@@ -433,7 +433,7 @@ namespace RealizedResultsService {
           recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, splittedPurchaseTransaction.getDate(), gainBaseNoFX, summary);
           recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, splittedPurchaseTransaction, gainBaseWithFX, gainBaseNoFX, splittedPurchaseTransaction.getDate(), summary)
           if (autoMtM) {
-            markToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, splittedPurchaseTransaction.getDateObject(), gainBaseNoFX, purchasePrice)
+            markToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, splittedPurchaseTransaction.getDateObject(), purchasePrice)
           }
         }
 
@@ -508,7 +508,7 @@ namespace RealizedResultsService {
     recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, saleTransaction.getDate(), gainBaseNoFxTotal, summary);
     recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, saleTransaction.getDate(), summary)
     if (autoMtM) {
-      markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, saleTransaction.getDateObject(), gainBaseNoFxTotal, salePrice)
+      markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, saleTransaction.getDateObject(), salePrice)
     }
 
   }
@@ -623,13 +623,8 @@ namespace RealizedResultsService {
     financialBook: Bkper.Book,
     unrealizedAccount: Bkper.Account,
     date: Date,
-    gain: Bkper.Amount, 
     price: Bkper.Amount
     ): void {
-
-    if (gain.round(financialBook.getFractionDigits()).eq(0)) {
-      return
-    }
 
     let total_quantity = getAccountBalance(stockBook, stockAccount, date);
     let financialInstrument = financialBook.getAccount(stockAccount.getName());
@@ -637,6 +632,7 @@ namespace RealizedResultsService {
     let newBalance = total_quantity.times(price);
 
     let amount = newBalance.minus(balance);
+
 
     if (amount.round(financialBook.getFractionDigits()).gt(0)) {
 
