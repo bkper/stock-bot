@@ -574,7 +574,7 @@ namespace RealizedResultsService {
         .setProperty(EXC_CODE_PROP, isBaseBook ? null : BotService.getExcCode(baseBook))
         .from(realizedGainAccount)
         .to(unrealizedAccount)
-        .post();
+        .post().check();
 
     } else if (gain.round(financialBook.getFractionDigits()).lt(0)) {
 
