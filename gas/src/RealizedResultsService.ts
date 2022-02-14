@@ -61,6 +61,8 @@ namespace RealizedResultsService {
       }
     }
 
+    template.accounts.sort((a: { name: string; }, b: { name: string; }) => a.name.localeCompare(b.name));
+
     return template.evaluate().setTitle('Stock Bot');
   }
   export function resetRealizedResults(stockBookId: string, stockAccountId: string): Summary {
