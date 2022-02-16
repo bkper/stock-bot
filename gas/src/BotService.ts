@@ -19,15 +19,11 @@ namespace BotService {
     }
   }
 
-  export function calculateGainBaseWithFX(purchaseAmount: Bkper.Amount, purchaseRate: Bkper.Amount, saleAmount: Bkper.Amount, saleRate: Bkper.Amount, shortSale: boolean): Bkper.Amount {
+  export function calculateGainBaseWithFX(purchaseAmount: Bkper.Amount, purchaseRate: Bkper.Amount, saleAmount: Bkper.Amount, saleRate: Bkper.Amount): Bkper.Amount {
     if (!purchaseRate || !saleRate) {
       return BkperApp.newAmount(0);
     }
-    if (shortSale) {
-      return purchaseAmount.times(purchaseRate).minus(saleAmount.times(saleRate));
-    } else {
-      return saleAmount.times(saleRate).minus(purchaseAmount.times(purchaseRate))
-    }
+    return saleAmount.times(saleRate).minus(purchaseAmount.times(purchaseRate))
   }
 
   export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction, excRateProp: string): Bkper.Amount {

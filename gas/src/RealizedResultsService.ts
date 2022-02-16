@@ -355,7 +355,7 @@ namespace RealizedResultsService {
         const purchaseAmount = (purchasePrice.times(purchaseQuantity));
         let gain = saleAmount.minus(purchaseAmount); 
         let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
-        let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate, shortSale);
+        let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
         if (!shortSale) {
           purchaseTotal = purchaseTotal.plus(purchaseAmount);
           saleTotal = saleTotal.plus(saleAmount);
@@ -401,7 +401,7 @@ namespace RealizedResultsService {
         const purchaseAmount = purchasePrice.times(partialBuyQuantity);
         let gain = saleAmount.minus(purchaseAmount); 
         let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
-        let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate, shortSale);
+        let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
 
         purchaseTransaction
         .setAmount(remainingBuyQuantity)
