@@ -749,7 +749,7 @@ namespace RealizedResultsService {
         .setProperty(EXC_AMOUNT_PROP, '0')
         .from(excAccount)
         .to(unrealizedAccount)
-        .post();
+        .post().check();
 
     } else if (fxGain.round(baseBook.getFractionDigits()).lt(0)) {
 
@@ -761,7 +761,7 @@ namespace RealizedResultsService {
         .setProperty(EXC_AMOUNT_PROP, '0')
         .from(unrealizedAccount)
         .to(excAccount)
-        .post();
+        .post().check();
 
     }
 
