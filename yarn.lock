@@ -2,11 +2,6 @@
 # yarn lockfile v1
 
 
-"@bkper/bkper-api-types@^3.7.5":
-  version "3.7.5"
-  resolved "https://registry.yarnpkg.com/@bkper/bkper-api-types/-/bkper-api-types-3.7.5.tgz#f16514d569f64b7d62c8bc9caf0859f4cbca0432"
-  integrity sha512-KrVMm1/zTYvuqZGvkr6a3FEKF1pH59TZmn1m7pY5pKOG2UTN5Z7ztg7/JELI9PE5D8HPUkNw7I4fxrvmJvsOEw==
-
 "@google-cloud/local-auth@^1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@google-cloud/local-auth/-/local-auth-1.0.0.tgz#f1a0145ae7204b3a15024846b65b6ef65dbc9da2"
@@ -63,20 +58,19 @@ bignumber.js@^9.0.0:
   resolved "https://registry.yarnpkg.com/bignumber.js/-/bignumber.js-9.0.1.tgz#8d7ba124c882bfd8e43260c67475518d0689e4e5"
   integrity sha512-IdZR9mh6ahOBv/hYGiXyVuyCetmGJhtYkqLBpTStdhEGjegpPlUawydyaF3pbIOFynJTpllEs+NP+CS9jKFLjA==
 
-bkper@^1.7.0:
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/bkper/-/bkper-1.7.0.tgz#a889692427152562970aeb65be707fe5a92c4c82"
-  integrity sha512-JDMgqh2/6D1KHCZXAkUDCY82zyXeAdIc/SP0t90Wib/HyPdNvUK6WZOLcMtkelNMNbt5tNSXd8nbY26QCTxrZA==
+bkper@^2.5.0:
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/bkper/-/bkper-2.5.0.tgz#faa2ab62548d83d2819c6125c227f826ab4987c9"
+  integrity sha512-bOasRUAO7i+L1gWLUnaHAJef/j3221QYY+9IkiOPn5/3viDowvCSt1dWrfTnpYMTzjgXYx6XfMLMthvfCDrRSQ==
   dependencies:
-    "@bkper/bkper-api-types" "^3.7.5"
     "@google-cloud/local-auth" "^1.0.0"
     big.js "^6.0.3"
     commander "^6.2.1"
     dayjs "^1.10.3"
     dotenv "^8.2.0"
+    gaxios "^4.3.0"
     google-auth-library "^6.1.4"
     luxon "^1.25.0"
-    node-fetch "^2.6.1"
     open "^7.3.1"
 
 brace-expansion@^1.1.7:
@@ -244,6 +238,17 @@ gaxios@^4.0.0:
     https-proxy-agent "^5.0.0"
     is-stream "^2.0.0"
     node-fetch "^2.3.0"
+
+gaxios@^4.3.0:
+  version "4.3.2"
+  resolved "https://registry.yarnpkg.com/gaxios/-/gaxios-4.3.2.tgz#845827c2dc25a0213c8ab4155c7a28910f5be83f"
+  integrity sha512-T+ap6GM6UZ0c4E6yb1y/hy2UB6hTrqhglp3XfmU9qbLCGRYhLVV5aRPpC4EmoG8N8zOnkYCgoBz+ScvGAARY6Q==
+  dependencies:
+    abort-controller "^3.0.0"
+    extend "^3.0.2"
+    https-proxy-agent "^5.0.0"
+    is-stream "^2.0.0"
+    node-fetch "^2.6.1"
 
 gcp-metadata@^4.2.0:
   version "4.2.1"
