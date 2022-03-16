@@ -28,6 +28,8 @@ export class EventHandlerTransactionDeleted extends EventHandlerTransaction {
 
     await stockTransaction.remove();
 
+    //TODO check if there is any associated RR tx on financial book and remove it
+
     let amountFormatted = stockBook.formatValue(stockTransaction.getAmount())
 
     let record = `DELETED: ${stockTransaction.getDateFormatted()} ${amountFormatted} ${await stockTransaction.getCreditAccountName()} ${await stockTransaction.getDebitAccountName()} ${stockTransaction.getDescription()}`;
