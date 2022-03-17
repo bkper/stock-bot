@@ -28,10 +28,13 @@ namespace ForwardDateService {
             .setProperty(ORDER_PROP, order + '')
             .setDate(date)
             .update()
+            order++;
         }
 
-        stockAccount.setProperty(STOCK_REALIZED_DATE_PROP, date.replaceAll('-', ''))
-        stockAccount.setProperty(FORWARDED_DATE_PROP, date)
+        stockAccount
+        .setProperty(STOCK_REALIZED_DATE_PROP, date.replaceAll('-', ''))
+        .setProperty(FORWARDED_DATE_PROP, date)
+        .update()
 
 
         let summary: Summary = {

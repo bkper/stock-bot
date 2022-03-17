@@ -195,9 +195,10 @@ namespace RealizedResultsService {
         } else {
             let forwardedDate = stockAccount.getProperty(FORWARDED_DATE_PROP);
             if (forwardedDate) {
-                forwardedDate = forwardedDate.replaceAll('-', '')
+                stockAccount.setProperty(STOCK_REALIZED_DATE_PROP, forwardedDate.replaceAll('-', ''));
+            } else {
+                stockAccount.deleteProperty(STOCK_REALIZED_DATE_PROP)
             }
-            stockAccount.setProperty(STOCK_REALIZED_DATE_PROP, forwardedDate);
         }
 
         stockAccount.update()
@@ -212,9 +213,9 @@ namespace RealizedResultsService {
             for (const saleTransaction of stockAccountSaleTransactions) {
                 processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM);
             }
+            checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
         }
 
-        checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
 
         return summary;
 
