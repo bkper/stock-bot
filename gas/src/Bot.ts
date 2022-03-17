@@ -8,6 +8,7 @@ const TRADE_DATE_PROP = 'trade_date';
 const INSTRUMENT_PROP = 'instrument';
 // const QUANTITY_PROP = 'quantity';
 const OPEN_QUANTITY_PROP = 'open_quantity';
+const HIST_QUANTITY_PROP = 'hist_quantity';
 const FEES_PROP = 'fees';
 const INTEREST_PROP = 'interest';
 const NEEDS_REBUILD_PROP = 'needs_rebuild';
@@ -32,7 +33,10 @@ const EXC_ACCOUNT_PROP = 'exc_account';
 const PURCHASE_EXC_RATE_PROP = 'purchase_exc_rate';
 const SALE_EXC_RATE_PROP = 'sale_exc_rate';
 const ORDER_PROP = 'order';
+const HIST_ORDER_PROP = 'hist_order';
+const DATE_PROP = 'date';
 const STOCK_REALIZED_DATE_PROP = 'stock_realized_date';
+const FORWARDED_DATE_PROP = 'forwarded_date';
 const STOCK_SELL_ACCOUNT_NAME = 'Sell';
 const STOCK_BUY_ACCOUNT_NAME = 'Buy';
 const REALIZED_SUFFIX = 'Realized';
@@ -69,12 +73,7 @@ function calculateRealizedResults(bookId: string, accountId: string, autoMtM: bo
 
 function updateAccountsToDate(bookId: string, accountId: string, date: string): Summary {
   if (accountId) {
-
-    let summary: Summary = {
-        accountId: accountId,
-        result: {date: date}
-      };   
-
+    let summary = ForwardDateService.forwardDate(bookId, accountId, date);
     summary.result = JSON.stringify(summary.result);
     return summary;
   }
@@ -82,7 +81,14 @@ function updateAccountsToDate(bookId: string, accountId: string, date: string): 
 
 function resetRealizedResults(bookId: string, accountId: string): Summary {
   if (accountId) {
-    let summary = RealizedResultsService.resetRealizedResults(bookId, accountId);
+    let summary = RealizedResultsService.resetRealizedResults(bookId, accountId, false);
+    return summary;
+  }
+}
+
+function fullResetRealizedResults(bookId: string, accountId: string): Summary {
+  if (accountId) {
+    let summary = RealizedResultsService.resetRealizedResults(bookId, accountId, true);
     return summary;
   }
 }

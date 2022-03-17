@@ -8,6 +8,14 @@ namespace BotService {
     });
   }
 
+  export function getAccountQuery(account: Bkper.Account) {
+      if (account.getProperty(FORWARDED_DATE_PROP)) {
+          return `account:'${account.getName()}' after:${account.getProperty(FORWARDED_DATE_PROP)}`
+      } else {
+          return `account:'${account.getName()}'`;
+      }
+  }
+
   export function calculateGainBaseNoFX(gainLocal: Bkper.Amount, purchaseRate: Bkper.Amount, saleRate: Bkper.Amount, shortSale: boolean): Bkper.Amount {
     if (!purchaseRate || !saleRate) {
       return BkperApp.newAmount(0);
@@ -59,6 +67,8 @@ namespace BotService {
 
   export function getBaseBook(book: Bkper.Book): Bkper.Book {
     if (book.getCollection() == null) {
+        //@ts-ignore
+        console.log(`Collection of book ${book.getName()} id ${book.getId()}: ${book.wrapped}`)
       return null;
     }
     let connectedBooks = book.getCollection().getBooks();
@@ -72,6 +82,7 @@ namespace BotService {
         return connectedBook;
       }
     }
+    console.log('No base book')
     return null;
   }
 
@@ -102,7 +113,7 @@ namespace BotService {
       let excCodeConnectedBook = getExcCode(connectedBook);
       let fractionDigits = connectedBook.getFractionDigits();
       if (fractionDigits != 0 && excCode == excCodeConnectedBook) {
-        return connectedBook;
+        return BkperApp.getBook(connectedBook.getId());
       }
     }
     return null;

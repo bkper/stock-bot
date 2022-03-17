@@ -103,6 +103,7 @@
 
     <div class="footer" id='footer-panel'>
       <?!= enableReset ? "<button id='reset-button' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
+      <button id="full-reset-button" onclick="fullResetRealizedResults()">Full Reset</button>
       <button id="calculate-button" onclick="calculateRealizedResults()">Calculate</button>
       <button id="close-button" onclick="closeWindow()">Close</button>
     </div>
@@ -172,9 +173,23 @@
     disableButtons(false)
   }
 
+  async function fullResetRealizedResults() {
+    disableButtons(true)
+    showAllAccountsWaiting()
+    await fullResetRealizedResultsForAll().catch(showError)
+    promiseRun('auditBooks' , '<?!= book.id ?>')
+    disableButtons(false)
+  }
+
   async function resetRealizedResultsForAll() {
     <? for (var i = 0; i < accounts.length; i++) { ?>
       await promiseRun('resetRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting)
+    <? } ?>
+  }
+
+  async function fullResetRealizedResultsForAll() {
+    <? for (var i = 0; i < accounts.length; i++) { ?>
+      await promiseRun('fullResetRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting)
     <? } ?>
   }
 
