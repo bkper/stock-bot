@@ -53,6 +53,12 @@
       .options-panel {
         padding-top: 10px;
       }
+      
+      .date-box {
+        display: flex;
+        justify-content: center;
+        padding: 20px 20px 0;
+      }
 
       .footer {
         justify-content: center;
@@ -95,11 +101,18 @@
       </div>
     </div>
 
-
     <div class="footer" id='footer-panel'>
       <?!= enableReset ? "<button id='reset-button' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
       <button id="calculate-button" onclick="calculateRealizedResults()">Calculate</button>
       <button id="close-button" onclick="closeWindow()">Close</button>
+    </div>
+    
+    <div class='date-box'>
+      <input type="date" id="forward-date" name="forward-date"/>
+    </div>
+
+    <div class="footer" id='forward-date-panel'>
+      <button id="forward-date-button" onclick="updateAccountsToDate()">Forward Date</button>
     </div>
 
   </body>
@@ -117,6 +130,24 @@
 
   function getAutoMtM() {
     return document.getElementById("autoMtM").checked;
+  }
+
+  function getDateInput() {
+    return document.getElementById("forward-date").value;
+  }
+
+  async function updateAccountsToDate() {
+    disableButtons(true)
+    showAllAccountsWaiting()
+    await updateAccountsToDateForAll().catch(showError)
+    promiseRun('auditBooks', '<?!= book.id ?>')
+    disableButtons(false)
+  }
+
+  async function updateAccountsToDateForAll() {
+    <? for (var i = 0; i < accounts.length; i++) { ?>
+      await promiseRun('updateAccountsToDate' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', getDateInput()).then(hideAccountWaiting)
+    <? } ?>
   }
 
   async function calculateRealizedResults() {
@@ -178,8 +209,10 @@
   function disableButtons(disable) {
     if (disable) {
       document.getElementById('footer-panel').style.display = 'none';
+      document.getElementById('forward-date-panel').style.display = 'none';
     } else {
       document.getElementById('footer-panel').style.display = 'flex';
+      document.getElementById('forward-date-panel').style.display = 'flex';
     }
   }    
 
