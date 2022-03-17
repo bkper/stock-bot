@@ -56,7 +56,7 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   //@ts-ignore
   let groupId = e.parameter.groupId;
 
-  return RealizedResultsService.getBotViewTemplate(bookId, accountId, groupId);
+  return BotViewService.getBotViewTemplate(bookId, accountId, groupId);
 }
 
 function calculateRealizedResults(bookId: string, accountId: string, autoMtM: boolean): Summary {

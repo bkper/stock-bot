@@ -141,5 +141,21 @@ namespace BotService {
     return book.getProperty(EXC_CODE_PROP, 'exchange_code');
   }
 
+  export function compareToFIFO(tx1: Bkper.Transaction, tx2: Bkper.Transaction): number {
+    if (tx1.getDateValue() != tx2.getDateValue()) {
+      return tx1.getDateValue() - tx2.getDateValue();
+    }
+    if (tx1.getProperty(ORDER_PROP) != null && tx2.getProperty(ORDER_PROP) != null) {
+      let order1 = +tx1.getProperty(ORDER_PROP);
+      let order2 = +tx2.getProperty(ORDER_PROP);
+      console.log(`${order1} | ${order2}`)
+      return order1 - order2;
+    }
+    if (tx1.getCreatedAt() && tx2.getCreatedAt()) {
+      return tx1.getCreatedAt().getMilliseconds() - tx2.getCreatedAt().getMilliseconds();
+    }
+    return 0;
+  }
+
 
 }

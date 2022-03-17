@@ -1,70 +1,5 @@
 namespace RealizedResultsService {
 
-  export function getBotViewTemplate(baseBookId: string, baseAccountId: string, baseGroupId: string): GoogleAppsScript.HTML.HtmlOutput {
-
-    let baseBook = BkperApp.getBook(baseBookId);
-    let baseAccount = baseBook.getAccount(baseAccountId);
-    let baseGroup = baseBook.getGroup(baseGroupId);
-
-    let stockBook = BotService.getStockBook(baseBook);
-
-    if (stockBook == null) {
-      throw 'No book with 0 decimal places found in the collection';
-    }
-
-    const template = HtmlService.createTemplateFromFile('BotView');
-
-    template.enableReset = true;
-  
-    template.book = {
-      id: stockBook.getId(),
-      name: stockBook.getName(),
-    }
-
-    template.accounts = [];
-    template.group = {}
-    
-    if (baseAccount) {
-      let stockAccount = stockBook.getAccount(baseAccount.getName());
-      addAccount(stockAccount);
-    } else if (baseGroup) {
-      let stockGroup = stockBook.getGroup(baseGroup.getName());
-      if (stockGroup) {
-        template.group = {
-          id: baseGroup.getId(),
-          name: baseGroup.getName()
-        }
-        for (const account of stockGroup.getAccounts()) {
-          addAccount(account);
-        }
-      }
-    } else {
-      for (const account of stockBook.getAccounts()) {
-        addAccount(account);
-      }
-      template.enableReset = false;
-    }
-
-    function addAccount(account: Bkper.Account) {
-      if (!account) {
-        return;
-      }
-      if (!account.isPermanent() || account.isArchived() || !BotService.getStockExchangeCode(account)) {
-        //bypass non permanent accounts
-        return;
-      }
-      if (baseAccount == null || (baseAccount != null && baseAccount.getNormalizedName() == account.getNormalizedName())) {
-        template.accounts.push({
-          id: account.getId(),
-          name: account.getName()
-        });
-      }
-    }
-
-    template.accounts.sort((a: { name: string; }, b: { name: string; }) => a.name.localeCompare(b.name));
-
-    return template.evaluate().setTitle('Stock Bot');
-  }
   export function resetRealizedResults(stockBookId: string, stockAccountId: string): Summary {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
@@ -73,6 +8,7 @@ namespace RealizedResultsService {
 
     return {accountId: stockAccount.getId(), result: 'Done.'};
   }
+
   export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string, autoMtM: boolean): Summary {
     let stockBook = BkperApp.getBook(stockBookId);
     let stockAccount = stockBook.getAccount(stockAccountId);
@@ -115,8 +51,8 @@ namespace RealizedResultsService {
         }
       }
 
-      stockAccountSaleTransactions = stockAccountSaleTransactions.sort(compareTo);
-      stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(compareTo);
+      stockAccountSaleTransactions = stockAccountSaleTransactions.sort(BotService.compareToFIFO);
+      stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(BotService.compareToFIFO);
 
       const baseBook = BotService.getBaseBook(financialBook);
 
@@ -251,8 +187,8 @@ namespace RealizedResultsService {
 
     if (recalculate) {
       //FIFO
-      stockAccountSaleTransactions = stockAccountSaleTransactions.sort(compareTo);
-      stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(compareTo);
+      stockAccountSaleTransactions = stockAccountSaleTransactions.sort(BotService.compareToFIFO);
+      stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(BotService.compareToFIFO);
 
       const baseBook = BotService.getBaseBook(financialBook);
 
@@ -287,21 +223,7 @@ namespace RealizedResultsService {
     }
   }
 
-  function compareTo(tx1: Bkper.Transaction, tx2: Bkper.Transaction): number {
-    if (tx1.getDateValue() != tx2.getDateValue()) {
-      return tx1.getDateValue() - tx2.getDateValue();
-    }
-    if (tx1.getProperty(ORDER_PROP) != null && tx2.getProperty(ORDER_PROP) != null) {
-      let order1 = +tx1.getProperty(ORDER_PROP);
-      let order2 = +tx2.getProperty(ORDER_PROP);
-      console.log(`${order1} | ${order2}`)
-      return order1 - order2;
-    }
-    if (tx1.getCreatedAt() && tx2.getCreatedAt()) {
-      return tx1.getCreatedAt().getMilliseconds() - tx2.getCreatedAt().getMilliseconds();
-    }
-    return 0;
-  }
+
 
   function logPurchase(stockBook: Bkper.Book, quantity: Bkper.Amount, price: Bkper.Amount, date: string, excRate: Bkper.Amount): PurchaseLogEntry {
     return {
@@ -313,7 +235,7 @@ namespace RealizedResultsService {
   }
 
   function isShortSale(purchaseTransaction: Bkper.Transaction, saleTransaction: Bkper.Transaction): boolean {
-    return compareTo(saleTransaction, purchaseTransaction) < 0;
+    return BotService.compareToFIFO(saleTransaction, purchaseTransaction) < 0;
   }
 
   function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean): void {
