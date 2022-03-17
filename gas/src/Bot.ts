@@ -38,6 +38,15 @@ const STOCK_BUY_ACCOUNT_NAME = 'Buy';
 const REALIZED_SUFFIX = 'Realized';
 const UREALIZED_SUFFIX = 'Unrealized';
 
+const REPORT_CLOSING_DATE_PROP = 'report_closing_date';
+const PREV_CLOSING_DATE_PROP = 'prev_closing_date';
+const QUANTITY_PROP = 'quantity';
+const SELL_ACCOUNT_NAME = 'Sell'
+const BUY_ACCOUNT_NAME = 'Buy'
+const ORIGINAL_PURCHASE_PRICE = 'orig_purchase_price'
+const ORIGINAL_SALE_PRICE = 'orig_sale_price'
+const TRADING = 'Trading';
+
 
 function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   //@ts-ignore
@@ -53,6 +62,19 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
 function calculateRealizedResults(bookId: string, accountId: string, autoMtM: boolean): Summary {
   if (accountId) {
     let summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId, autoMtM);
+    summary.result = JSON.stringify(summary.result);
+    return summary;
+  }
+}
+
+function updateAccountsToDate(bookId: string, accountId: string, date: string): Summary {
+  if (accountId) {
+
+    let summary: Summary = {
+        accountId: accountId,
+        result: {date: date}
+      };   
+
     summary.result = JSON.stringify(summary.result);
     return summary;
   }
