@@ -8,11 +8,11 @@ namespace BotService {
     });
   }
 
-  export function getAccountQuery(account: Bkper.Account) {
-      if (account.getProperty(FORWARDED_DATE_PROP)) {
-          return `account:'${account.getName()}' after:${account.getProperty(FORWARDED_DATE_PROP)}`
+  export function getAccountQuery(account: Bkper.Account, full: boolean) {
+      if (full || !account.getProperty(FORWARDED_DATE_PROP)) {
+        return `account:'${account.getName()}'`;
       } else {
-          return `account:'${account.getName()}'`;
+        return `account:'${account.getName()}' after:${account.getProperty(FORWARDED_DATE_PROP)}`
       }
   }
 

@@ -28,7 +28,7 @@ namespace RealizedResultsService {
                 return summary; //Skip
             }
 
-            let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount));
+            let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, false));
 
             let stockAccountSaleTransactions: Bkper.Transaction[] = [];
             let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
@@ -69,7 +69,7 @@ namespace RealizedResultsService {
     }
 
     export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account, recalculate: boolean, autoMtM: boolean, full: boolean): Summary {
-        let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount));
+        let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, full));
         let summary: Summary = {
             accountId: stockAccount.getId(),
             result: {}
