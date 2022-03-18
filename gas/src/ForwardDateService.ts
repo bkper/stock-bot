@@ -19,15 +19,21 @@ namespace ForwardDateService {
         transactions =  transactions.sort(BotService.compareToFIFO)
         let order = -transactions.length;
         for (const transaction of transactions) {
+            if (!transaction.getProperty(DATE_PROP)) {
+                transaction.setProperty(DATE_PROP, transaction.getDate())
+            }
+            if (!transaction.getProperty(HIST_QUANTITY_PROP)) {
+                transaction.setProperty(HIST_QUANTITY_PROP, transaction.getProperty(ORIGINAL_QUANTITY_PROP))
+            }
+            if (!transaction.getProperty(HIST_ORDER_PROP)) {
+                transaction.setProperty(HIST_ORDER_PROP, transaction.getProperty(ORDER_PROP))
+            }
             transaction
-            .setProperty('date', transaction.getDate())
-            .setProperty('hist_quantity', transaction.getProperty(ORIGINAL_QUANTITY_PROP))
-            .setProperty('hist_order', transaction.getProperty(ORDER_PROP))
-            .deleteProperty(ORIGINAL_AMOUNT_PROP)
-            .setProperty(ORIGINAL_QUANTITY_PROP, transaction.getAmount().toString())
-            .setProperty(ORDER_PROP, order + '')
-            .setDate(date)
-            .update()
+                .deleteProperty(ORIGINAL_AMOUNT_PROP)
+                .setProperty(ORIGINAL_QUANTITY_PROP, transaction.getAmount().toString())
+                .setProperty(ORDER_PROP, order + '')
+                .setDate(date)
+                .update()
             order++;
         }
 
