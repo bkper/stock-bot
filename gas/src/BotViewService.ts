@@ -14,7 +14,15 @@ namespace BotViewService {
 
     const template = HtmlService.createTemplateFromFile('BotView');
 
+    template.currentYear = new Date().getFullYear();
+
     template.enableReset = true;
+
+    if (stockBook.getPermission() == BkperApp.Permission.OWNER) {
+      template.enableFullReset = true;
+    } else {
+      template.enableFullReset = false;
+    }
   
     template.book = {
       id: stockBook.getId(),
@@ -43,6 +51,7 @@ namespace BotViewService {
         addAccount(account);
       }
       template.enableReset = false;
+      template.enableFullReset = false;
     }
 
     function addAccount(account: Bkper.Account) {

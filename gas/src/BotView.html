@@ -20,7 +20,7 @@
         text-align: center;
       }
 
-      .body #sub-header {
+      .sub-header {
         display: flex;
         height: 40px;
         font-size: 14px;
@@ -54,14 +54,18 @@
         padding-top: 10px;
       }
       
-      .date-box {
+      .date-panel {
         display: flex;
         justify-content: center;
-        padding: 20px 20px 0;
+        padding: 10px 20px 0;
       }
 
       .footer {
         justify-content: center;
+      }
+
+      #forward-date-panel {
+        padding-top: 0 !important;
       }
 
     </style>
@@ -75,7 +79,7 @@
     </div>
 
     <div class='body'>
-      <div id='sub-header'>
+      <div class='sub-header'>
         Calculate using FIFO method
       </div>
   
@@ -103,13 +107,19 @@
 
     <div class="footer" id='footer-panel'>
       <?!= enableReset ? "<button id='reset-button' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
-      <button id="full-reset-button" onclick="fullResetRealizedResults()">Full Reset</button>
+      <?!= enableFullReset ? "<button id='full-reset-button' onclick='fullResetRealizedResults()'>Full Reset</button>" : "" ?>
       <button id="calculate-button" onclick="calculateRealizedResults()">Calculate</button>
       <button id="close-button" onclick="closeWindow()">Close</button>
     </div>
-    
-    <div class='date-box'>
-      <input type="date" id="forward-date" name="forward-date"/>
+
+    <div class='body'>
+      <div class='sub-header'>
+        Carry open batches to a new fiscal period by setting a Forward Date
+      </div>
+
+      <div class='date-panel'>
+        <input type="date" id="forward-date" name="forward-date" value='<?!= currentYear ?>-01-01'/>
+      </div>
     </div>
 
     <div class="footer" id='forward-date-panel'>
@@ -219,17 +229,33 @@
       [func].apply (this , runArgs) ;
     })
   
-  }  
+  }
 
   function disableButtons(disable) {
     if (disable) {
-      document.getElementById('footer-panel').style.display = 'none';
-      document.getElementById('forward-date-panel').style.display = 'none';
+      <? if (enableReset) { ?>
+        document.getElementById('reset-button').setAttribute('disabled', true);
+      <? } ?>
+      <? if (enableFullReset) { ?>
+        document.getElementById('full-reset-button').setAttribute('disabled', true);
+      <? } ?>
+      document.getElementById('calculate-button').setAttribute('disabled', true);
+      document.getElementById('close-button').setAttribute('disabled', true);
+      document.getElementById('forward-date').setAttribute('disabled', true);
+      document.getElementById('forward-date-button').setAttribute('disabled', true);
     } else {
-      document.getElementById('footer-panel').style.display = 'flex';
-      document.getElementById('forward-date-panel').style.display = 'flex';
+      <? if (enableReset) { ?>
+        document.getElementById('reset-button').removeAttribute('disabled');
+      <? } ?>
+      <? if (enableFullReset) { ?>
+        document.getElementById('full-reset-button').removeAttribute('disabled');
+      <? } ?>
+      document.getElementById('calculate-button').removeAttribute('disabled');
+      document.getElementById('close-button').removeAttribute('disabled');
+      document.getElementById('forward-date').removeAttribute('disabled');
+      document.getElementById('forward-date-button').removeAttribute('disabled');
     }
-  }    
+  }
 
   function showError(error) {
     window.alert(error);
