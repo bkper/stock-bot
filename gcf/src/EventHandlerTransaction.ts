@@ -48,8 +48,6 @@ export abstract class EventHandlerTransaction extends EventHandler {
     let financialCreditAccount = fiancialTransaction.creditAccount;
     let financialDebitAccount = fiancialTransaction.debitAccount;
 
-    console.log(`${fiancialTransaction.creditAccount.id} - ${fiancialTransaction.debitAccount.id}`)
-
     let stockExcCode = getStockExchangeCode(financialCreditAccount);
     if (stockExcCode == null) {
       stockExcCode = getStockExchangeCode(financialDebitAccount);

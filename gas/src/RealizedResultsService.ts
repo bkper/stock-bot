@@ -233,7 +233,7 @@ namespace RealizedResultsService {
         }
         let stockAccountLastTxDateValue = stockAccount.getRealizedDateValue();
         if (lastTxDateValue != null && (stockAccountLastTxDateValue == null || lastTxDateValue > stockAccountLastTxDateValue)) {
-            stockAccount.setRealizedDate(lastTxDate);
+            stockAccount.setRealizedDate(lastTxDate).update();
         }
     }
 

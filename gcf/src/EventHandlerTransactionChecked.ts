@@ -1,5 +1,5 @@
 import { Account, AccountType, Amount, Book, Transaction } from "bkper";
-import { getStockExchangeCode } from "./BotService";
+import { getStockExchangeCode, getRealizedDateValue } from "./BotService";
 import * as constants from "./constants";
 import { EventHandlerTransaction } from "./EventHandlerTransaction";
 import { InterceptorFlagRebuild } from "./InterceptorFlagRebuild";
@@ -102,7 +102,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
   }
 
   private checkLastTxDate(stockAccount: Account, transaction: bkper.Transaction) {
-    let lastTxDate = stockAccount.getProperty(constants.STOCK_REALIZED_DATE_PROP);
+    let lastTxDate = getRealizedDateValue(stockAccount);
     if (lastTxDate != null && transaction.dateValue <= +lastTxDate) {
       stockAccount.setProperty(constants.NEEDS_REBUILD_PROP, 'TRUE').update();
     }

@@ -12,8 +12,6 @@ export class InterceptorFlagRebuild {
       
       let stockAccount = await getStockAccount(transaction);
 
-      console.log(stockAccount)
-
       if(stockAccount && stockAccount.getProperty(NEEDS_REBUILD_PROP) == null) {
         stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
         return `Flagging account ${stockAccount.getName()} for rebuild`;

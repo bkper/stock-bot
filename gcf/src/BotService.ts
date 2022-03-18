@@ -1,5 +1,5 @@
 import { Account, AccountType, Bkper, Book, Group, Transaction } from 'bkper';
-import { EXC_CODE_PROP, NEEDS_REBUILD_PROP, STOCK_BOOK_PROP, STOCK_EXC_CODE_PROP, STOCK_REALIZED_DATE_PROP } from './constants';
+import { EXC_CODE_PROP, LEGACY_REALIZED_DATE_PROP, NEEDS_REBUILD_PROP, REALIZED_DATE_PROP, STOCK_BOOK_PROP, STOCK_EXC_CODE_PROP } from './constants';
 
 export function isStockBook(book: Book): boolean {
   if (book.getProperty(STOCK_BOOK_PROP)) {
@@ -40,11 +40,23 @@ export async function getStockAccount(stockTransaction: Transaction): Promise<Ac
 export async function flagStockAccountForRebuildIfNeeded(stockTransaction: Transaction) {
   let stockAccount = await getStockAccount(stockTransaction);
   if (stockAccount) {
-    let lastTxDate = stockAccount.getProperty(STOCK_REALIZED_DATE_PROP);
+    let lastTxDate = getRealizedDateValue(stockAccount);
     if (lastTxDate != null && stockTransaction.getDateValue() <= +lastTxDate) {
       await stockAccount.setProperty(NEEDS_REBUILD_PROP, 'TRUE').update();
     }
   }
+}
+
+export function getRealizedDateValue(account: Account): number | null {
+    const legacyRealizedDate = account.getProperty(LEGACY_REALIZED_DATE_PROP);
+    if (legacyRealizedDate) {
+        return +legacyRealizedDate;
+    }
+    const realizedDate = account.getProperty(REALIZED_DATE_PROP)
+    if (realizedDate) {
+        return +(realizedDate.replace(/-/g, ""))
+    }
+    return null
 }
 
 export function getStockExchangeCode(account: bkper.Account): string {
