@@ -29,7 +29,7 @@ class StockAccount {
     }
 
     getRealizedDateValue(): number | null {
-        return +(this.getRealizedDate().replaceAll('-', ''))
+        return this.getRealizedDate() ? +(this.getRealizedDate().replaceAll('-', '')) : null
     }
 
     getRealizedDate(): string {
@@ -57,7 +57,7 @@ class StockAccount {
     }
 
     getForwardedDateValue(): number | null {
-        return +(this.getForwardedDate().replaceAll('-', ''))
+        return this.getForwardedDate() ? +(this.getForwardedDate().replaceAll('-', '')) : null
     }
 
     getForwardedDate(): string | undefined {
