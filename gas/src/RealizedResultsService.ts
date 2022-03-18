@@ -2,7 +2,7 @@ namespace RealizedResultsService {
 
     export function resetRealizedResults(stockBookId: string, stockAccountId: string, full: boolean): Summary {
         let stockBook = BkperApp.getBook(stockBookId);
-        let stockAccount = stockBook.getAccount(stockAccountId);
+        let stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
 
         revertRealizedResultsForAccount(stockBook, stockAccount, false, false, full);
 
@@ -11,7 +11,7 @@ namespace RealizedResultsService {
 
     export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string, autoMtM: boolean): Summary {
         let stockBook = BkperApp.getBook(stockBookId);
-        let stockAccount = stockBook.getAccount(stockAccountId);
+        let stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
 
         let summary: Summary = {
             accountId: stockAccountId,
@@ -19,10 +19,10 @@ namespace RealizedResultsService {
         };
 
 
-        if (needsRebuild(stockAccount)) {
+        if (stockAccount.needsRebuild()) {
             revertRealizedResultsForAccount(stockBook, stockAccount, true, autoMtM, false);
         } else {
-            let stockExcCode = BotService.getStockExchangeCode(stockAccount);
+            let stockExcCode =  stockAccount.getExchangeCode();
             let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
             if (financialBook == null) {
                 return summary; //Skip
@@ -68,7 +68,7 @@ namespace RealizedResultsService {
 
     }
 
-    export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: Bkper.Account, recalculate: boolean, autoMtM: boolean, full: boolean): Summary {
+    export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, recalculate: boolean, autoMtM: boolean, full: boolean): Summary {
         let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, full));
         let summary: Summary = {
             accountId: stockAccount.getId(),
@@ -77,7 +77,7 @@ namespace RealizedResultsService {
         let stockAccountSaleTransactions: Bkper.Transaction[] = [];
         let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
 
-        let stockExcCode = BotService.getStockExchangeCode(stockAccount);
+        let stockExcCode = stockAccount.getExchangeCode();
         let financialBook = BotService.getFinancialBook(stockBook, stockExcCode)
         if (financialBook == null) {
             return;
@@ -188,16 +188,16 @@ namespace RealizedResultsService {
             }
         }
 
-        stockAccount.deleteProperty(NEEDS_REBUILD_PROP)
+        stockAccount.clearNeedsRebuild()
 
         if (full) {
-            stockAccount.deleteProperty(STOCK_REALIZED_DATE_PROP).deleteProperty(FORWARDED_DATE_PROP)
+            stockAccount.deleteRealizedDate().deleteForwardedDate();
         } else {
-            let forwardedDate = stockAccount.getProperty(FORWARDED_DATE_PROP);
+            let forwardedDate = stockAccount.getForwardedDate();
             if (forwardedDate) {
-                stockAccount.setProperty(STOCK_REALIZED_DATE_PROP, forwardedDate.replaceAll('-', ''));
+                stockAccount.setRealizedDate(forwardedDate);
             } else {
-                stockAccount.deleteProperty(STOCK_REALIZED_DATE_PROP)
+                stockAccount.deleteRealizedDate();
             }
         }
 
@@ -221,23 +221,19 @@ namespace RealizedResultsService {
 
     }
 
-    function needsRebuild(stockAccount: Bkper.Account): boolean {
-        return stockAccount.getProperty(NEEDS_REBUILD_PROP) == 'TRUE';
-    }
-
-    function checkLastTxDate(stockAccount: Bkper.Account, stockAccountSaleTransactions: Bkper.Transaction[], stockAccountPurchaseTransactions: Bkper.Transaction[]) {
+    function checkLastTxDate(stockAccount: StockAccount, stockAccountSaleTransactions: Bkper.Transaction[], stockAccountPurchaseTransactions: Bkper.Transaction[]) {
         let lastSaleTx = stockAccountSaleTransactions.length > 0 ? stockAccountSaleTransactions[stockAccountSaleTransactions.length - 1] : null;
         let lastPurchaseTx = stockAccountPurchaseTransactions.length > 0 ? stockAccountPurchaseTransactions[stockAccountPurchaseTransactions.length - 1] : null;
 
-        let lastTxDate = lastSaleTx != null ? lastSaleTx.getDateValue() : null;
-        if ((lastTxDate == null && lastPurchaseTx != null) || (lastPurchaseTx != null && lastPurchaseTx.getDateValue() > +lastTxDate)) {
-            lastTxDate = lastPurchaseTx.getDateValue();
+        let lastTxDateValue = lastSaleTx != null ? lastSaleTx.getDateValue() : null;
+        let lastTxDate = lastSaleTx != null ? lastSaleTx.getDate() : null;
+        if ((lastTxDateValue == null && lastPurchaseTx != null) || (lastPurchaseTx != null && lastPurchaseTx.getDateValue() > +lastTxDateValue)) {
+            lastTxDate = lastPurchaseTx.getDate();
+            lastTxDateValue = lastPurchaseTx.getDateValue();
         }
-
-        let stockAccountLastTxDate = stockAccount.getProperty(STOCK_REALIZED_DATE_PROP);
-
-        if (lastTxDate != null && (stockAccountLastTxDate == null || lastTxDate > +stockAccountLastTxDate)) {
-            stockAccount.deleteProperty('last_sale_date').setProperty(STOCK_REALIZED_DATE_PROP, lastTxDate + '').update();
+        let stockAccountLastTxDateValue = stockAccount.getRealizedDateValue();
+        if (lastTxDateValue != null && (stockAccountLastTxDateValue == null || lastTxDateValue > stockAccountLastTxDateValue)) {
+            stockAccount.setRealizedDate(lastTxDate);
         }
     }
 
@@ -256,7 +252,7 @@ namespace RealizedResultsService {
         return BotService.compareToFIFO(saleTransaction, purchaseTransaction) < 0;
     }
 
-    function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: Bkper.Account, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean): void {
+    function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: StockAccount, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean): void {
 
         let salePrice: Bkper.Amount = BkperApp.newAmount(saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP));
 
@@ -456,7 +452,7 @@ namespace RealizedResultsService {
     }
 
 
-    function getUnrealizedAccount(stockAccount: Bkper.Account, book: Bkper.Book, summary: Summary, stockExcCode: string) {
+    function getUnrealizedAccount(stockAccount: StockAccount, book: Bkper.Book, summary: Summary, stockExcCode: string) {
         let unrealizedAccountName = `${stockAccount.getName()} ${UREALIZED_SUFFIX}`;
         let unrealizedAccount = book.getAccount(unrealizedAccountName);
         if (unrealizedAccount == null) {
@@ -473,7 +469,7 @@ namespace RealizedResultsService {
 
     function recordRealizedResult(
         baseBook: Bkper.Book,
-        stockAccount: Bkper.Account,
+        stockAccount: StockAccount,
         stockExcCode: string,
         financialBook: Bkper.Book,
         unrealizedAccount: Bkper.Account,
@@ -561,7 +557,7 @@ namespace RealizedResultsService {
     function markToMarket(
         stockBook: Bkper.Book,
         transaction: Bkper.Transaction,
-        stockAccount: Bkper.Account,
+        stockAccount: StockAccount,
         financialBook: Bkper.Book,
         unrealizedAccount: Bkper.Account,
         date: Date,
@@ -608,7 +604,7 @@ namespace RealizedResultsService {
         }
     }
 
-    function getAccountBalance(book: Bkper.Book, account: Bkper.Account, date: Date): Bkper.Amount {
+    function getAccountBalance(book: Bkper.Book, account: Bkper.Account | StockAccount, date: Date): Bkper.Amount {
         let balances = book.getBalancesReport(`account:"${account.getName()}" on:${book.formatDate(date)}`);
         let containers = balances.getBalancesContainers();
         if (containers == null || containers.length == 0) {

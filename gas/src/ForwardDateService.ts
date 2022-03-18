@@ -3,7 +3,7 @@ namespace ForwardDateService {
     export function forwardDate(stockBookId: string, stockAccountId: string, date: string): Summary {
 
         let stockBook = BkperApp.getBook(stockBookId);
-        let stockAccount = stockBook.getAccount(stockAccountId);
+        let stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
 
         let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' before:${date}`);
         let transactions: Bkper.Transaction[] = [];
@@ -32,8 +32,8 @@ namespace ForwardDateService {
         }
 
         stockAccount
-        .setProperty(STOCK_REALIZED_DATE_PROP, date.replaceAll('-', ''))
-        .setProperty(FORWARDED_DATE_PROP, date)
+        .setRealizedDate(date)
+        .setForwardedDate(date)
         .update()
 
 

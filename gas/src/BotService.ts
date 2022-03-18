@@ -8,13 +8,14 @@ namespace BotService {
     });
   }
 
-  export function getAccountQuery(account: Bkper.Account, full: boolean) {
-      if (full || !account.getProperty(FORWARDED_DATE_PROP)) {
-        return `account:'${account.getName()}'`;
+  export function getAccountQuery(stockAccount: StockAccount, full: boolean) {
+      if (full || !stockAccount.getForwardedDate()) {
+        return `account:'${stockAccount.getName()}'`;
       } else {
-        return `account:'${account.getName()}' after:${account.getProperty(FORWARDED_DATE_PROP)}`
+        return `account:'${stockAccount.getName()}' after:${stockAccount.getForwardedDate()}`
       }
   }
+
 
   export function calculateGainBaseNoFX(gainLocal: Bkper.Amount, purchaseRate: Bkper.Amount, saleRate: Bkper.Amount, shortSale: boolean): Bkper.Amount {
     if (!purchaseRate || !saleRate) {
@@ -114,26 +115,6 @@ namespace BotService {
       let fractionDigits = connectedBook.getFractionDigits();
       if (fractionDigits != 0 && excCode == excCodeConnectedBook) {
         return BkperApp.getBook(connectedBook.getId());
-      }
-    }
-    return null;
-  }
-
-
-  export function getStockExchangeCode(account: Bkper.Account): string {
-    if (account == null || account.getType() == BkperApp.AccountType.INCOMING || account.getType() == BkperApp.AccountType.OUTGOING) {
-      return null;
-    }
-    let groups = account.getGroups();
-    if (groups != null) {
-      for (const group of groups) {
-        if (group == null) {
-          continue;
-        }
-        let stockExchange = group.getProperty(STOCK_EXC_CODE_PROP);
-        if (stockExchange != null && stockExchange.trim() != '') {
-          return stockExchange;
-        }
       }
     }
     return null;
