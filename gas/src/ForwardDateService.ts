@@ -5,6 +5,29 @@ namespace ForwardDateService {
         let stockBook = BkperApp.getBook(stockBookId);
         let stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
 
+        let baseBook = BotService.getBaseBook(stockBook);
+        let financialBook = BotService.getFinancialBook(stockBook, stockAccount.getExchangeCode());
+
+        // Closing Date: Forward Date - 1 day
+        const closingDate = new Date();
+        closingDate.setTime(stockBook.parseDate(date).getTime());
+        closingDate.setDate(closingDate.getDate() - 1);
+
+        let stockBookBalancesReport = stockBook.getBalancesReport(`group:'${TRADING}' on:${stockBook.formatDate(closingDate)}`);
+        let baseBookBalancesReport = baseBook.getBalancesReport(`group:'${TRADING}' on:${baseBook.formatDate(closingDate)}`);
+        let financialBookBalancesReport = financialBook.getBalancesReport(`group:'${TRADING}' on:${financialBook.formatDate(closingDate)}`);
+
+        // Open amount from Base Book
+        const openAmountBase = baseBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalance();
+        // Open amount from Financial Book
+        const openAmountExc = financialBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalance();
+        // Open quantity from Stock Book
+        const openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalance();
+        // Current price
+        const currentPrice = !openQuantity.eq(0) ? openAmountBase.div(openQuantity) : undefined;
+        // Exchange rate
+        const excRate = !openAmountExc.eq(0) ? openAmountBase.div(openAmountExc) : undefined;
+
         let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' before:${date}`);
         let transactions: Bkper.Transaction[] = [];
 
@@ -27,6 +50,20 @@ namespace ForwardDateService {
             }
             if (!transaction.getProperty(HIST_ORDER_PROP)) {
                 transaction.setProperty(HIST_ORDER_PROP, transaction.getProperty(ORDER_PROP))
+            }
+            // fwd_purchase_price / fwd_sale_price
+            if (BotService.isPurchase(transaction) && currentPrice) {
+                transaction.setProperty(FWD_PURCHASE_PRICE_PROP, currentPrice.toString());
+            } else {
+                transaction.setProperty(FWD_SALE_PRICE_PROP, currentPrice.toString());
+            }
+            // fwd_purchase_exc_rate / fwd_sale_exc_rate
+            if (stockAccount.getExchangeCode() !== BotService.getExcCode(baseBook)) {
+                if (BotService.isPurchase(transaction) && excRate) {
+                    transaction.setProperty(FWD_PURCHASE_EXC_RATE_PROP, excRate.toString());
+                } else {
+                    transaction.setProperty(FWD_SALE_EXC_RATE_PROP, excRate.toString());
+                }
             }
             transaction
                 .deleteProperty(ORIGINAL_AMOUNT_PROP)

@@ -137,6 +137,22 @@ namespace RealizedResultsService {
                     originalQuantityProp = histQuantity
                     tx.deleteProperty(HIST_QUANTITY_PROP)
                 }
+                const fwdPurchasePrice = tx.getProperty(FWD_PURCHASE_PRICE_PROP);
+                if (fwdPurchasePrice) {
+                    tx.deleteProperty(FWD_PURCHASE_PRICE_PROP);
+                }
+                const fwdSalePrice = tx.getProperty(FWD_SALE_PRICE_PROP);
+                if (fwdSalePrice) {
+                    tx.deleteProperty(FWD_SALE_PRICE_PROP);
+                }
+                const fwdPurchaseExcRate = tx.getProperty(FWD_PURCHASE_EXC_RATE_PROP);
+                if (fwdPurchaseExcRate) {
+                    tx.deleteProperty(FWD_PURCHASE_EXC_RATE_PROP);
+                }
+                const fwdSaleExcRate = tx.getProperty(FWD_SALE_EXC_RATE_PROP);
+                if (fwdSaleExcRate) {
+                    tx.deleteProperty(FWD_SALE_EXC_RATE_PROP);
+                }
             }
 
             if (!originalQuantityProp) {
