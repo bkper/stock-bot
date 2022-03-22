@@ -24,7 +24,7 @@ namespace ForwardDateService {
         // Open quantity from Stock Book
         const openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalance();
         // Current price
-        const currentPrice = !openQuantity.eq(0) ? openAmountBase.div(openQuantity) : undefined;
+        const currentPrice = !openQuantity.eq(0) ? openAmountExc.div(openQuantity) : undefined;
         // Exchange rate
         const excRate = !openAmountExc.eq(0) ? openAmountBase.div(openAmountExc) : undefined;
 
