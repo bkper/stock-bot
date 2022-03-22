@@ -52,16 +52,16 @@ namespace ForwardDateService {
                 transaction.setProperty(HIST_ORDER_PROP, transaction.getProperty(ORDER_PROP))
             }
             // fwd_purchase_price / fwd_sale_price
-            if (BotService.isPurchase(transaction) && currentPrice) {
+            if (currentPrice && BotService.isPurchase(transaction)) {
                 transaction.setProperty(FWD_PURCHASE_PRICE_PROP, currentPrice.toString());
-            } else {
+            } else if (currentPrice && BotService.isSale(transaction)) {
                 transaction.setProperty(FWD_SALE_PRICE_PROP, currentPrice.toString());
             }
             // fwd_purchase_exc_rate / fwd_sale_exc_rate
             if (stockAccount.getExchangeCode() !== BotService.getExcCode(baseBook)) {
-                if (BotService.isPurchase(transaction) && excRate) {
+                if (excRate && BotService.isPurchase(transaction)) {
                     transaction.setProperty(FWD_PURCHASE_EXC_RATE_PROP, excRate.toString());
-                } else {
+                } else if (excRate && BotService.isSale(transaction)) {
                     transaction.setProperty(FWD_SALE_EXC_RATE_PROP, excRate.toString());
                 }
             }
