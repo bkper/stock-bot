@@ -127,32 +127,23 @@ namespace RealizedResultsService {
             let originalQuantityProp = tx.getProperty(ORIGINAL_QUANTITY_PROP)
 
             if (full) {
-                tx.setProperty(ORDER_PROP, tx.getProperty(HIST_ORDER_PROP)).deleteProperty(HIST_ORDER_PROP)
+                tx.setProperty(ORDER_PROP, tx.getProperty(HIST_ORDER_PROP))
                 if (tx.getProperty(DATE_PROP)) {
-                    tx.setDate(tx.getProperty(DATE_PROP)).deleteProperty(DATE_PROP)
+                    tx.setDate(tx.getProperty(DATE_PROP))
                 }
                 const histQuantity = tx.getProperty(HIST_QUANTITY_PROP);
                 if (histQuantity) {
                     tx.setProperty(ORIGINAL_QUANTITY_PROP, histQuantity)
                     originalQuantityProp = histQuantity
-                    tx.deleteProperty(HIST_QUANTITY_PROP)
                 }
-                const fwdPurchasePrice = tx.getProperty(FWD_PURCHASE_PRICE_PROP);
-                if (fwdPurchasePrice) {
-                    tx.deleteProperty(FWD_PURCHASE_PRICE_PROP);
-                }
-                const fwdSalePrice = tx.getProperty(FWD_SALE_PRICE_PROP);
-                if (fwdSalePrice) {
-                    tx.deleteProperty(FWD_SALE_PRICE_PROP);
-                }
-                const fwdPurchaseExcRate = tx.getProperty(FWD_PURCHASE_EXC_RATE_PROP);
-                if (fwdPurchaseExcRate) {
-                    tx.deleteProperty(FWD_PURCHASE_EXC_RATE_PROP);
-                }
-                const fwdSaleExcRate = tx.getProperty(FWD_SALE_EXC_RATE_PROP);
-                if (fwdSaleExcRate) {
-                    tx.deleteProperty(FWD_SALE_EXC_RATE_PROP);
-                }
+                tx
+                .deleteProperty(DATE_PROP)
+                .deleteProperty(HIST_ORDER_PROP)
+                .deleteProperty(HIST_QUANTITY_PROP)
+                .deleteProperty(FWD_PURCHASE_PRICE_PROP)
+                .deleteProperty(FWD_SALE_PRICE_PROP)
+                .deleteProperty(FWD_PURCHASE_EXC_RATE_PROP)
+                .deleteProperty(FWD_SALE_EXC_RATE_PROP)
             }
 
             if (!originalQuantityProp) {
@@ -174,6 +165,7 @@ namespace RealizedResultsService {
                     .deleteProperty(PURCHASE_EXC_RATE_PROP)
                     .deleteProperty(SALE_EXC_RATE_PROP)
                     .deleteProperty(EXC_RATE_PROP)
+                    .deleteProperty(ORIGINAL_AMOUNT_PROP)
                     .setAmount(originalQuantityProp)
                     .update();
                 stockAccountSaleTransactions.push(tx);
@@ -198,6 +190,7 @@ namespace RealizedResultsService {
                     .deleteProperty(PURCHASE_EXC_RATE_PROP)
                     .deleteProperty(SALE_EXC_RATE_PROP)
                     .deleteProperty(EXC_RATE_PROP)
+                    .deleteProperty(ORIGINAL_AMOUNT_PROP)
                     .setAmount(originalQuantityProp)
                     .update();
                 stockAccountPurchaseTransactions.push(tx);
