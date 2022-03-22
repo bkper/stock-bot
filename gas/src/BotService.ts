@@ -35,6 +35,12 @@ namespace BotService {
     return saleAmount.times(saleRate).minus(purchaseAmount.times(purchaseRate))
   }
 
+  export function getFwdExcRate(stockTransaction: Bkper.Transaction, fwdExcRateProp: string, fallbackExcRate: Bkper.Amount): Bkper.Amount {
+    if (stockTransaction.getProperty(fwdExcRateProp)) {
+        return BkperApp.newAmount(stockTransaction.getProperty(fwdExcRateProp))
+    }
+    return undefined;
+  }
   export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction, excRateProp: string): Bkper.Amount {
     if (baseBook.getProperty(EXC_CODE_PROP) == financialBook.getProperty(EXC_CODE_PROP)) {
       return undefined;

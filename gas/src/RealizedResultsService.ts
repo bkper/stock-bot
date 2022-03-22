@@ -166,6 +166,9 @@ namespace RealizedResultsService {
                     .deleteProperty(SALE_EXC_RATE_PROP)
                     .deleteProperty(EXC_RATE_PROP)
                     .deleteProperty(ORIGINAL_AMOUNT_PROP)
+                    .deleteProperty(FWD_PURCHASE_AMOUNT_PROP)
+                    .deleteProperty(FWD_PURCHASE_LOG_PROP)
+                    .deleteProperty(FWD_SALE_AMOUNT_PROP)
                     .setAmount(originalQuantityProp)
                     .update();
                 stockAccountSaleTransactions.push(tx);
@@ -184,13 +187,12 @@ namespace RealizedResultsService {
                     .deleteProperty(SALE_AMOUNT_PROP)
                     .deleteProperty(SHORT_SALE_PROP)
                     .deleteProperty(GAIN_AMOUNT_PROP)
-                    .deleteProperty(PURCHASE_LOG_PROP)
                     .deleteProperty('gain_log')
                     .deleteProperty(PURCHASE_AMOUNT_PROP)
-                    .deleteProperty(PURCHASE_EXC_RATE_PROP)
-                    .deleteProperty(SALE_EXC_RATE_PROP)
                     .deleteProperty(EXC_RATE_PROP)
                     .deleteProperty(ORIGINAL_AMOUNT_PROP)
+                    .deleteProperty(FWD_SALE_AMOUNT_PROP)
+                    .deleteProperty(FWD_PURCHASE_AMOUNT_PROP)
                     .setAmount(originalQuantityProp)
                     .update();
                 stockAccountPurchaseTransactions.push(tx);
@@ -264,9 +266,11 @@ namespace RealizedResultsService {
     function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: StockAccount, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean): void {
 
         let salePrice: Bkper.Amount = BkperApp.newAmount(saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP));
+        let fwdSalePrice: Bkper.Amount = saleTransaction.getProperty(FWD_SALE_PRICE_PROP) ? BkperApp.newAmount(saleTransaction.getProperty(FWD_SALE_PRICE_PROP)) : null;
 
         let soldQuantity = saleTransaction.getAmount();
         const saleExcRate = BotService.getExcRate(baseBook, financialBook, saleTransaction, SALE_EXC_RATE_PROP)
+        const fwdSaleExcRate = BotService.getFwdExcRate(saleTransaction, FWD_SALE_EXC_RATE_PROP, saleExcRate)
 
         let purchaseTotal = BkperApp.newAmount(0);
         let saleTotal = BkperApp.newAmount(0);
@@ -274,10 +278,14 @@ namespace RealizedResultsService {
         let gainBaseNoFxTotal = BkperApp.newAmount(0);
         let gainBaseWithFxTotal = BkperApp.newAmount(0);
 
+        let fwdPurchaseTotal = BkperApp.newAmount(0);
+        let fwdSaleTotal = BkperApp.newAmount(0);
+
         let unrealizedAccount = getUnrealizedAccount(stockAccount, financialBook, summary, stockExcCode);
         let unrealizedBaseAccount = getUnrealizedAccount(stockAccount, baseBook, summary, stockExcCode);
 
         let purchaseLogEntries: PurchaseLogEntry[] = []
+        let fwdPurchaseLogEntries: PurchaseLogEntry[] = []
 
 
 
@@ -291,28 +299,39 @@ namespace RealizedResultsService {
             let shortSale = isShortSale(purchaseTransaction, saleTransaction);
 
             const purchaseExcRate = BotService.getExcRate(baseBook, financialBook, purchaseTransaction, PURCHASE_EXC_RATE_PROP)
-
+            const fwdPurchaseExcRate = BotService.getFwdExcRate(purchaseTransaction, FWD_PURCHASE_EXC_RATE_PROP, purchaseExcRate)
+            let fwdPurchasePrice: Bkper.Amount = purchaseTransaction.getProperty(FWD_PURCHASE_PRICE_PROP) ? BkperApp.newAmount(purchaseTransaction.getProperty(FWD_PURCHASE_PRICE_PROP)) : null;
             let purchasePrice: Bkper.Amount = BkperApp.newAmount(purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP));
             let purchaseQuantity = purchaseTransaction.getAmount();
 
             if (soldQuantity.gte(purchaseQuantity)) {
-                const saleAmount = (salePrice.times(purchaseQuantity));
-                const purchaseAmount = (purchasePrice.times(purchaseQuantity));
+                const saleAmount = salePrice.times(purchaseQuantity);
+                const purchaseAmount = purchasePrice.times(purchaseQuantity);
+                const fwdSaleAmount = fwdSalePrice ? fwdSalePrice.times(purchaseQuantity) : saleAmount;
+                const fwdPurchaseAmount = fwdPurchasePrice ? fwdPurchasePrice.times(purchaseQuantity) : purchaseAmount;
                 let gain = saleAmount.minus(purchaseAmount);
                 let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
                 let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
                 if (!shortSale) {
                     purchaseTotal = purchaseTotal.plus(purchaseAmount);
                     saleTotal = saleTotal.plus(saleAmount);
+                    fwdPurchaseTotal = fwdPurchaseTotal.plus(fwdPurchaseAmount);
+                    fwdSaleTotal = fwdSaleTotal.plus(fwdSaleAmount)
                     gainTotal = gainTotal.plus(gain);
                     gainBaseNoFxTotal = gainBaseNoFxTotal.plus(gainBaseNoFX);
                     gainBaseWithFxTotal = gainBaseWithFxTotal.plus(gainBaseWithFX);
-                    purchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
+                    purchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getProperty(DATE_PROP) || purchaseTransaction.getDate(), purchaseExcRate))
+                    if (fwdPurchasePrice) {
+                        fwdPurchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, fwdPurchasePrice, purchaseTransaction.getDate(), fwdPurchaseExcRate))
+                    } else {
+                        fwdPurchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
+                    }
                 }
                 purchaseTransaction
                     .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
                     .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
                     .setProperty(PURCHASE_EXC_RATE_PROP, purchaseExcRate?.toString())
+                    .setProperty(FWD_PURCHASE_AMOUNT_PROP, fwdPurchaseAmount?.toString())
 
                 if (shortSale) {
                     purchaseTransaction.setProperty(SALE_PRICE_PROP, salePrice.toString())
@@ -321,6 +340,7 @@ namespace RealizedResultsService {
                         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
                         .setProperty(GAIN_AMOUNT_PROP, gain.toString())
                         .setProperty(SHORT_SALE_PROP, 'true')
+                        .setProperty(FWD_SALE_AMOUNT_PROP, fwdSaleAmount?.toString())
                 }
                 purchaseTransaction.update();
 
@@ -344,6 +364,8 @@ namespace RealizedResultsService {
 
                 const saleAmount = salePrice.times(partialBuyQuantity);
                 const purchaseAmount = purchasePrice.times(partialBuyQuantity);
+                const fwdSaleAmount = fwdSalePrice ? fwdSalePrice.times(partialBuyQuantity) : saleAmount;
+                const fwdPurchaseAmount = fwdPurchasePrice ? fwdPurchasePrice.times(partialBuyQuantity) : purchaseAmount;
                 let gain = saleAmount.minus(purchaseAmount);
                 let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
                 let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
@@ -359,16 +381,23 @@ namespace RealizedResultsService {
                     .setDebitAccount(purchaseTransaction.getDebitAccount())
                     .setDescription(purchaseTransaction.getDescription())
                     .setProperty(ORDER_PROP, purchaseTransaction.getProperty(ORDER_PROP))
+                    .setProperty(DATE_PROP, purchaseTransaction.getProperty(DATE_PROP))
                     .setProperty(PARENT_ID, purchaseTransaction.getId())
                     .setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
                     .setProperty(PURCHASE_AMOUNT_PROP, purchaseAmount.toString())
                     .setProperty(PURCHASE_EXC_RATE_PROP, purchaseExcRate?.toString())
+                    .setProperty(FWD_PURCHASE_PRICE_PROP, fwdPurchasePrice?.toString())
+                    .setProperty(FWD_PURCHASE_AMOUNT_PROP, fwdPurchaseAmount?.toString())
+                    .setProperty(FWD_PURCHASE_EXC_RATE_PROP, fwdPurchaseExcRate?.toString())
 
                 if (shortSale) {
                     splittedPurchaseTransaction
                         .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
                         .setProperty(SALE_PRICE_PROP, salePrice.toString())
                         .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
+                        .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
+                        .setProperty(FWD_SALE_PRICE_PROP, fwdSalePrice?.toString())
+                        .setProperty(FWD_SALE_AMOUNT_PROP, fwdSaleAmount?.toString())
                         .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
                         .setProperty(GAIN_AMOUNT_PROP, gain.toString())
                         .setProperty(SHORT_SALE_PROP, 'true')
@@ -382,17 +411,25 @@ namespace RealizedResultsService {
                     if (autoMtM) {
                         markToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, splittedPurchaseTransaction.getDateObject(), purchasePrice, gain)
                     }
+
                 }
-
+                
                 soldQuantity = soldQuantity.minus(partialBuyQuantity);
-
+                
                 if (!shortSale) {
                     purchaseTotal = purchaseTotal.plus(purchaseAmount);
                     saleTotal = saleTotal.plus(saleAmount);
+                    fwdSaleTotal = fwdSaleTotal.plus(fwdSaleAmount)
+                    fwdPurchaseTotal = fwdPurchaseTotal.plus(fwdPurchaseAmount);
                     gainTotal = gainTotal.plus(gain);
                     gainBaseNoFxTotal = gainBaseNoFxTotal.plus(gainBaseNoFX);
                     gainBaseWithFxTotal = gainBaseWithFxTotal.plus(gainBaseWithFX);
-                    purchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
+                    purchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction.getProperty(DATE_PROP) || purchaseTransaction.getDate(), purchaseExcRate))
+                    if (fwdPurchasePrice) {
+                        fwdPurchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, fwdPurchasePrice, purchaseTransaction.getDate(), fwdPurchaseExcRate))
+                    } else {
+                        fwdPurchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
+                    }
                 }
 
             }
@@ -412,6 +449,15 @@ namespace RealizedResultsService {
                     .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
                     .setProperty(PURCHASE_LOG_PROP, JSON.stringify(purchaseLogEntries))
                     .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
+
+                    if (fwdPurchaseLogEntries.length > 0) {
+                        saleTransaction
+                            .setProperty(FWD_PURCHASE_AMOUNT_PROP, !fwdPurchaseTotal.eq(0) ? fwdPurchaseTotal?.toString() : null)
+                            .setProperty(FWD_SALE_AMOUNT_PROP, !fwdSaleTotal.eq(0) ? fwdSaleTotal.toString() : null)
+                            .setProperty(FWD_PURCHASE_LOG_PROP, JSON.stringify(fwdPurchaseLogEntries))
+                            .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
+                    }   
+
                 saleTransaction.update()
             }
             saleTransaction.check();
@@ -421,10 +467,9 @@ namespace RealizedResultsService {
 
             if (!remainingSaleQuantity.eq(0)) {
 
-
-
                 saleTransaction
                     .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
+                    .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
                     .setAmount(soldQuantity)
                     .update();
 
@@ -435,9 +480,12 @@ namespace RealizedResultsService {
                     .setDebitAccount(saleTransaction.getDebitAccount())
                     .setDescription(saleTransaction.getDescription())
                     .setProperty(ORDER_PROP, saleTransaction.getProperty(ORDER_PROP))
+                    .setProperty(DATE_PROP, saleTransaction.getProperty(DATE_PROP))
                     .setProperty(PARENT_ID, saleTransaction.getId())
                     .setProperty(SALE_PRICE_PROP, salePrice.toString())
                     .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
+                    .setProperty(FWD_SALE_PRICE_PROP, fwdSalePrice?.toString())
+                    .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
 
                 if (purchaseLogEntries.length > 0) {
                     splittedSaleTransaction
@@ -445,6 +493,13 @@ namespace RealizedResultsService {
                         .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
                         .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
                         .setProperty(PURCHASE_LOG_PROP, JSON.stringify(purchaseLogEntries))
+
+                        if (fwdPurchaseLogEntries.length > 0) {
+                            splittedSaleTransaction
+                                .setProperty(FWD_PURCHASE_AMOUNT_PROP, !fwdPurchaseTotal.eq(0) ? fwdPurchaseTotal?.toString() : null)
+                                .setProperty(FWD_SALE_AMOUNT_PROP, !fwdSaleTotal.eq(0) ? fwdSaleTotal.toString() : null)
+                                .setProperty(FWD_PURCHASE_LOG_PROP, JSON.stringify(fwdPurchaseLogEntries))
+                        }                        
                 }
 
                 splittedSaleTransaction.post().check()

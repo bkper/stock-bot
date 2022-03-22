@@ -40,7 +40,6 @@ The Bot also add the following properties to the generated transaction in the In
 
 - ```purchase_price```: The price the instrument was bought.
 - ```original_quantity```: The original quantity used for rebuilding FIFO gains/losses if needed
-- ```original_amount```: The original financial transaction amount for buy or sell the instrument 
 - ```sale_price```: The price the instrument was sold.
 - ```sale_amount```: The financial amount the instrument was sold.
 - ```sale_date```: The date the instrument was sold.
