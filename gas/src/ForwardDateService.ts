@@ -78,9 +78,11 @@ namespace ForwardDateService {
         stockAccount
         .setRealizedDate(date)
         .setForwardedDate(date)
-        .setForwardedPrice(fwdPrice)
-        .setForwardedExcRate(fwdExcRate)
-        .update()
+        .setForwardedPrice(fwdPrice);
+        if (stockAccount.getExchangeCode() !== BotService.getExcCode(baseBook)) {
+            stockAccount.setForwardedExcRate(fwdExcRate)
+        }
+        stockAccount.update()
 
 
         let summary: Summary = {
