@@ -181,7 +181,7 @@
 
   async function fireRealizedResultsForAll() {
     <? for (var i = 0; i < accounts.length; i++) { ?>
-      await promiseRun('calculateRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', getAutoMtM()).then(hideAccountWaiting)
+      await promiseRun('calculateRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', getAutoMtM(), getDateInput()).then(hideAccountWaiting)
     <? } ?>
   }
 

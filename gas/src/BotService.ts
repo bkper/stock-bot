@@ -8,12 +8,17 @@ namespace BotService {
     });
   }
 
-  export function getAccountQuery(stockAccount: StockAccount, full: boolean) {
-      if (full || !stockAccount.getForwardedDate()) {
-        return `account:'${stockAccount.getName()}'`;
-      } else {
-        return `account:'${stockAccount.getName()}' after:${stockAccount.getForwardedDate()}`
+  export function getAccountQuery(stockAccount: StockAccount, full: boolean, beforeDate?: string) {
+      let query = `account:'${stockAccount.getName()}'`;
+
+      if (!full && stockAccount.getForwardedDate()) {
+        query += ` after:${stockAccount.getForwardedDate()}`
       }
+
+      if (beforeDate) {
+        query += ` before:${beforeDate}`
+      }
+      return query;
   }
 
 
