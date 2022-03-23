@@ -85,16 +85,18 @@ namespace ForwardDateService {
         stockAccount.update()
 
         if (isForwardedDateSameOnAllAccounts(stockBook, date)) {
-            stockBook.setLockDate(stockBook.formatDate(closingDate)).update()
+            stockBook.setLockDate(Utilities.formatDate(closingDate, stockBook.getTimeZone(), "yyyy-MM-dd")).update()
+            return {
+                accountId: stockAccountId,
+                result: `${transactions.length} forwarded to ${date} and locked book on ${stockBook.formatDate(closingDate)}`
+            };
+        } else {
+            return {
+                accountId: stockAccountId,
+                result: `${transactions.length} forwarded to ${date}`
+            };
         }
 
-
-        let summary: Summary = {
-            accountId: stockAccountId,
-            result: `${transactions.length} forwarded to ${date}`
-        };
-
-        return summary;
     }
 
     function isForwardedDateSameOnAllAccounts(book: Bkper.Book, forwardedDate: string): boolean {
