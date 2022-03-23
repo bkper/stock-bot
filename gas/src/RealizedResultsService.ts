@@ -3,10 +3,7 @@ namespace RealizedResultsService {
     export function resetRealizedResults(stockBookId: string, stockAccountId: string, full: boolean): Summary {
         let stockBook = BkperApp.getBook(stockBookId);
         let stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
-
-        revertRealizedResultsForAccount(stockBook, stockAccount, false, false, full);
-
-        return { accountId: stockAccount.getId(), result: 'Done.' };
+        return resetRealizedResultsForAccount(stockBook, stockAccount, full);
     }
 
     export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string, autoMtM: boolean): Summary {
@@ -18,62 +15,61 @@ namespace RealizedResultsService {
             result: {}
         };
 
-
         if (stockAccount.needsRebuild()) {
-            revertRealizedResultsForAccount(stockBook, stockAccount, true, autoMtM, false);
-        } else {
-            let stockExcCode =  stockAccount.getExchangeCode();
-            let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
-            if (financialBook == null) {
-                return summary; //Skip
-            }
-
-            let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, false));
-
-            let stockAccountSaleTransactions: Bkper.Transaction[] = [];
-            let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
-
-            while (iterator.hasNext()) {
-
-                let tx = iterator.next();
-
-                if (tx.isChecked()) {
-                    //Filter only unchecked
-                    continue;
-                }
-
-                if (BotService.isSale(tx)) {
-                    stockAccountSaleTransactions.push(tx);
-                }
-
-                if (BotService.isPurchase(tx)) {
-                    stockAccountPurchaseTransactions.push(tx);
-                }
-            }
-
-            stockAccountSaleTransactions = stockAccountSaleTransactions.sort(BotService.compareToFIFO);
-            stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(BotService.compareToFIFO);
-
-            const baseBook = BotService.getBaseBook(financialBook);
-
-            for (const saleTransaction of stockAccountSaleTransactions) {
-                processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM);
-            }
-
-            checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
-
+            resetRealizedResultsForAccount(stockBook, stockAccount, false);
+            stockBook = BkperApp.getBook(stockBookId);
+            stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
         }
+
+        let stockExcCode = stockAccount.getExchangeCode();
+        let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
+        if (financialBook == null) {
+            return summary; //Skip
+        }
+
+        let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, false));
+
+        let stockAccountSaleTransactions: Bkper.Transaction[] = [];
+        let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
+
+        while (iterator.hasNext()) {
+
+            let tx = iterator.next();
+
+            if (tx.isChecked()) {
+                //Filter only unchecked
+                continue;
+            }
+
+            if (BotService.isSale(tx)) {
+                stockAccountSaleTransactions.push(tx);
+            }
+
+            if (BotService.isPurchase(tx)) {
+                stockAccountPurchaseTransactions.push(tx);
+            }
+        }
+
+        stockAccountSaleTransactions = stockAccountSaleTransactions.sort(BotService.compareToFIFO);
+        stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(BotService.compareToFIFO);
+
+        const baseBook = BotService.getBaseBook(financialBook);
+
+        for (const saleTransaction of stockAccountSaleTransactions) {
+            processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM);
+        }
+
+        checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
+
 
         return summary;
 
     }
 
-    export function revertRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, recalculate: boolean, autoMtM: boolean, full: boolean): Summary {
+    export function resetRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, full: boolean): Summary {
+        
         let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, full));
-        let summary: Summary = {
-            accountId: stockAccount.getId(),
-            result: {}
-        };
+
         let stockAccountSaleTransactions: Bkper.Transaction[] = [];
         let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
 
@@ -137,13 +133,13 @@ namespace RealizedResultsService {
                     originalQuantityProp = histQuantity
                 }
                 tx
-                .deleteProperty(DATE_PROP)
-                .deleteProperty(HIST_ORDER_PROP)
-                .deleteProperty(HIST_QUANTITY_PROP)
-                .deleteProperty(FWD_PURCHASE_PRICE_PROP)
-                .deleteProperty(FWD_SALE_PRICE_PROP)
-                .deleteProperty(FWD_PURCHASE_EXC_RATE_PROP)
-                .deleteProperty(FWD_SALE_EXC_RATE_PROP)
+                    .deleteProperty(DATE_PROP)
+                    .deleteProperty(HIST_ORDER_PROP)
+                    .deleteProperty(HIST_QUANTITY_PROP)
+                    .deleteProperty(FWD_PURCHASE_PRICE_PROP)
+                    .deleteProperty(FWD_SALE_PRICE_PROP)
+                    .deleteProperty(FWD_PURCHASE_EXC_RATE_PROP)
+                    .deleteProperty(FWD_SALE_EXC_RATE_PROP)
             }
 
             if (!originalQuantityProp) {
@@ -203,36 +199,25 @@ namespace RealizedResultsService {
 
         if (full) {
             stockAccount
-            .deleteRealizedDate()
-            .deleteForwardedDate()
-            .deleteForwardedExcRate()
-            .deleteForwardedPrice();
+                .deleteRealizedDate()
+                .deleteForwardedDate()
+                .deleteForwardedExcRate()
+                .deleteForwardedPrice();
+        }
+        
+        let forwardedDate = stockAccount.getForwardedDate();
+        if (forwardedDate) {
+            stockAccount.setRealizedDate(forwardedDate);
         } else {
-            let forwardedDate = stockAccount.getForwardedDate();
-            if (forwardedDate) {
-                stockAccount.setRealizedDate(forwardedDate);
-            } else {
-                stockAccount.deleteRealizedDate();
-            }
+            stockAccount.deleteRealizedDate();
         }
 
         stockAccount.update()
 
-        if (recalculate) {
-            //FIFO
-            stockAccountSaleTransactions = stockAccountSaleTransactions.sort(BotService.compareToFIFO);
-            stockAccountPurchaseTransactions = stockAccountPurchaseTransactions.sort(BotService.compareToFIFO);
-
-            const baseBook = BotService.getBaseBook(financialBook);
-
-            for (const saleTransaction of stockAccountSaleTransactions) {
-                processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM);
-            }
-            checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
-        }
-
-
-        return summary;
+        return {
+            accountId: stockAccount.getId(),
+            result: 'Done.'
+        };;
 
     }
 
@@ -417,9 +402,9 @@ namespace RealizedResultsService {
                     }
 
                 }
-                
+
                 soldQuantity = soldQuantity.minus(partialBuyQuantity);
-                
+
                 if (!shortSale) {
                     purchaseTotal = purchaseTotal.plus(purchaseAmount);
                     saleTotal = saleTotal.plus(saleAmount);
@@ -454,13 +439,13 @@ namespace RealizedResultsService {
                     .setProperty(PURCHASE_LOG_PROP, JSON.stringify(purchaseLogEntries))
                     .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
 
-                    if (fwdPurchaseLogEntries.length > 0) {
-                        saleTransaction
-                            .setProperty(FWD_PURCHASE_AMOUNT_PROP, !fwdPurchaseTotal.eq(0) ? fwdPurchaseTotal?.toString() : null)
-                            .setProperty(FWD_SALE_AMOUNT_PROP, !fwdSaleTotal.eq(0) ? fwdSaleTotal.toString() : null)
-                            .setProperty(FWD_PURCHASE_LOG_PROP, JSON.stringify(fwdPurchaseLogEntries))
-                            .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
-                    }   
+                if (fwdPurchaseLogEntries.length > 0) {
+                    saleTransaction
+                        .setProperty(FWD_PURCHASE_AMOUNT_PROP, !fwdPurchaseTotal.eq(0) ? fwdPurchaseTotal?.toString() : null)
+                        .setProperty(FWD_SALE_AMOUNT_PROP, !fwdSaleTotal.eq(0) ? fwdSaleTotal.toString() : null)
+                        .setProperty(FWD_PURCHASE_LOG_PROP, JSON.stringify(fwdPurchaseLogEntries))
+                        .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
+                }
 
                 saleTransaction.update()
             }
@@ -498,12 +483,12 @@ namespace RealizedResultsService {
                         .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
                         .setProperty(PURCHASE_LOG_PROP, JSON.stringify(purchaseLogEntries))
 
-                        if (fwdPurchaseLogEntries.length > 0) {
-                            splittedSaleTransaction
-                                .setProperty(FWD_PURCHASE_AMOUNT_PROP, !fwdPurchaseTotal.eq(0) ? fwdPurchaseTotal?.toString() : null)
-                                .setProperty(FWD_SALE_AMOUNT_PROP, !fwdSaleTotal.eq(0) ? fwdSaleTotal.toString() : null)
-                                .setProperty(FWD_PURCHASE_LOG_PROP, JSON.stringify(fwdPurchaseLogEntries))
-                        }                        
+                    if (fwdPurchaseLogEntries.length > 0) {
+                        splittedSaleTransaction
+                            .setProperty(FWD_PURCHASE_AMOUNT_PROP, !fwdPurchaseTotal.eq(0) ? fwdPurchaseTotal?.toString() : null)
+                            .setProperty(FWD_SALE_AMOUNT_PROP, !fwdSaleTotal.eq(0) ? fwdSaleTotal.toString() : null)
+                            .setProperty(FWD_PURCHASE_LOG_PROP, JSON.stringify(fwdPurchaseLogEntries))
+                    }
                 }
 
                 splittedSaleTransaction.post().check()
