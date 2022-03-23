@@ -349,10 +349,10 @@ namespace RealizedResultsService {
                 purchaseTransaction.update();
 
                 if (shortSale) {
-                    recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, purchaseTransaction.getDate(), gainBaseNoFX, summary);
-                    recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, purchaseTransaction, gainBaseWithFX, gainBaseNoFX, purchaseTransaction.getDate(), summary)
+                    recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, gainBaseNoFX, summary);
+                    recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, purchaseTransaction, gainBaseWithFX, gainBaseNoFX, summary)
                     if (autoMtM) {
-                        markToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchaseTransaction.getDateObject(), purchasePrice, gain)
+                        markToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, gain)
                     }
                 }
 
@@ -410,10 +410,10 @@ namespace RealizedResultsService {
                 splittedPurchaseTransaction.post().check()
 
                 if (shortSale) {
-                    recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, splittedPurchaseTransaction.getDate(), gainBaseNoFX, summary);
-                    recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, splittedPurchaseTransaction, gainBaseWithFX, gainBaseNoFX, splittedPurchaseTransaction.getDate(), summary)
+                    recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, gainBaseNoFX, summary);
+                    recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, splittedPurchaseTransaction, gainBaseWithFX, gainBaseNoFX, summary)
                     if (autoMtM) {
-                        markToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, splittedPurchaseTransaction.getDateObject(), purchasePrice, gain)
+                        markToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, gain)
                     }
 
                 }
@@ -511,10 +511,10 @@ namespace RealizedResultsService {
 
         }
 
-        recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, saleTransaction.getDate(), gainBaseNoFxTotal, summary);
-        recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, saleTransaction.getDate(), summary)
+        recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, gainBaseNoFxTotal, summary);
+        recordFxGain(stockExcCode, baseBook, unrealizedBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, summary)
         if (autoMtM) {
-            markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, saleTransaction.getDateObject(), salePrice, gainTotal)
+            markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, salePrice, gainTotal)
         }
 
     }
@@ -543,10 +543,10 @@ namespace RealizedResultsService {
         unrealizedAccount: Bkper.Account,
         transaction: Bkper.Transaction,
         gain: Bkper.Amount,
-        gainDate: string,
         gainBaseNoFX: Bkper.Amount,
         summary: Summary
     ) {
+        const gainDate = transaction.getProperty(DATE_PROP) || transaction.getDate();
 
         let isBaseBook = baseBook.getId() == financialBook.getId();
 
@@ -628,7 +628,6 @@ namespace RealizedResultsService {
         stockAccount: StockAccount,
         financialBook: Bkper.Book,
         unrealizedAccount: Bkper.Account,
-        date: Date,
         price: Bkper.Amount,
         gain: Bkper.Amount
     ): void {
@@ -636,6 +635,9 @@ namespace RealizedResultsService {
         if (gain.round(financialBook.getFractionDigits()).eq(0)) {
             return;
         }
+
+        const date = transaction.getProperty(DATE_PROP) ? stockBook.parseDate(transaction.getProperty(DATE_PROP)) : transaction.getDateObject();
+
 
         let total_quantity = getAccountBalance(stockBook, stockAccount, date);
         let financialInstrument = financialBook.getAccount(stockAccount.getName());
@@ -712,9 +714,10 @@ namespace RealizedResultsService {
         transaction: Bkper.Transaction,
         gainBaseWithFx: Bkper.Amount,
         gainBaseNoFx: Bkper.Amount,
-        gainDate: string,
         summary: Summary
     ): void {
+
+        const gainDate = transaction.getProperty(DATE_PROP) || transaction.getDate();
 
         if (!gainBaseWithFx) {
             console.log('Missing gain with FX')
