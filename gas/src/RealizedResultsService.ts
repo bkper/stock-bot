@@ -159,7 +159,7 @@ namespace RealizedResultsService {
                     .deleteProperty(EXC_RATE_PROP)
                     .deleteProperty(PURCHASE_EXC_RATE_PROP)
                     .deleteProperty(SALE_EXC_RATE_PROP)
-                    .deleteProperty(ORIGINAL_AMOUNT_PROP)
+                    // .deleteProperty(ORIGINAL_AMOUNT_PROP)
                     .deleteProperty(FWD_PURCHASE_AMOUNT_PROP)
                     .deleteProperty(FWD_SALE_AMOUNT_PROP)
 
