@@ -14,6 +14,10 @@
         padding: 20px;
       }
 
+      .body {
+        padding-bottom: 0;
+      }
+
       .header {
         font-size: 120%;
         background-color: #f5f5f5;
@@ -53,15 +57,34 @@
       .options-panel {
         padding-top: 10px;
       }
+
+      #date-div {
+        visibility: hidden;
+      }
       
-      .date-panel {
+      #date-div {
         display: flex;
         justify-content: center;
         padding: 10px;
+        padding-top: 20px;
       }
 
       .footer {
         justify-content: center;
+      }
+
+      #footer-panel a {
+        margin-left: 10px;
+        font-size: 12px;
+        color: grey;
+      }
+
+      .rr-service {
+        display: block;
+      }
+
+      .fd-service {
+        display: none;
       }
 
     </style>
@@ -98,22 +121,19 @@
       </div>        
       <div class='options-panel'>
         <input type="checkbox" id="autoMtM" name="Perform #mtm valuations?">Perform #mtm valuations?</input>
+        <div id='date-div'>
+          <input type="date" id="forward-date" name="forward-date" value='<?!= dateToday ?>'/>
+        </div>
       </div>
     </div>
 
     <div class="footer" id='footer-panel'>
-      <?!= enableReset ? "<button id='reset-button' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
+      <?!= enableReset ? "<button id='reset-button' class='rr-service' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
+      <?!= enableFullReset ? "<button id='full-reset-button' class='fd-service' onclick='fullResetRealizedResults()'>Full Reset</button>" : "" ?>
+      <button id="forward-date-button" class='fd-service' onclick="updateAccountsToDate()">Forward Date</button>
       <button id="calculate-button" onclick="calculateRealizedResults()">Calculate</button>
       <button id="close-button" onclick="closeWindow()">Close</button>
-    </div>
-
-    <div class='date-panel'>
-      <input type="date" id="date-input" name="date-input" value='<?!= dateToday ?>'/>
-    </div>
-
-    <div class="footer" id='fd-service'>
-      <?!= enableFullReset ? "<button id='full-reset-button' onclick='fullResetRealizedResults()'>Full Reset</button>" : "" ?>
-      <button id="forward-button" onclick="updateAccountsToDate()">Forward</button>
+      <a id="change-view-link" onclick="changeServiceView()">Forward Date</a>
     </div>
 
   </body>
@@ -134,7 +154,7 @@
   }
 
   function getDateInput() {
-    return document.getElementById("date-input").value;
+    return document.getElementById("forward-date").value;
   }
 
   async function updateAccountsToDate() {
@@ -226,24 +246,24 @@
       <? if (enableReset) { ?>
         document.getElementById('reset-button').setAttribute('disabled', true);
       <? } ?>
-      document.getElementById('calculate-button').setAttribute('disabled', true);
-      document.getElementById('close-button').setAttribute('disabled', true);
-      document.getElementById('date-input').setAttribute('disabled', true);
       <? if (enableFullReset) { ?>
         document.getElementById('full-reset-button').setAttribute('disabled', true);
       <? } ?>
-      document.getElementById('forward-button').setAttribute('disabled', true);
+      document.getElementById('calculate-button').setAttribute('disabled', true);
+      document.getElementById('close-button').setAttribute('disabled', true);
+      document.getElementById('forward-date').setAttribute('disabled', true);
+      document.getElementById('forward-date-button').setAttribute('disabled', true);
     } else {
       <? if (enableReset) { ?>
         document.getElementById('reset-button').removeAttribute('disabled');
       <? } ?>
-      document.getElementById('calculate-button').removeAttribute('disabled');
-      document.getElementById('close-button').removeAttribute('disabled');
-      document.getElementById('date-input').removeAttribute('disabled');
       <? if (enableFullReset) { ?>
         document.getElementById('full-reset-button').removeAttribute('disabled');
       <? } ?>
-      document.getElementById('forward-button').removeAttribute('disabled');
+      document.getElementById('calculate-button').removeAttribute('disabled');
+      document.getElementById('close-button').removeAttribute('disabled');
+      document.getElementById('forward-date').removeAttribute('disabled');
+      document.getElementById('forward-date-button').removeAttribute('disabled');
     }
   }
 
@@ -257,6 +277,31 @@
     } catch (error) {
       console.log("Attempt to automatically close window failed: " + error)
       showError(error)
+    }
+  }
+
+  function changeServiceView() {
+    let realizedResultsElements = document.getElementsByClassName('rr-service');
+    for (const element of realizedResultsElements) {
+      if (element.style.display == "none") {
+        element.style.display = "block";
+      } else {
+        element.style.display = "none";
+      }
+    }
+    let forwardDateElements = document.getElementsByClassName('fd-service');
+    for (const element of forwardDateElements) {
+      if (!element.style.display || element.style.display == "none") {
+        element.style.display = "block";
+      } else {
+        element.style.display = "none";
+      }
+    }
+    let dateInputDiv = document.getElementById('date-div');
+    if (!dateInputDiv.style.visibility || dateInputDiv.style.visibility == "hidden") {
+      dateInputDiv.style.visibility = "visible";
+    } else {
+      dateInputDiv.style.visibility = "hidden";
     }
   }
 

@@ -14,7 +14,7 @@ namespace BotViewService {
 
         const template = HtmlService.createTemplateFromFile('BotView');
 
-        template.dateToday = new Date().toISOString().substring(10, 0);
+        template.dateToday = Utilities.formatDate(new Date(), baseBook.getTimeZone(), 'yyyy-MM-dd');
 
         template.enableReset = true;
 
