@@ -14,7 +14,7 @@ namespace BotViewService {
 
         const template = HtmlService.createTemplateFromFile('BotView');
 
-        template.currentYear = new Date().getFullYear();
+        template.dateToday = new Date().toISOString().substring(10, 0);
 
         template.enableReset = true;
 
