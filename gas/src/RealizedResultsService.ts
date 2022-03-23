@@ -71,7 +71,7 @@ namespace RealizedResultsService {
     }
 
     export function resetRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, full: boolean): Summary {
-        
+
         let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, full));
 
         let stockAccountSaleTransactions: Bkper.Transaction[] = [];
@@ -148,56 +148,52 @@ namespace RealizedResultsService {
 
             if (!originalQuantityProp) {
                 tx.remove();
-            } else if (BotService.isSale(tx)) {
-                let salePriceProp = tx.getProperty(SALE_PRICE_PROP)
-                //OLD way to find price
-                if (originalAmountProp && originalQuantityProp && !salePriceProp) {
-                    let salePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
-                    tx.setProperty(SALE_PRICE_PROP, salePrice.toString())
-                }
-                tx.deleteProperty(GAIN_AMOUNT_PROP)
-                    .deleteProperty('gain_log')
-                    .deleteProperty(PURCHASE_LOG_PROP)
+            } else {
+
+                tx
+                    .deleteProperty(GAIN_AMOUNT_PROP)
                     .deleteProperty(PURCHASE_AMOUNT_PROP)
+                    .deleteProperty('gain_log')
                     .deleteProperty(SALE_AMOUNT_PROP)
                     .deleteProperty(SHORT_SALE_PROP)
-                    .deleteProperty(PURCHASE_PRICE_PROP)
+                    .deleteProperty(EXC_RATE_PROP)
                     .deleteProperty(PURCHASE_EXC_RATE_PROP)
                     .deleteProperty(SALE_EXC_RATE_PROP)
-                    .deleteProperty(EXC_RATE_PROP)
                     .deleteProperty(ORIGINAL_AMOUNT_PROP)
                     .deleteProperty(FWD_PURCHASE_AMOUNT_PROP)
-                    .deleteProperty(FWD_PURCHASE_LOG_PROP)
                     .deleteProperty(FWD_SALE_AMOUNT_PROP)
-                    .setAmount(originalQuantityProp)
-                    .update();
-                stockAccountSaleTransactions.push(tx);
 
-            } else if (BotService.isPurchase(tx)) {
-                let purchasePriceProp = tx.getProperty(PURCHASE_PRICE_PROP)
+                if (BotService.isSale(tx)) {
+                    let salePriceProp = tx.getProperty(SALE_PRICE_PROP)
+                    //OLD way to find price
+                    if (originalAmountProp && originalQuantityProp && !salePriceProp) {
+                        let salePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
+                        tx.setProperty(SALE_PRICE_PROP, salePrice.toString())
+                    }
+                    tx
+                        .deleteProperty(PURCHASE_LOG_PROP)
+                        .deleteProperty(PURCHASE_PRICE_PROP)
+                        .deleteProperty(FWD_PURCHASE_LOG_PROP)
+                        .setAmount(originalQuantityProp)
+                        .update();
+                    stockAccountSaleTransactions.push(tx);
 
-                //OLD way to find price
-                if (originalAmountProp && originalQuantityProp && !purchasePriceProp) {
-                    let purchasePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
-                    tx.setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
+                } else if (BotService.isPurchase(tx)) {
+                    let purchasePriceProp = tx.getProperty(PURCHASE_PRICE_PROP)
+
+                    //OLD way to find price
+                    if (originalAmountProp && originalQuantityProp && !purchasePriceProp) {
+                        let purchasePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
+                        tx.setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
+                    }
+
+                    tx
+                        .deleteProperty(SALE_DATE_PROP)
+                        .deleteProperty(SALE_PRICE_PROP)
+                        .setAmount(originalQuantityProp)
+                        .update();
+                    stockAccountPurchaseTransactions.push(tx);
                 }
-
-                tx.deleteProperty(SALE_DATE_PROP)
-                    .deleteProperty(SALE_PRICE_PROP)
-                    .deleteProperty(SALE_AMOUNT_PROP)
-                    .deleteProperty(SHORT_SALE_PROP)
-                    .deleteProperty(GAIN_AMOUNT_PROP)
-                    .deleteProperty('gain_log')
-                    .deleteProperty(PURCHASE_AMOUNT_PROP)
-                    .deleteProperty(EXC_RATE_PROP)
-                    .deleteProperty(PURCHASE_EXC_RATE_PROP)
-                    .deleteProperty(SALE_EXC_RATE_PROP)                    
-                    .deleteProperty(ORIGINAL_AMOUNT_PROP)
-                    .deleteProperty(FWD_SALE_AMOUNT_PROP)
-                    .deleteProperty(FWD_PURCHASE_AMOUNT_PROP)
-                    .setAmount(originalQuantityProp)
-                    .update();
-                stockAccountPurchaseTransactions.push(tx);
             }
         }
 
@@ -210,7 +206,7 @@ namespace RealizedResultsService {
                 .deleteForwardedExcRate()
                 .deleteForwardedPrice();
         }
-        
+
         let forwardedDate = stockAccount.getForwardedDate();
         if (forwardedDate) {
             stockAccount.setRealizedDate(forwardedDate);
