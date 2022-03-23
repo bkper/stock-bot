@@ -78,6 +78,8 @@ namespace ForwardDateService {
         stockAccount
         .setRealizedDate(date)
         .setForwardedDate(date)
+        .setForwardedPrice(fwdPrice)
+        .setForwardedExcRate(fwdExcRate)
         .update()
 
 

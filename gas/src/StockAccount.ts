@@ -17,7 +17,7 @@ class StockAccount {
     update() {
         this.account.update()
     }
-              
+
     getNormalizedName() {
         return this.account.getNormalizedName();
     }
@@ -88,22 +88,43 @@ class StockAccount {
 
     getExchangeCode(): string | null {
         if (this.account.getType() == BkperApp.AccountType.INCOMING || this.account.getType() == BkperApp.AccountType.OUTGOING) {
-          return null;
+            return null;
         }
         let groups = this.account.getGroups();
         if (groups != null) {
-          for (const group of groups) {
-            if (group == null) {
-              continue;
+            for (const group of groups) {
+                if (group == null) {
+                    continue;
+                }
+                let exchange = group.getProperty(STOCK_EXC_CODE_PROP);
+                if (exchange != null && exchange.trim() != '') {
+                    return exchange;
+                }
             }
-            let exchange = group.getProperty(STOCK_EXC_CODE_PROP);
-            if (exchange != null && exchange.trim() != '') {
-              return exchange;
-            }
-          }
         }
         return null;
-      }
+    }
+
+    setForwardedExcRate(fwdExcRate: Bkper.Amount): StockAccount {
+        this.account.setProperty(FORWARDED_EXC_RATE_PROP, fwdExcRate?.toString())
+        return this;
+    }
+
+    deleteForwardedExcRate(): StockAccount {
+        this.account.deleteProperty(FORWARDED_EXC_RATE_PROP)
+        return this;
+    }
+
+    setForwardedPrice(fwdPrice: Bkper.Amount): StockAccount {
+        this.account.setProperty(FORWARDED_PRICE_PROP, fwdPrice?.toString())
+        return this;
+    }
+
+    deleteForwardedPrice(): StockAccount {
+        this.account.deleteProperty(FORWARDED_PRICE_PROP)
+        return this;
+    }
+
 
 
 }

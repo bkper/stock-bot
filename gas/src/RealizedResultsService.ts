@@ -202,7 +202,11 @@ namespace RealizedResultsService {
         stockAccount.clearNeedsRebuild()
 
         if (full) {
-            stockAccount.deleteRealizedDate().deleteForwardedDate();
+            stockAccount
+            .deleteRealizedDate()
+            .deleteForwardedDate()
+            .deleteForwardedExcRate()
+            .deleteForwardedPrice();
         } else {
             let forwardedDate = stockAccount.getForwardedDate();
             if (forwardedDate) {
