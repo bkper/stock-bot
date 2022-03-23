@@ -286,6 +286,12 @@
   }
 
   function changeServiceView() {
+    let changeViewLink = document.getElementById('change-view-link');
+    if (changeViewLink.innerHTML == 'Forward Date') {
+      changeViewLink.innerHTML = 'Realized Results';
+    } else {
+      changeViewLink.innerHTML = 'Forward Date';
+    }
     let realizedResultsElements = document.getElementsByClassName('rr-service');
     for (const element of realizedResultsElements) {
       if (element.style.display == "none") {
