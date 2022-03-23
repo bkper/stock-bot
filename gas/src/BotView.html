@@ -154,7 +154,12 @@
   }
 
   function getDateInput() {
-    return document.getElementById("forward-date").value;
+    let dateInputDiv = document.getElementById('date-div');
+    if (dateInputDiv.style.visibility == "visible") {
+        return document.getElementById("forward-date").value;
+    } else {
+        return  null;
+    }
   }
 
   async function updateAccountsToDate() {

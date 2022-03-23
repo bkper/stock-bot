@@ -8,6 +8,10 @@ namespace RealizedResultsService {
 
     export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string, autoMtM: boolean, beforeDate: string): Summary {
         let stockBook = BkperApp.getBook(stockBookId);
+        if (!beforeDate) {
+            beforeDate = stockBook.formatDate(new Date())
+        }
+
         let stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
 
         let summary: Summary = {
