@@ -84,6 +84,10 @@ namespace ForwardDateService {
         }
         stockAccount.update()
 
+        if (isForwardedDateSameOnAllAccounts(stockBook, date)) {
+            stockBook.setLockDate(stockBook.formatDate(closingDate)).update()
+        }
+
 
         let summary: Summary = {
             accountId: stockAccountId,
@@ -91,5 +95,17 @@ namespace ForwardDateService {
         };
 
         return summary;
+    }
+
+    function isForwardedDateSameOnAllAccounts(book: Bkper.Book, forwardedDate: string): boolean {
+        for (const account of book.getAccounts()) {
+            const stockAccount = new StockAccount(account)
+            if (stockAccount.isPermanent() && !stockAccount.isArchived() && stockAccount.getExchangeCode()) {
+                if (stockAccount.getForwardedDate() != forwardedDate) {
+                    return false
+                }
+            }
+        }
+        return true;
     }
 }
