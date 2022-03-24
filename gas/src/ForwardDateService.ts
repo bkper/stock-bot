@@ -28,76 +28,85 @@ namespace ForwardDateService {
         // Exchange rate
         const fwdExcRate = !openAmountExc.eq(0) ? openAmountBase.div(openAmountExc) : undefined;
 
-        let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' before:${date}`);
-        let transactions: Bkper.Transaction[] = [];
 
+        // Allow forward date only if account is NOT flagged with needs_rebuild
+        if (!stockAccount.needsRebuild()) {
 
-        while (iterator.hasNext()) {
-            let tx = iterator.next();
-            if (!tx.isChecked()) {
-                transactions.push(tx);
-            }
-        }
+            let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' before:${date}`);
+            let transactions: Bkper.Transaction[] = [];
 
-        transactions =  transactions.sort(BotService.compareToFIFO)
-        let order = -transactions.length;
-        for (const transaction of transactions) {
-            if (!transaction.getProperty(DATE_PROP)) {
-                transaction.setProperty(DATE_PROP, transaction.getDate())
-            }
-            if (!transaction.getProperty(HIST_QUANTITY_PROP)) {
-                transaction.setProperty(HIST_QUANTITY_PROP, transaction.getProperty(ORIGINAL_QUANTITY_PROP))
-            }
-            if (!transaction.getProperty(HIST_ORDER_PROP)) {
-                transaction.setProperty(HIST_ORDER_PROP, transaction.getProperty(ORDER_PROP))
-            }
-
-            if (BotService.isPurchase(transaction)) {
-                transaction.setProperty(FWD_PURCHASE_PRICE_PROP, fwdPrice ? fwdPrice.toString() : undefined);
-                if (stockAccount.getExchangeCode() !== BotService.getExcCode(baseBook)) {
-                    transaction.setProperty(FWD_PURCHASE_EXC_RATE_PROP, fwdExcRate ? fwdExcRate.toString() : undefined);
-                }
-            }
-            
-            if (BotService.isSale(transaction)) {
-                transaction.setProperty(FWD_SALE_PRICE_PROP, fwdPrice ? fwdPrice.toString() : undefined);
-                if (stockAccount.getExchangeCode() !== BotService.getExcCode(baseBook)) {
-                    transaction.setProperty(FWD_SALE_EXC_RATE_PROP, fwdExcRate ? fwdExcRate.toString() : undefined);
+            while (iterator.hasNext()) {
+                let tx = iterator.next();
+                if (!tx.isChecked()) {
+                    transactions.push(tx);
                 }
             }
 
-            transaction
-                .deleteProperty(ORIGINAL_AMOUNT_PROP)
-                .setProperty(ORIGINAL_QUANTITY_PROP, transaction.getAmount().toString())
-                .setProperty(ORDER_PROP, order + '')
-                .setDate(date)
-                .update()
-            order++;
-        }
+            transactions =  transactions.sort(BotService.compareToFIFO)
+            let order = -transactions.length;
+            for (const transaction of transactions) {
+                if (!transaction.getProperty(DATE_PROP)) {
+                    transaction.setProperty(DATE_PROP, transaction.getDate())
+                }
+                if (!transaction.getProperty(HIST_QUANTITY_PROP)) {
+                    transaction.setProperty(HIST_QUANTITY_PROP, transaction.getProperty(ORIGINAL_QUANTITY_PROP))
+                }
+                if (!transaction.getProperty(HIST_ORDER_PROP)) {
+                    transaction.setProperty(HIST_ORDER_PROP, transaction.getProperty(ORDER_PROP))
+                }
+    
+                if (BotService.isPurchase(transaction)) {
+                    transaction.setProperty(FWD_PURCHASE_PRICE_PROP, fwdPrice ? fwdPrice.toString() : undefined);
+                    if (stockAccount.getExchangeCode() !== BotService.getExcCode(baseBook)) {
+                        transaction.setProperty(FWD_PURCHASE_EXC_RATE_PROP, fwdExcRate ? fwdExcRate.toString() : undefined);
+                    }
+                }
+                
+                if (BotService.isSale(transaction)) {
+                    transaction.setProperty(FWD_SALE_PRICE_PROP, fwdPrice ? fwdPrice.toString() : undefined);
+                    if (stockAccount.getExchangeCode() !== BotService.getExcCode(baseBook)) {
+                        transaction.setProperty(FWD_SALE_EXC_RATE_PROP, fwdExcRate ? fwdExcRate.toString() : undefined);
+                    }
+                }
+    
+                transaction
+                    .deleteProperty(ORIGINAL_AMOUNT_PROP)
+                    .setProperty(ORIGINAL_QUANTITY_PROP, transaction.getAmount().toString())
+                    .setProperty(ORDER_PROP, order + '')
+                    .setDate(date)
+                    .update()
+                order++;
+            }
+    
+            stockAccount
+            .setRealizedDate(date)
+            .setForwardedDate(date)
+            .setForwardedPrice(fwdPrice);
+            if (stockAccount.getExchangeCode() !== BotService.getExcCode(baseBook)) {
+                stockAccount.setForwardedExcRate(fwdExcRate)
+            }
+            stockAccount.update()
+    
+            const closingDateISO = Utilities.formatDate(closingDate, stockBook.getTimeZone(), "yyyy-MM-dd");
+            if (isForwardedDateSameOnAllAccounts(stockBook, date) && stockBook.getLockDate() != closingDateISO) {
+                stockBook.setLockDate(closingDateISO).update()
+                return {
+                    accountId: stockAccountId,
+                    result: `${transactions.length} forwarded to ${date} and locked book on ${stockBook.formatDate(closingDate)}`
+                };
+            } else {
+                return {
+                    accountId: stockAccountId,
+                    result: `${transactions.length} forwarded to ${date}`
+                };
+            }
 
-        stockAccount
-        .setRealizedDate(date)
-        .setForwardedDate(date)
-        .setForwardedPrice(fwdPrice);
-        if (stockAccount.getExchangeCode() !== BotService.getExcCode(baseBook)) {
-            stockAccount.setForwardedExcRate(fwdExcRate)
-        }
-        stockAccount.update()
-
-        const closingDateISO = Utilities.formatDate(closingDate, stockBook.getTimeZone(), "yyyy-MM-dd");
-        if (isForwardedDateSameOnAllAccounts(stockBook, date) && stockBook.getLockDate() != closingDateISO) {
-            stockBook.setLockDate(closingDateISO).update()
-            return {
-                accountId: stockAccountId,
-                result: `${transactions.length} forwarded to ${date} and locked book on ${stockBook.formatDate(closingDate)}`
-            };
         } else {
             return {
                 accountId: stockAccountId,
-                result: `${transactions.length} forwarded to ${date}`
+                result: `Cannot set forward date: account needs rebuild`
             };
         }
-
     }
 
     function isForwardedDateSameOnAllAccounts(book: Bkper.Book, forwardedDate: string): boolean {
