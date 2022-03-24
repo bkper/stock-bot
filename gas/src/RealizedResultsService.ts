@@ -265,10 +265,11 @@ namespace RealizedResultsService {
 
         let purchaseTotal = BkperApp.newAmount(0);
         let saleTotal = BkperApp.newAmount(0);
+
         let gainTotal = BkperApp.newAmount(0);
         let gainBaseNoFxTotal = BkperApp.newAmount(0);
         let gainBaseWithFxTotal = BkperApp.newAmount(0);
-
+        
         let fwdPurchaseTotal = BkperApp.newAmount(0);
         let fwdSaleTotal = BkperApp.newAmount(0);
 
@@ -300,9 +301,11 @@ namespace RealizedResultsService {
                 const purchaseAmount = purchasePrice.times(purchaseQuantity);
                 const fwdSaleAmount = fwdSalePrice ? fwdSalePrice.times(purchaseQuantity) : saleAmount;
                 const fwdPurchaseAmount = fwdPurchasePrice ? fwdPurchasePrice.times(purchaseQuantity) : purchaseAmount;
-                let gain = saleAmount.minus(purchaseAmount);
-                let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
-                let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
+
+                let gain = fwdSaleAmount.minus(fwdPurchaseAmount);
+                let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, fwdPurchaseExcRate, fwdSaleExcRate, shortSale);
+                let gainBaseWithFX = BotService.calculateGainBaseWithFX(fwdPurchaseAmount, fwdPurchaseExcRate, fwdSaleAmount, fwdSaleExcRate);
+                
                 if (!shortSale) {
                     purchaseTotal = purchaseTotal.plus(purchaseAmount);
                     saleTotal = saleTotal.plus(saleAmount);
@@ -357,9 +360,9 @@ namespace RealizedResultsService {
                 const purchaseAmount = purchasePrice.times(partialBuyQuantity);
                 const fwdSaleAmount = fwdSalePrice ? fwdSalePrice.times(partialBuyQuantity) : saleAmount;
                 const fwdPurchaseAmount = fwdPurchasePrice ? fwdPurchasePrice.times(partialBuyQuantity) : purchaseAmount;
-                let gain = saleAmount.minus(purchaseAmount);
-                let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
-                let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
+                let gain = fwdSaleAmount.minus(fwdPurchaseAmount);
+                let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, fwdPurchaseExcRate, fwdSaleExcRate, shortSale);
+                let gainBaseWithFX = BotService.calculateGainBaseWithFX(fwdPurchaseAmount, fwdPurchaseExcRate, fwdSaleAmount, fwdSaleExcRate);
 
                 purchaseTransaction
                     .setAmount(remainingBuyQuantity)
