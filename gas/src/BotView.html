@@ -57,10 +57,6 @@
       .options-panel {
         padding-top: 10px;
       }
-
-      #date-div {
-        visibility: hidden;
-      }
       
       #date-div {
         display: flex;
@@ -101,7 +97,7 @@
       <div class='sub-header'>
         Calculate using FIFO method
       </div>
-  
+
       <div class='accounts-panel'>
         <div id='account-list'>
           <? if (group.name) { ?>
@@ -118,9 +114,12 @@
               <div id='result-<?!= accounts[i].id ?>'></div>
             </div>
           <? } ?>
-      </div>        
+      </div>
+
       <div class='options-panel'>
-        <input type="checkbox" id="autoMtM" name="Perform #mtm valuations?">Perform #mtm valuations?</input>
+        <div id='checkbox-div'>
+          <input type="checkbox" id="autoMtM" name="Perform #mtm valuations?">Perform #mtm valuations?</input>
+        </div>
         <div id='date-div'>
           <input type="date" id="forward-date" name="forward-date" value='<?!= dateToday ?>'/>
         </div>
@@ -131,9 +130,9 @@
       <?!= enableReset ? "<button id='reset-button' class='rr-service' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
       <?!= enableFullReset ? "<button id='full-reset-button' class='fd-service' onclick='fullResetRealizedResults()'>Full Reset</button>" : "" ?>
       <button id="forward-date-button" class='fd-service' onclick="updateAccountsToDate()">Forward Date</button>
-      <button id="calculate-button" onclick="calculateRealizedResults()">Calculate</button>
+      <button id="calculate-button" class='rr-service' onclick="calculateRealizedResults()">Calculate</button>
       <button id="close-button" onclick="closeWindow()">Close</button>
-      <a id="change-view-link" onclick="changeServiceView()">Forward Date</a>
+      <a id="change-view-link" onclick="changeServiceView()">Set Forward Date</a>
     </div>
 
   </body>
@@ -154,12 +153,7 @@
   }
 
   function getDateInput() {
-    let dateInputDiv = document.getElementById('date-div');
-    if (dateInputDiv.style.visibility == "visible") {
-        return document.getElementById("forward-date").value;
-    } else {
-        return  null;
-    }
+    return document.getElementById("forward-date").value;
   }
 
   async function updateAccountsToDate() {
@@ -287,10 +281,10 @@
 
   function changeServiceView() {
     let changeViewLink = document.getElementById('change-view-link');
-    if (changeViewLink.innerHTML == 'Forward Date') {
-      changeViewLink.innerHTML = 'Realized Results';
+    if (changeViewLink.innerHTML == 'Set Forward Date') {
+      changeViewLink.innerHTML = 'Calculate RR';
     } else {
-      changeViewLink.innerHTML = 'Forward Date';
+      changeViewLink.innerHTML = 'Set Forward Date';
     }
     let realizedResultsElements = document.getElementsByClassName('rr-service');
     for (const element of realizedResultsElements) {
@@ -308,11 +302,11 @@
         element.style.display = "none";
       }
     }
-    let dateInputDiv = document.getElementById('date-div');
-    if (!dateInputDiv.style.visibility || dateInputDiv.style.visibility == "hidden") {
-      dateInputDiv.style.visibility = "visible";
+    let mtmCheckboxDiv = document.getElementById('checkbox-div');
+    if (mtmCheckboxDiv.style.visibility == "hidden") {
+      mtmCheckboxDiv.style.visibility = "visible";
     } else {
-      dateInputDiv.style.visibility = "hidden";
+      mtmCheckboxDiv.style.visibility = "hidden";
     }
   }
 
