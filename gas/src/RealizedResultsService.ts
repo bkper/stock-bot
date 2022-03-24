@@ -241,11 +241,11 @@ namespace RealizedResultsService {
 
 
 
-    function logPurchase(stockBook: Bkper.Book, quantity: Bkper.Amount, price: Bkper.Amount, date: string, excRate: Bkper.Amount): PurchaseLogEntry {
+    function logPurchase(stockBook: Bkper.Book, quantity: Bkper.Amount, price: Bkper.Amount, transaction: Bkper.Transaction, excRate: Bkper.Amount): PurchaseLogEntry {
         return {
             qt: quantity.toFixed(stockBook.getFractionDigits()).toString(),
             pr: price.toString(),
-            dt: date,
+            dt: transaction.getProperty(DATE_PROP) || transaction.getDate(),
             rt: excRate?.toString()
         }
     }
@@ -311,11 +311,11 @@ namespace RealizedResultsService {
                     gainTotal = gainTotal.plus(gain);
                     gainBaseNoFxTotal = gainBaseNoFxTotal.plus(gainBaseNoFX);
                     gainBaseWithFxTotal = gainBaseWithFxTotal.plus(gainBaseWithFX);
-                    purchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getProperty(DATE_PROP) || purchaseTransaction.getDate(), purchaseExcRate))
+                    purchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction, purchaseExcRate))
                     if (fwdPurchasePrice) {
-                        fwdPurchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, fwdPurchasePrice, purchaseTransaction.getDate(), fwdPurchaseExcRate))
+                        fwdPurchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, fwdPurchasePrice, purchaseTransaction, fwdPurchaseExcRate))
                     } else {
-                        fwdPurchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
+                        fwdPurchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction, purchaseExcRate))
                     }
                 }
                 purchaseTransaction
@@ -415,11 +415,11 @@ namespace RealizedResultsService {
                     gainTotal = gainTotal.plus(gain);
                     gainBaseNoFxTotal = gainBaseNoFxTotal.plus(gainBaseNoFX);
                     gainBaseWithFxTotal = gainBaseWithFxTotal.plus(gainBaseWithFX);
-                    purchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction.getProperty(DATE_PROP) || purchaseTransaction.getDate(), purchaseExcRate))
+                    purchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction, purchaseExcRate))
                     if (fwdPurchasePrice) {
-                        fwdPurchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, fwdPurchasePrice, purchaseTransaction.getDate(), fwdPurchaseExcRate))
+                        fwdPurchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, fwdPurchasePrice, purchaseTransaction, fwdPurchaseExcRate))
                     } else {
-                        fwdPurchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction.getDate(), purchaseExcRate))
+                        fwdPurchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction, purchaseExcRate))
                     }
                 }
 
