@@ -328,7 +328,7 @@ namespace RealizedResultsService {
                     purchaseTransaction.setProperty(SALE_PRICE_PROP, salePrice.toString())
                         .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
                         .setProperty(SALE_AMOUNT_PROP, saleAmount.toString())
-                        .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
+                        .setProperty(SALE_DATE_PROP, saleTransaction.getProperty(DATE_PROP) || saleTransaction.getDate())
                         .setProperty(GAIN_AMOUNT_PROP, gain.toString())
                         .setProperty(SHORT_SALE_PROP, 'true')
                         .setProperty(FWD_SALE_AMOUNT_PROP, fwdSaleAmount?.toString())
@@ -389,7 +389,7 @@ namespace RealizedResultsService {
                         .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
                         .setProperty(FWD_SALE_PRICE_PROP, fwdSalePrice?.toString())
                         .setProperty(FWD_SALE_AMOUNT_PROP, fwdSaleAmount?.toString())
-                        .setProperty(SALE_DATE_PROP, saleTransaction.getDate())
+                        .setProperty(SALE_DATE_PROP, saleTransaction.getProperty(DATE_PROP) || saleTransaction.getDate())
                         .setProperty(GAIN_AMOUNT_PROP, gain.toString())
                         .setProperty(SHORT_SALE_PROP, 'true')
                 }
