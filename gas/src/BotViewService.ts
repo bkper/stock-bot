@@ -18,7 +18,7 @@ namespace BotViewService {
 
         template.enableReset = true;
 
-        if (stockBook.getPermission() == BkperApp.Permission.OWNER && stockBook.getLockDate() == '1900-00-00') {
+        if (stockBook.getPermission() == BkperApp.Permission.OWNER && checkIfAllBooksAreUnlocked(baseBook)) {
             template.enableFullReset = true;
         } else {
             template.enableFullReset = false;
@@ -74,5 +74,17 @@ namespace BotViewService {
         template.accounts.sort((a: { name: string; }, b: { name: string; }) => a.name.localeCompare(b.name));
 
         return template.evaluate().setTitle('Stock Bot');
+    }
+
+    function checkIfAllBooksAreUnlocked(baseBook: Bkper.Book): boolean {
+        let books = baseBook.getCollection().getBooks();
+        for (const book of books) {
+            if (book.getLockDate() == '1900-00-00') {
+                continue;
+            } else {
+                return false;
+            };
+        };
+        return true;
     }
 }
