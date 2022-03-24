@@ -84,8 +84,9 @@ namespace ForwardDateService {
         }
         stockAccount.update()
 
-        if (isForwardedDateSameOnAllAccounts(stockBook, date)) {
-            stockBook.setLockDate(Utilities.formatDate(closingDate, stockBook.getTimeZone(), "yyyy-MM-dd")).update()
+        const closingDateISO = Utilities.formatDate(closingDate, stockBook.getTimeZone(), "yyyy-MM-dd");
+        if (isForwardedDateSameOnAllAccounts(stockBook, date) && stockBook.getLockDate() != closingDateISO) {
+            stockBook.setLockDate(closingDateISO).update()
             return {
                 accountId: stockAccountId,
                 result: `${transactions.length} forwarded to ${date} and locked book on ${stockBook.formatDate(closingDate)}`
