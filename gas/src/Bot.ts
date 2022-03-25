@@ -41,6 +41,7 @@ const SALE_EXC_RATE_PROP = 'sale_exc_rate';
 const FWD_SALE_EXC_RATE_PROP = 'fwd_sale_exc_rate';
 const ORDER_PROP = 'order';
 const HIST_ORDER_PROP = 'hist_order';
+const STOCK_HISTORICAL_PROP = 'stock_historical';
 const DATE_PROP = 'date';
 const REALIZED_DATE_PROP = 'realized_date';
 const LEGACY_REALIZED_DATE_PROP = 'stock_realized_date';

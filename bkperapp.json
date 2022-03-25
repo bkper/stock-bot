@@ -38,7 +38,8 @@
     "book": {
       "keys": [
         "exc_code",
-        "stock_book"
+        "stock_book",
+        "stock_historical"
       ]
     },
     "transaction": {
