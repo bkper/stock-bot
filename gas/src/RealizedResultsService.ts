@@ -259,7 +259,7 @@ namespace RealizedResultsService {
     function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: StockAccount, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean, historical: boolean): void {
 
         let salePrice: Bkper.Amount = BkperApp.newAmount(saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP));
-        let fwdSalePrice: Bkper.Amount = saleTransaction.getProperty(FWD_SALE_PRICE_PROP) ? BkperApp.newAmount(saleTransaction.getProperty(FWD_SALE_PRICE_PROP)) : null;
+        let fwdSalePrice: Bkper.Amount = saleTransaction.getProperty(FWD_SALE_PRICE_PROP) ? BkperApp.newAmount(saleTransaction.getProperty(FWD_SALE_PRICE_PROP)) : salePrice;
 
         let soldQuantity = saleTransaction.getAmount();
         const saleExcRate = BotService.getExcRate(baseBook, financialBook, saleTransaction, SALE_EXC_RATE_PROP)
@@ -294,15 +294,15 @@ namespace RealizedResultsService {
 
             const purchaseExcRate = BotService.getExcRate(baseBook, financialBook, purchaseTransaction, PURCHASE_EXC_RATE_PROP)
             const fwdPurchaseExcRate = BotService.getFwdExcRate(purchaseTransaction, FWD_PURCHASE_EXC_RATE_PROP, purchaseExcRate)
-            let fwdPurchasePrice: Bkper.Amount = purchaseTransaction.getProperty(FWD_PURCHASE_PRICE_PROP) ? BkperApp.newAmount(purchaseTransaction.getProperty(FWD_PURCHASE_PRICE_PROP)) : null;
             let purchasePrice: Bkper.Amount = BkperApp.newAmount(purchaseTransaction.getProperty(PURCHASE_PRICE_PROP, PRICE_PROP));
+            let fwdPurchasePrice: Bkper.Amount = purchaseTransaction.getProperty(FWD_PURCHASE_PRICE_PROP) ? BkperApp.newAmount(purchaseTransaction.getProperty(FWD_PURCHASE_PRICE_PROP)) : purchasePrice;
             let purchaseQuantity = purchaseTransaction.getAmount();
 
             if (soldQuantity.gte(purchaseQuantity)) {
                 const saleAmount = salePrice.times(purchaseQuantity);
                 const purchaseAmount = purchasePrice.times(purchaseQuantity);
-                const fwdSaleAmount = fwdSalePrice ? fwdSalePrice.times(purchaseQuantity) : saleAmount;
-                const fwdPurchaseAmount = fwdPurchasePrice ? fwdPurchasePrice.times(purchaseQuantity) : purchaseAmount;
+                const fwdSaleAmount = fwdSalePrice.times(purchaseQuantity);
+                const fwdPurchaseAmount = fwdPurchasePrice.times(purchaseQuantity);
 
                 let gain = saleAmount.minus(purchaseAmount);
                 let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
@@ -370,8 +370,8 @@ namespace RealizedResultsService {
 
                 const saleAmount = salePrice.times(partialBuyQuantity);
                 const purchaseAmount = purchasePrice.times(partialBuyQuantity);
-                const fwdSaleAmount = fwdSalePrice ? fwdSalePrice.times(partialBuyQuantity) : saleAmount;
-                const fwdPurchaseAmount = fwdPurchasePrice ? fwdPurchasePrice.times(partialBuyQuantity) : purchaseAmount;
+                const fwdSaleAmount = fwdSalePrice.times(partialBuyQuantity);
+                const fwdPurchaseAmount = fwdPurchasePrice.times(partialBuyQuantity);
 
                 let gain = saleAmount.minus(purchaseAmount);
                 let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);

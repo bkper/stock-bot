@@ -44,7 +44,7 @@ namespace BotService {
         if (stockTransaction.getProperty(fwdExcRateProp)) {
             return BkperApp.newAmount(stockTransaction.getProperty(fwdExcRateProp))
         }
-        return undefined;
+        return fallbackExcRate;
     }
     export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction, excRateProp: string): Bkper.Amount {
         if (baseBook.getProperty(EXC_CODE_PROP) == financialBook.getProperty(EXC_CODE_PROP)) {
