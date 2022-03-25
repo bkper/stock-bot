@@ -14,6 +14,8 @@ namespace RealizedResultsService {
 
         let stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
 
+        let historical = stockBook.getProperty(STOCK_HISTORICAL_PROP) && stockBook.getProperty(STOCK_HISTORICAL_PROP).toLowerCase() == 'true' ? true : false
+
         let summary: Summary = {
             accountId: stockAccountId,
             result: {}
@@ -60,7 +62,7 @@ namespace RealizedResultsService {
         const baseBook = BotService.getBaseBook(financialBook);
 
         for (const saleTransaction of stockAccountSaleTransactions) {
-            processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM);
+            processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM, historical);
         }
 
         checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
@@ -254,7 +256,7 @@ namespace RealizedResultsService {
         return BotService.compareToFIFO(saleTransaction, purchaseTransaction) < 0;
     }
 
-    function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: StockAccount, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean): void {
+    function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: StockAccount, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean, historical: boolean): void {
 
         let salePrice: Bkper.Amount = BkperApp.newAmount(saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP));
         let fwdSalePrice: Bkper.Amount = saleTransaction.getProperty(FWD_SALE_PRICE_PROP) ? BkperApp.newAmount(saleTransaction.getProperty(FWD_SALE_PRICE_PROP)) : null;
@@ -302,9 +304,16 @@ namespace RealizedResultsService {
                 const fwdSaleAmount = fwdSalePrice ? fwdSalePrice.times(purchaseQuantity) : saleAmount;
                 const fwdPurchaseAmount = fwdPurchasePrice ? fwdPurchasePrice.times(purchaseQuantity) : purchaseAmount;
 
-                let gain = fwdSaleAmount.minus(fwdPurchaseAmount);
-                let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, fwdPurchaseExcRate, fwdSaleExcRate, shortSale);
-                let gainBaseWithFX = BotService.calculateGainBaseWithFX(fwdPurchaseAmount, fwdPurchaseExcRate, fwdSaleAmount, fwdSaleExcRate);
+                let gain = saleAmount.minus(purchaseAmount);
+                let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
+                let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
+
+                if (!historical) {
+                    //Override if not historical
+                    gain = fwdSaleAmount.minus(fwdPurchaseAmount);
+                    gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, fwdPurchaseExcRate, fwdSaleExcRate, shortSale);
+                    gainBaseWithFX = BotService.calculateGainBaseWithFX(fwdPurchaseAmount, fwdPurchaseExcRate, fwdSaleAmount, fwdSaleExcRate);
+                }
                 
                 if (!shortSale) {
                     purchaseTotal = purchaseTotal.plus(purchaseAmount);
@@ -363,9 +372,17 @@ namespace RealizedResultsService {
                 const purchaseAmount = purchasePrice.times(partialBuyQuantity);
                 const fwdSaleAmount = fwdSalePrice ? fwdSalePrice.times(partialBuyQuantity) : saleAmount;
                 const fwdPurchaseAmount = fwdPurchasePrice ? fwdPurchasePrice.times(partialBuyQuantity) : purchaseAmount;
-                let gain = fwdSaleAmount.minus(fwdPurchaseAmount);
-                let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, fwdPurchaseExcRate, fwdSaleExcRate, shortSale);
-                let gainBaseWithFX = BotService.calculateGainBaseWithFX(fwdPurchaseAmount, fwdPurchaseExcRate, fwdSaleAmount, fwdSaleExcRate);
+
+                let gain = saleAmount.minus(purchaseAmount);
+                let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
+                let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
+
+                if (!historical) {
+                    //Override if not historical
+                    gain = fwdSaleAmount.minus(fwdPurchaseAmount);
+                    gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, fwdPurchaseExcRate, fwdSaleExcRate, shortSale);
+                    gainBaseWithFX = BotService.calculateGainBaseWithFX(fwdPurchaseAmount, fwdPurchaseExcRate, fwdSaleAmount, fwdSaleExcRate);
+                }
 
                 purchaseTransaction
                     .setAmount(remainingBuyQuantity)
