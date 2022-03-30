@@ -90,8 +90,7 @@ namespace RealizedResultsService {
 
         while (iterator.hasNext()) {
             let tx = iterator.next();
-            transactions.push(tx)
-            console.log(tx.getDescription())
+            transactions.push(tx);
         }
 
         for (let tx of transactions) {
