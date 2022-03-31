@@ -90,7 +90,8 @@ namespace RealizedResultsService {
 
         while (iterator.hasNext()) {
             let tx = iterator.next();
-            transactions.push(tx);
+            transactions.push(tx)
+            console.log(tx.getDescription())
         }
 
         for (let tx of transactions) {
@@ -516,6 +517,9 @@ namespace RealizedResultsService {
                 }
 
                 splittedSaleTransaction.post().check()
+
+                //Override to have the RR FX and MtM associated to the splitted on
+                saleTransaction = splittedSaleTransaction;
             }
 
         }
