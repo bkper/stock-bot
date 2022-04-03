@@ -39,7 +39,7 @@ The Stock Bot interacts with the following properties:
 
 ## Realized Results Service
 
-When calculating realized results, the market value of remaining instruments can be automatically adjusted on Financial Books to match the last realized price of that instrument. This valuation proceedure is known as [Mark-To-Market](https://www.investopedia.com/terms/m/marktomarket.asp). 
+When calculating realized results, the market value of remaining instruments can be automatically adjusted on Financial Books to match the last realized price of that instrument. This valuation procedure is known as [Mark-To-Market](https://www.investopedia.com/terms/m/marktomarket.asp). 
 
 The Stock Bot adds the following properties to the generated transactions in the Instruments Book:
 
