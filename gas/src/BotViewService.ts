@@ -55,10 +55,10 @@ namespace BotViewService {
         }
 
         function addAccount(account: Bkper.Account) {
-            const stockAccount = new StockAccount(account)
-            if (!stockAccount) {
+            if (!account) {
                 return;
             }
+            const stockAccount = new StockAccount(account);
             if (!stockAccount.isPermanent() || stockAccount.isArchived() || !stockAccount.getExchangeCode()) {
                 //bypass non permanent accounts
                 return;
