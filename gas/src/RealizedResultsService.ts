@@ -152,6 +152,14 @@ namespace RealizedResultsService {
                 tx.remove();
             } else {
 
+                //Fix wrong negative prices from forwarded date error
+                if (tx.getProperty(FWD_SALE_PRICE_PROP)) {
+                    tx.setProperty(FWD_SALE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_SALE_PRICE_PROP)).abs().toString())
+                }
+                if (tx.getProperty(FWD_PURCHASE_PRICE_PROP)) {
+                    tx.setProperty(FWD_PURCHASE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_PURCHASE_PRICE_PROP)).abs().toString())
+                }
+
                 tx
                     .deleteProperty(GAIN_AMOUNT_PROP)
                     .deleteProperty(PURCHASE_AMOUNT_PROP)

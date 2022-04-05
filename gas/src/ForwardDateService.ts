@@ -18,15 +18,15 @@ namespace ForwardDateService {
         let financialBookBalancesReport = financialBook.getBalancesReport(`account:'${stockAccount.getName()}' on:${financialBook.formatDate(closingDate)}`);
 
         // Open amount from Base Book
-        const openAmountBase = baseBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalance();
-        // Open amount from Financial Book
-        const openAmountExc = financialBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalance();
+        const openAmountBase = baseBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
+        // Open amount from Local Book
+        const openAmountLocal = financialBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
         // Open quantity from Stock Book
-        const openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalance();
+        const openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
         // Current price
-        const fwdPrice = !openQuantity.eq(0) ? openAmountExc.div(openQuantity) : undefined;
+        const fwdPrice = !openQuantity.eq(0) ? openAmountLocal.div(openQuantity) : undefined;
         // Exchange rate
-        const fwdExcRate = !openAmountExc.eq(0) ? openAmountBase.div(openAmountExc) : undefined;
+        const fwdExcRate = !openAmountLocal.eq(0) ? openAmountBase.div(openAmountLocal) : undefined;
 
 
         // Allow forward date only if account is NOT flagged with needs_rebuild
