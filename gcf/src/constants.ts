@@ -21,6 +21,7 @@ export const ORIGINAL_AMOUNT_PROP = 'original_amount';
 export const SALE_PRICE_PROP = 'sale_price';
 export const SALE_AMOUNT_PROP = 'sale_amount';
 export const SALE_DATE_PROP = 'sale_date';
+export const EXC_BASE_PROP = 'exc_base';
 export const EXC_CODE_PROP = 'exc_code';
 export const ORDER_PROP = 'order';
 export const LEGACY_REALIZED_DATE_PROP = 'stock_realized_date';

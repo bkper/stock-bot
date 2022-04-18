@@ -1,5 +1,5 @@
 import { Account, AccountType, Bkper, Book, Group, Transaction } from 'bkper';
-import { EXC_CODE_PROP, LEGACY_REALIZED_DATE_PROP, NEEDS_REBUILD_PROP, REALIZED_DATE_PROP, STOCK_BOOK_PROP, STOCK_EXC_CODE_PROP } from './constants';
+import { EXC_BASE_PROP, EXC_CODE_PROP, LEGACY_REALIZED_DATE_PROP, NEEDS_REBUILD_PROP, REALIZED_DATE_PROP, STOCK_BOOK_PROP, STOCK_EXC_CODE_PROP } from './constants';
 
 export function isStockBook(book: Book): boolean {
   if (book.getProperty(STOCK_BOOK_PROP)) {
@@ -10,6 +10,25 @@ export function isStockBook(book: Book): boolean {
   }
   return false;
 }
+
+export function getBaseBook(book: Book): Book {
+  if (book.getCollection() == null) {
+    return null;
+  }
+  let connectedBooks = book.getCollection().getBooks();
+  for (const connectedBook of connectedBooks) {
+    if (connectedBook.getProperty(EXC_BASE_PROP)) {
+      return connectedBook;
+    }
+  }
+  for (const connectedBook of connectedBooks) {
+    if (connectedBook.getProperty(EXC_CODE_PROP) == 'USD') {
+      return connectedBook;
+    }
+  }
+  return null;
+}
+
 export function getStockBook(book: Book): Book {
   if (book.getCollection() == null) {
     return null;
