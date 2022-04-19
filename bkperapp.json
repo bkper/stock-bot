@@ -32,7 +32,8 @@
     "ACCOUNT_DELETED",
     "GROUP_CREATED",
     "GROUP_UPDATED",
-    "GROUP_DELETED"
+    "GROUP_DELETED",
+    "BOOK_UPDATED"
   ],
   "propertiesSchema": {
     "book": {
