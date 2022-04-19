@@ -13,6 +13,7 @@ import { EventHandlerTransactionRestored } from './EventHandlerTransactionRestor
 import { EventHandlerAccountCreatedOrUpdated } from './EventHandlerAccountCreatedOrUpdated';
 import { EventHandlerAccountDeleted } from './EventHandlerAccountDeleted';
 import { EventHandlerGroupCreatedOrUpdated } from './EventHandlerGroupCreatedOrUpdated';
+import { EventHandlerBookUpdated } from './EventHandlerBookUpdated';
 
 require('dotenv').config({path:`${__dirname}/../../.env`})
 
@@ -81,6 +82,9 @@ async function handleEvent(req: Request, res: Response) {
         break;
       case 'GROUP_DELETED':
         result.result = await new EventHandlerGroupCreatedOrUpdated().handleEvent(event);
+        break;
+      case 'BOOK_UPDATED':
+        result.result = await new EventHandlerBookUpdated().handleEvent(event);
         break;
 
     }
