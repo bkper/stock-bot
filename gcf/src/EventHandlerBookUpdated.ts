@@ -12,7 +12,7 @@ export class EventHandlerBookUpdated extends EventHandler {
 
         if (isStockBook(book)) {
             const stockHistorical = book.getProperty(STOCK_HISTORICAL_PROP);
-            if (stockHistorical && stockHistorical != baseBook.getProperty(EXC_HISTORICAL_PROP)) {
+            if (stockHistorical != baseBook.getProperty(EXC_HISTORICAL_PROP)) {
                 baseBook.setProperty(EXC_HISTORICAL_PROP, stockHistorical);
                 response += ` ${EXC_HISTORICAL_PROP}: ${stockHistorical}`;
             }
