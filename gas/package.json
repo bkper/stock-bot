@@ -1,6 +1,6 @@
 {
   "name": "stock-bot-gas",
-  "version": "1.5.10",
+  "version": "1.5.11",
   "license": "MIT",
   "scripts": {
     "login": "clasp login",
