@@ -18,7 +18,7 @@ namespace BotViewService {
 
         template.enableReset = true;
 
-        if (stockBook.getPermission() == BkperApp.Permission.OWNER && checkIfAllBooksAreUnlocked(baseBook)) {
+        if (stockBook.getPermission() == BkperApp.Permission.OWNER) {
             template.enableFullReset = true;
         } else {
             template.enableFullReset = false;
