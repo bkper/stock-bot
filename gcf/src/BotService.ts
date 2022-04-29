@@ -46,8 +46,42 @@ export function getStockBook(book: Book): Book {
   return null;
 }
 
+export async function getExchangeCode(account: Account): Promise<string> | null {
+  if (account.getType() == AccountType.INCOMING || account.getType() == AccountType.OUTGOING) {
+    return null;
+  }
+  let groups = await account.getGroups();
+  if (groups != null) {
+    for (const group of groups) {
+      if (group == null) {
+        continue;
+      }
+      let excCode = group.getProperty(STOCK_EXC_CODE_PROP);
+      if (excCode != null && excCode.trim() != '') {
+        return excCode;
+      }
+    }
+  }
+  return null;
+}
+
+export async function getFinancialBook(book: Book, excCode?: string): Promise<Book> {
+  if (book.getCollection() == null) {
+    return null;
+  }
+  let connectedBooks = book.getCollection().getBooks();
+  for (const connectedBook of connectedBooks) {
+    let excCodeConnectedBook = getExcCode(connectedBook);
+    let fractionDigits = connectedBook.getFractionDigits();
+    if (fractionDigits != 0 && excCode == excCodeConnectedBook) {
+      return Bkper.getBook(connectedBook.getId());
+    }
+  }
+  return null;
+}
+
 export async function getStockAccount(stockTransaction: Transaction): Promise<Account> {
-  if (await isSale(stockTransaction)) {1
+  if (await isSale(stockTransaction)) {
     return await stockTransaction.getCreditAccount();
   }
   if (await isPurchase(stockTransaction)) {
@@ -67,15 +101,15 @@ export async function flagStockAccountForRebuildIfNeeded(stockTransaction: Trans
 }
 
 export function getRealizedDateValue(account: Account): number | null {
-    const legacyRealizedDate = account.getProperty(LEGACY_REALIZED_DATE_PROP);
-    if (legacyRealizedDate) {
-        return +legacyRealizedDate;
-    }
-    const realizedDate = account.getProperty(REALIZED_DATE_PROP)
-    if (realizedDate) {
-        return +(realizedDate.replace(/-/g, ""))
-    }
-    return null
+  const legacyRealizedDate = account.getProperty(LEGACY_REALIZED_DATE_PROP);
+  if (legacyRealizedDate) {
+    return +legacyRealizedDate;
+  }
+  const realizedDate = account.getProperty(REALIZED_DATE_PROP)
+  if (realizedDate) {
+    return +(realizedDate.replace(/-/g, ""))
+  }
+  return null
 }
 
 export function getStockExchangeCode(account: bkper.Account): string {
