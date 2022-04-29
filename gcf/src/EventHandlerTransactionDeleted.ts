@@ -1,12 +1,18 @@
 import { Book, Transaction } from "bkper";
-import { flagStockAccountForRebuildIfNeeded } from "./BotService";
+import { flagStockAccountForRebuildIfNeeded, isStockBook } from "./BotService";
 import { EventHandlerTransaction } from "./EventHandlerTransaction";
-import { InterceptorOrderProcessorDelete } from "./InterceptorOrderProcessorDelete";
+// import { InterceptorOrderProcessorDeleteInstruments } from "./InterceptorOrderProcessorDeleteInstruments";
+import { InterceptorOrderProcessorDeleteFinancial } from "./InterceptorOrderProcessorDeleteFinancial";
 
 export class EventHandlerTransactionDeleted extends EventHandlerTransaction {
 
-  async intercept(baseBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {
-    let response = await new InterceptorOrderProcessorDelete().intercept(baseBook, event);
+  async intercept(book: Book, event: bkper.Event): Promise<string[] | string | boolean> {
+    let response;
+    if (isStockBook(book)) {
+      // response = await new InterceptorOrderProcessorDeleteInstruments().intercept(book, event);
+    } else {
+      response = await new InterceptorOrderProcessorDeleteFinancial().intercept(book, event);
+    }
     return response;
   }
 
@@ -17,6 +23,7 @@ export class EventHandlerTransactionDeleted extends EventHandlerTransaction {
   protected connectedTransactionNotFound(financialBook: Book, stockBook: Book, financialTransaction: bkper.Transaction, stockExcCode: string): Promise<string> {
     return null;
   }
+
   protected async connectedTransactionFound(financialBook: Book, stockBook: Book, financialTransaction: bkper.Transaction, stockTransaction: Transaction, stockExcCode: string): Promise<string> {
     let bookAnchor = super.buildBookAnchor(stockBook);
 
