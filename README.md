@@ -59,9 +59,9 @@ Properties starting with ```fwd``` have the same meaning as their peers. However
 
 ## Forward Date Service
 
-In order to [close a period](https://help.bkper.com/en/articles/6000644-closing-a-period) and [set a lock date](https://help.bkper.com/en/articles/5100445-book-closing-and-lock-dates) to the Stock Book, open instruments must be carried to the next period. The proper way to do so is by setting a Forward Date to the accounts in the Instruments Book.
+In order to [close a period](https://help.bkper.com/en/articles/6000644-closing-a-period) and [set a closing date](https://help.bkper.com/en/articles/5100445-book-closing-and-lock-dates) to the Stock Book, open instruments must be carried to the next period. The proper way to do so is by setting a Forward Date to the accounts in the Instruments Book.
 
-Each open batch will have its date and prices updated. When the last instrument is successfully forwarded a lock date will be set on the Stock Book one day before the Forward Date.
+Each open batch will have its date and prices updated. When the last instrument is successfully forwarded a closing date will be set on the Stock Book one day before the Forward Date.
 
 Once an instrument is forwarded, future FIFO calculations will consider updated prices. To calculate gains/losses over historical prices, the property ```stock_historical``` must be set to ```true``` on the Instruments Book.
 
