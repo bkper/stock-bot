@@ -79,7 +79,7 @@ namespace BotViewService {
     function checkIfAllBooksAreUnlocked(baseBook: Bkper.Book): boolean {
         let books = baseBook.getCollection().getBooks();
         for (const book of books) {
-            if (book.getLockDate() == '1900-00-00') {
+            if ((!book.getLockDate() || book.getLockDate() == '1900-00-00') && (!book.getClosingDate() || book.getClosingDate() == '1900-00-00')) {
                 continue;
             } else {
                 return false;

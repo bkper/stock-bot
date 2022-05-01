@@ -53,8 +53,6 @@ const STOCK_BUY_ACCOUNT_NAME = 'Buy';
 const REALIZED_SUFFIX = 'Realized';
 const UREALIZED_SUFFIX = 'Unrealized';
 
-const REPORT_CLOSING_DATE_PROP = 'report_closing_date';
-const PREV_CLOSING_DATE_PROP = 'prev_closing_date';
 const QUANTITY_PROP = 'quantity';
 const SELL_ACCOUNT_NAME = 'Sell'
 const BUY_ACCOUNT_NAME = 'Buy'
