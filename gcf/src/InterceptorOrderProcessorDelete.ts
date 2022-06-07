@@ -4,6 +4,9 @@ import { flagStockAccountForRebuildIfNeeded, getStockBook, getBaseBook } from ".
 export abstract class InterceptorOrderProcessorDelete {
 
   protected cascadeDelete(book: Book, transaction: bkper.Transaction) {
+    if (!book) {
+        return;
+    }
     this.cascadeDeleteTransactions(book, transaction, ``);
     this.cascadeDeleteTransactions(book, transaction, `mtm_`);
     this.cascadeDeleteTransactions(getBaseBook(book), transaction, `fx_`);
