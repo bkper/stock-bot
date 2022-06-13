@@ -58,7 +58,6 @@ const SELL_ACCOUNT_NAME = 'Sell'
 const BUY_ACCOUNT_NAME = 'Buy'
 const ORIGINAL_PURCHASE_PRICE = 'orig_purchase_price'
 const ORIGINAL_SALE_PRICE = 'orig_sale_price'
-const TRADING = 'Trading';
 
 
 function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {

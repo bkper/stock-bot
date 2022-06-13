@@ -33,7 +33,6 @@ export const STOCK_BUY_ACCOUNT_NAME = 'Buy';
 export const REALIZED_GAIN_SUFFIX = 'Realized Gain';
 export const REALIZED_LOSS_SUFFIX = 'Realized Loss';
 export const UREALIZED_SUFFIX = 'Unrealized';
-export const GROUP_TRADING = 'Trading';
 
 
 
