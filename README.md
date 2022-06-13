@@ -30,7 +30,7 @@ The Stock Bot interacts with the following properties:
 
 ### Account Properties
 
-- ```stock_fees_account```: Optional - The fees account used by the exchange account. The exchange account is identified by having an associated fees account.
+- ```stock_fees_account```: Optional - The fees account used by the broker account. The broker account is identified by having an associated fees account.
 
 ### Transaction Properties 
 
