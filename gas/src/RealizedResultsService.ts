@@ -797,10 +797,14 @@ namespace RealizedResultsService {
 
 
     function getExcAccountName(connectedAccount: Bkper.Account, connectedCode: string): string {
+        let excAccount = connectedAccount.getProperty(EXC_ACCOUNT_PROP)
+        if (excAccount) {
+            return excAccount;
+        }
         let groups = connectedAccount.getGroups();
         if (groups) {
             for (const group of groups) {
-                let excAccount = group.getProperty(EXC_ACCOUNT_PROP)
+                excAccount = group.getProperty(EXC_ACCOUNT_PROP)
                 if (excAccount) {
                     return excAccount;
                 }
