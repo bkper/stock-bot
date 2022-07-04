@@ -15,20 +15,19 @@ export class InterceptorOrderProcessorDeleteFinancial extends InterceptorOrderPr
 
         let responses: string[] = [];
 
-        let response1 = await this.deleteTransaction(financialBook, `${FEES_PROP}_${transactionPayload.id}`, false);
+        let response1 = await this.deleteTransaction(financialBook, `${FEES_PROP}_${transactionPayload.id}`);
         if (response1) {
-            responses.push(await this.buildDeleteResponse(response1.financialTx));
+            responses.push(await this.buildDeleteResponse(response1));
         }
-        let response2 = await this.deleteTransaction(financialBook, `${INTEREST_PROP}_${transactionPayload.id}`, false);
+        let response2 = await this.deleteTransaction(financialBook, `${INTEREST_PROP}_${transactionPayload.id}`);
         if (response2) {
-            responses.push(await this.buildDeleteResponse(response2.financialTx));
+            responses.push(await this.buildDeleteResponse(response2));
         }
-        let response3 = await this.deleteTransaction(financialBook, `${INSTRUMENT_PROP}_${transactionPayload.id}`, true);
+        let response3 = await this.deleteTransaction(financialBook, `${INSTRUMENT_PROP}_${transactionPayload.id}`);
         if (response3) {
-            responses.push(await this.buildDeleteResponse(response3.financialTx));
-            if (response3.stockTx) {
-                this.cascadeDelete(financialBook, response3.stockTx.json());
-            }
+            await this.deleteOnStockBook(financialBook, response3.getId());
+        } else {
+            await this.deleteOnStockBook(financialBook, transactionPayload.id);
         }
         
         return responses.length > 0 ? responses : false;

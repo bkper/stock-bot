@@ -27,34 +27,27 @@ export abstract class InterceptorOrderProcessorDelete {
     return `DELETED: ${tx.getDateFormatted()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`
   }
 
-  protected async deleteTransaction(book: Book, remoteId: string, checkStockBook: boolean): Promise<{ financialTx: Transaction, stockTx?: Transaction }> {
+  protected async deleteTransaction(book: Book, remoteId: string): Promise<Transaction> {
     let iterator = book.getTransactions(`remoteId:${remoteId}`);
     if (await iterator.hasNext()) {
       let tx = await iterator.next();
       if (tx.isChecked()) {
         tx = await tx.uncheck();
       }
-
-      const response: { financialTx: Transaction, stockTx?: Transaction } = { financialTx: tx }
-
-      if (checkStockBook) {
-        let stockBook = getStockBook(book);
-        let stockIterator = stockBook.getTransactions(`remoteId:${tx.getId()}`)
-        if (await stockIterator.hasNext()) {
-          let stockTransaction = await stockIterator.next();
-          response.stockTx = stockTransaction;
-          if (stockTransaction.isChecked()) {
-            await stockTransaction.uncheck();
-          }
-          await flagStockAccountForRebuildIfNeeded(stockTransaction);
-          await stockTransaction.remove();
-        }
-      }
-
       tx = await tx.remove();
-      return response;
+      return tx;
     }
     return null;
   }
 
+
+  protected async deleteOnStockBook(financialBook: Book, remoteId: string): Promise<Transaction> {
+    let stockBook = getStockBook(financialBook);
+    const deletedStockTx = await this.deleteTransaction(stockBook, remoteId);
+    if (deletedStockTx) {
+      await flagStockAccountForRebuildIfNeeded(deletedStockTx);
+      this.cascadeDelete(financialBook, deletedStockTx.json());
+    }
+    return deletedStockTx;
+  }
 }
