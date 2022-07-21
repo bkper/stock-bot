@@ -34,6 +34,7 @@ const EXC_BASE_PROP = 'exc_base';
 const EXC_RATE_PROP = 'exc_rate';
 const EXC_AMOUNT_PROP = 'exc_amount';
 const EXC_ACCOUNT_PROP = 'exc_account';
+const EXC_AGGREGATE_PROP = 'exc_aggregate';
 const PURCHASE_EXC_RATE_PROP = 'purchase_exc_rate';
 const FWD_PURCHASE_EXC_RATE_PROP = 'fwd_purchase_exc_rate';
 const SALE_EXC_RATE_PROP = 'sale_exc_rate';
@@ -50,7 +51,7 @@ const FORWARDED_EXC_RATE_PROP = 'forwarded_exc_rate';
 const STOCK_SELL_ACCOUNT_NAME = 'Sell';
 const STOCK_BUY_ACCOUNT_NAME = 'Buy';
 const REALIZED_SUFFIX = 'Realized';
-const UREALIZED_SUFFIX = 'Unrealized';
+const UNREALIZED_SUFFIX = 'Unrealized';
 
 const QUANTITY_PROP = 'quantity';
 const SELL_ACCOUNT_NAME = 'Sell'
