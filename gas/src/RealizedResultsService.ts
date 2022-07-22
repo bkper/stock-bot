@@ -99,110 +99,113 @@ namespace RealizedResultsService {
             if (tx.isChecked()) {
                 tx = tx.uncheck();
             }
+            
+            if (tx.getAgentId() == 'stock-bot') {
 
-            let i = financialBook.getTransactions(`remoteId:${tx.getId()}`)
-            while (i.hasNext()) {
-                let financialTx = i.next();
-                if (financialTx.isChecked()) {
-                    financialTx = financialTx.uncheck();
+                let i = financialBook.getTransactions(`remoteId:${tx.getId()}`)
+                while (i.hasNext()) {
+                    let financialTx = i.next();
+                    if (financialTx.isChecked()) {
+                        financialTx = financialTx.uncheck();
+                    }
+                    financialTx.remove();
                 }
-                financialTx.remove();
-            }
-            i = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`)
-            while (i.hasNext()) {
-                let mtmTx = i.next();
-                if (mtmTx.isChecked()) {
-                    mtmTx = mtmTx.uncheck();
+                i = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`)
+                while (i.hasNext()) {
+                    let mtmTx = i.next();
+                    if (mtmTx.isChecked()) {
+                        mtmTx = mtmTx.uncheck();
+                    }
+                    mtmTx.remove();
                 }
-                mtmTx.remove();
-            }
-            i = baseBook.getTransactions(`remoteId:fx_${tx.getId()}`)
-            while (i.hasNext()) {
-                let fxTx = i.next();
-                if (fxTx.isChecked()) {
-                    fxTx = fxTx.uncheck();
-                }
-                fxTx.remove();
-            }
-
-            let originalAmountProp = tx.getProperty(ORIGINAL_AMOUNT_PROP)
-            let originalQuantityProp = tx.getProperty(ORIGINAL_QUANTITY_PROP)
-
-            if (full) {
-                tx.setProperty(ORDER_PROP, tx.getProperty(HIST_ORDER_PROP))
-                if (tx.getProperty(DATE_PROP)) {
-                    tx.setDate(tx.getProperty(DATE_PROP))
-                }
-                const histQuantity = tx.getProperty(HIST_QUANTITY_PROP);
-                if (histQuantity) {
-                    tx.setProperty(ORIGINAL_QUANTITY_PROP, histQuantity)
-                    originalQuantityProp = histQuantity
-                }
-                tx
-                    .deleteProperty(DATE_PROP)
-                    .deleteProperty(HIST_ORDER_PROP)
-                    .deleteProperty(HIST_QUANTITY_PROP)
-                    .deleteProperty(FWD_PURCHASE_PRICE_PROP)
-                    .deleteProperty(FWD_SALE_PRICE_PROP)
-                    .deleteProperty(FWD_PURCHASE_EXC_RATE_PROP)
-                    .deleteProperty(FWD_SALE_EXC_RATE_PROP)
-            }
-
-            if (!originalQuantityProp) {
-                tx.remove();
-            } else {
-
-                //Fix wrong negative prices from forwarded date error
-                if (tx.getProperty(FWD_SALE_PRICE_PROP)) {
-                    tx.setProperty(FWD_SALE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_SALE_PRICE_PROP)).abs().toString())
-                }
-                if (tx.getProperty(FWD_PURCHASE_PRICE_PROP)) {
-                    tx.setProperty(FWD_PURCHASE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_PURCHASE_PRICE_PROP)).abs().toString())
+                i = baseBook.getTransactions(`remoteId:fx_${tx.getId()}`)
+                while (i.hasNext()) {
+                    let fxTx = i.next();
+                    if (fxTx.isChecked()) {
+                        fxTx = fxTx.uncheck();
+                    }
+                    fxTx.remove();
                 }
 
-                tx
-                    .deleteProperty(GAIN_AMOUNT_PROP)
-                    .deleteProperty(PURCHASE_AMOUNT_PROP)
-                    .deleteProperty('gain_log')
-                    .deleteProperty(SALE_AMOUNT_PROP)
-                    .deleteProperty(SHORT_SALE_PROP)
-                    .deleteProperty(EXC_RATE_PROP)
-                    .deleteProperty(PURCHASE_EXC_RATE_PROP)
-                    .deleteProperty(SALE_EXC_RATE_PROP)
-                    // .deleteProperty(ORIGINAL_AMOUNT_PROP)
-                    .deleteProperty(FWD_PURCHASE_AMOUNT_PROP)
-                    .deleteProperty(FWD_SALE_AMOUNT_PROP)
+                let originalAmountProp = tx.getProperty(ORIGINAL_AMOUNT_PROP)
+                let originalQuantityProp = tx.getProperty(ORIGINAL_QUANTITY_PROP)
 
-                if (BotService.isSale(tx)) {
-                    let salePriceProp = tx.getProperty(SALE_PRICE_PROP)
-                    //OLD way to find price
-                    if (originalAmountProp && originalQuantityProp && !salePriceProp) {
-                        let salePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
-                        tx.setProperty(SALE_PRICE_PROP, salePrice.toString())
+                if (full) {
+                    tx.setProperty(ORDER_PROP, tx.getProperty(HIST_ORDER_PROP))
+                    if (tx.getProperty(DATE_PROP)) {
+                        tx.setDate(tx.getProperty(DATE_PROP))
+                    }
+                    const histQuantity = tx.getProperty(HIST_QUANTITY_PROP);
+                    if (histQuantity) {
+                        tx.setProperty(ORIGINAL_QUANTITY_PROP, histQuantity)
+                        originalQuantityProp = histQuantity
                     }
                     tx
-                        .deleteProperty(PURCHASE_LOG_PROP)
-                        .deleteProperty(PURCHASE_PRICE_PROP)
-                        .deleteProperty(FWD_PURCHASE_LOG_PROP)
-                        .setAmount(originalQuantityProp)
-                        .update();
-                    stockAccountSaleTransactions.push(tx);
+                        .deleteProperty(DATE_PROP)
+                        .deleteProperty(HIST_ORDER_PROP)
+                        .deleteProperty(HIST_QUANTITY_PROP)
+                        .deleteProperty(FWD_PURCHASE_PRICE_PROP)
+                        .deleteProperty(FWD_SALE_PRICE_PROP)
+                        .deleteProperty(FWD_PURCHASE_EXC_RATE_PROP)
+                        .deleteProperty(FWD_SALE_EXC_RATE_PROP)
+                }
 
-                } else if (BotService.isPurchase(tx)) {
-                    let purchasePriceProp = tx.getProperty(PURCHASE_PRICE_PROP)
+                if (!originalQuantityProp) {
+                    tx.remove();
+                } else {
 
-                    //OLD way to find price
-                    if (originalAmountProp && originalQuantityProp && !purchasePriceProp) {
-                        let purchasePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
-                        tx.setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
+                    //Fix wrong negative prices from forwarded date error
+                    if (tx.getProperty(FWD_SALE_PRICE_PROP)) {
+                        tx.setProperty(FWD_SALE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_SALE_PRICE_PROP)).abs().toString())
+                    }
+                    if (tx.getProperty(FWD_PURCHASE_PRICE_PROP)) {
+                        tx.setProperty(FWD_PURCHASE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_PURCHASE_PRICE_PROP)).abs().toString())
                     }
 
                     tx
-                        .deleteProperty(SALE_DATE_PROP)
-                        .deleteProperty(SALE_PRICE_PROP)
-                        .setAmount(originalQuantityProp)
-                        .update();
-                    stockAccountPurchaseTransactions.push(tx);
+                        .deleteProperty(GAIN_AMOUNT_PROP)
+                        .deleteProperty(PURCHASE_AMOUNT_PROP)
+                        .deleteProperty('gain_log')
+                        .deleteProperty(SALE_AMOUNT_PROP)
+                        .deleteProperty(SHORT_SALE_PROP)
+                        .deleteProperty(EXC_RATE_PROP)
+                        .deleteProperty(PURCHASE_EXC_RATE_PROP)
+                        .deleteProperty(SALE_EXC_RATE_PROP)
+                        // .deleteProperty(ORIGINAL_AMOUNT_PROP)
+                        .deleteProperty(FWD_PURCHASE_AMOUNT_PROP)
+                        .deleteProperty(FWD_SALE_AMOUNT_PROP)
+
+                    if (BotService.isSale(tx)) {
+                        let salePriceProp = tx.getProperty(SALE_PRICE_PROP)
+                        //OLD way to find price
+                        if (originalAmountProp && originalQuantityProp && !salePriceProp) {
+                            let salePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
+                            tx.setProperty(SALE_PRICE_PROP, salePrice.toString())
+                        }
+                        tx
+                            .deleteProperty(PURCHASE_LOG_PROP)
+                            .deleteProperty(PURCHASE_PRICE_PROP)
+                            .deleteProperty(FWD_PURCHASE_LOG_PROP)
+                            .setAmount(originalQuantityProp)
+                            .update();
+                        stockAccountSaleTransactions.push(tx);
+
+                    } else if (BotService.isPurchase(tx)) {
+                        let purchasePriceProp = tx.getProperty(PURCHASE_PRICE_PROP)
+
+                        //OLD way to find price
+                        if (originalAmountProp && originalQuantityProp && !purchasePriceProp) {
+                            let purchasePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
+                            tx.setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
+                        }
+
+                        tx
+                            .deleteProperty(SALE_DATE_PROP)
+                            .deleteProperty(SALE_PRICE_PROP)
+                            .setAmount(originalQuantityProp)
+                            .update();
+                        stockAccountPurchaseTransactions.push(tx);
+                    }
                 }
             }
         }
