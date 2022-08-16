@@ -22,6 +22,7 @@ const SHORT_SALE_PROP = 'short_sale';
 const GAIN_AMOUNT_PROP = 'gain_amount';
 const PURCHASE_LOG_PROP = 'purchase_log';
 const FWD_PURCHASE_LOG_PROP = 'fwd_purchase_log';
+const LIQUIDATION_LOG_PROP = 'liquidation_log';
 const ORIGINAL_QUANTITY_PROP = 'original_quantity';
 const ORIGINAL_AMOUNT_PROP = 'original_amount';
 const SALE_PRICE_PROP = 'sale_price';

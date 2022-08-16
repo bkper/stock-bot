@@ -174,6 +174,7 @@ namespace RealizedResultsService {
                         // .deleteProperty(ORIGINAL_AMOUNT_PROP)
                         .deleteProperty(FWD_PURCHASE_AMOUNT_PROP)
                         .deleteProperty(FWD_SALE_AMOUNT_PROP)
+                        .deleteProperty(LIQUIDATION_LOG_PROP)
 
                     if (BotService.isSale(tx)) {
                         let salePriceProp = tx.getProperty(SALE_PRICE_PROP)
@@ -252,7 +253,12 @@ namespace RealizedResultsService {
         }
     }
 
-
+    function logLiquidation(transaction: Bkper.Transaction): LiquidationLogEntry {
+        return {
+            id: transaction.getId(),
+            dt: transaction.getDate()
+        }
+    }
 
     function logPurchase(stockBook: Bkper.Book, quantity: Bkper.Amount, price: Bkper.Amount, transaction: Bkper.Transaction, excRate: Bkper.Amount): PurchaseLogEntry {
         return {
@@ -294,9 +300,11 @@ namespace RealizedResultsService {
         let purchaseLogEntries: PurchaseLogEntry[] = []
         let fwdPurchaseLogEntries: PurchaseLogEntry[] = []
 
-
+        let shortSaleLiquidationLogEntries: LiquidationLogEntry[] = [];
 
         for (const purchaseTransaction of purchaseTransactions) {
+
+            let longSaleLiquidationLogEntries: LiquidationLogEntry[] = [];
 
             if (purchaseTransaction.isChecked()) {
                 //Only process unchecked ones
@@ -350,6 +358,7 @@ namespace RealizedResultsService {
                     .setProperty(FWD_PURCHASE_AMOUNT_PROP, fwdPurchaseAmount?.toString())
 
                 if (shortSale) {
+                    shortSaleLiquidationLogEntries.push(logLiquidation(purchaseTransaction));
                     purchaseTransaction
                         .setProperty(SALE_PRICE_PROP, salePrice.toString())
                         .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
@@ -360,6 +369,9 @@ namespace RealizedResultsService {
                         .setProperty(SALE_DATE_PROP, saleTransaction.getProperty(DATE_PROP) || saleTransaction.getDate())
                         .setProperty(GAIN_AMOUNT_PROP, gain.toString())
                         .setProperty(SHORT_SALE_PROP, 'true')
+                } else {
+                    longSaleLiquidationLogEntries.push(logLiquidation(saleTransaction));
+                    purchaseTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(longSaleLiquidationLogEntries));
                 }
                 purchaseTransaction.update();
 
@@ -428,6 +440,9 @@ namespace RealizedResultsService {
                         .setProperty(SALE_DATE_PROP, saleTransaction.getProperty(DATE_PROP) || saleTransaction.getDate())
                         .setProperty(GAIN_AMOUNT_PROP, gain.toString())
                         .setProperty(SHORT_SALE_PROP, 'true')
+                } else {
+                    longSaleLiquidationLogEntries.push(logLiquidation(saleTransaction));
+                    splittedPurchaseTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(longSaleLiquidationLogEntries));
                 }
 
                 splittedPurchaseTransaction.post().check()
@@ -438,7 +453,8 @@ namespace RealizedResultsService {
                     if (autoMtM) {
                         markToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, gain)
                     }
-
+                    // Make sure splitted purchase transaction is already posted so it has an id
+                    shortSaleLiquidationLogEntries.push(logLiquidation(splittedPurchaseTransaction));
                 }
 
                 soldQuantity = soldQuantity.minus(partialBuyQuantity);
@@ -469,6 +485,11 @@ namespace RealizedResultsService {
 
 
         if (soldQuantity.round(stockBook.getFractionDigits()).eq(0)) {
+            let saleTxChanged = false;
+            if (shortSaleLiquidationLogEntries.length > 0) {
+                saleTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(shortSaleLiquidationLogEntries));
+                saleTxChanged = true;
+            }
             if (purchaseLogEntries.length > 0) {
                 saleTransaction
                     .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString())
@@ -484,8 +505,10 @@ namespace RealizedResultsService {
                         .setProperty(FWD_PURCHASE_LOG_PROP, JSON.stringify(fwdPurchaseLogEntries))
                         .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
                 }
-
-                saleTransaction.update()
+                saleTxChanged = true;
+            }
+            if (saleTxChanged) {
+                saleTransaction.update();
             }
             saleTransaction.check();
         } else if (soldQuantity.round(stockBook.getFractionDigits()).gt(0)) {
@@ -513,7 +536,9 @@ namespace RealizedResultsService {
                     .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
                     .setProperty(FWD_SALE_PRICE_PROP, fwdSalePrice?.toString())
                     .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
-
+                if (shortSaleLiquidationLogEntries.length > 0) {
+                    splittedSaleTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(shortSaleLiquidationLogEntries));
+                }
                 if (purchaseLogEntries.length > 0) {
                     splittedSaleTransaction
                         .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString())
