@@ -23,6 +23,7 @@ The Stock Bot interacts with the following properties:
 - ```exc_code```: Required - The book exchange code to match the ```stock_exc_code```.
 #### Instruments Book
 - ```stock_historical```: Optional - true/false - Defines if realized results calculations should consider historical values. If set to false or not present, updated values will be used instead. See [Forward Date Service](#forward-date-service).
+- ```stock_book```: Optional - true/false - Identifies the Instruments book of the collection. If not present, decimal places must be set to 0 (zero) in the book settings.
 
 ### Group Properties
 
