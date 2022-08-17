@@ -65,6 +65,9 @@ namespace RealizedResultsService {
             processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM, historical);
         }
 
+        // Check & record exchange rates if missing
+        checkAndRecordExchangeRates(baseBook, financialBook, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
+
         checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
 
 
@@ -235,6 +238,36 @@ namespace RealizedResultsService {
             result: 'Done.'
         };;
 
+    }
+
+    function checkAndRecordExchangeRates(baseBook: Bkper.Book, financialBook: Bkper.Book, saleTransactions: Bkper.Transaction[], purchaseTransactions: Bkper.Transaction[]): void {
+        for (const saleTx of saleTransactions) {
+            if (!saleTx.isChecked()) {
+                recordExcRateProp(baseBook, financialBook, saleTx, SALE_EXC_RATE_PROP);
+            }
+        }
+        for (const purchaseTx of purchaseTransactions) {
+            if (!purchaseTx.isChecked()) {
+                recordExcRateProp(baseBook, financialBook, purchaseTx, PURCHASE_EXC_RATE_PROP);
+            }
+        }
+    }
+
+    function recordExcRateProp(baseBook: Bkper.Book, financialBook: Bkper.Book, transaction: Bkper.Transaction, exchangeRateProperty: string): void {
+        if (transaction.isChecked()) {
+            return;
+        }
+        const excRateProp = transaction.getProperty(exchangeRateProperty);
+        const fwdExcRateProp = transaction.getProperty(`fwd_${exchangeRateProperty}`);
+        if (!excRateProp && !fwdExcRateProp) {
+            const excRate = BotService.getExcRate(baseBook, financialBook, transaction, exchangeRateProperty);
+            const fwdExcRate = BotService.getFwdExcRate(transaction, `fwd_${exchangeRateProperty}`, excRate);
+            transaction
+                .setProperty(exchangeRateProperty, excRate?.toString())
+                .setProperty(`fwd_${exchangeRateProperty}`, fwdExcRate?.toString())
+                .update()
+            ;
+        }
     }
 
     function checkLastTxDate(stockAccount: StockAccount, stockAccountSaleTransactions: Bkper.Transaction[], stockAccountPurchaseTransactions: Bkper.Transaction[]) {
@@ -411,6 +444,8 @@ namespace RealizedResultsService {
 
                 purchaseTransaction
                     .setAmount(remainingBuyQuantity)
+                    .setProperty(PURCHASE_EXC_RATE_PROP, purchaseExcRate?.toString())
+                    .setProperty(FWD_PURCHASE_EXC_RATE_PROP, fwdPurchaseExcRate?.toString())
                     .update();
 
                 let splittedPurchaseTransaction = stockBook.newTransaction()
