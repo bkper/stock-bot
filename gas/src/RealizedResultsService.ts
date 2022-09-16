@@ -295,7 +295,7 @@ namespace RealizedResultsService {
 
     function logPurchase(stockBook: Bkper.Book, quantity: Bkper.Amount, price: Bkper.Amount, transaction: Bkper.Transaction, excRate: Bkper.Amount): PurchaseLogEntry {
         return {
-            qt: quantity.toFixed(stockBook.getFractionDigits()).toString(),
+            qt: quantity.toString(),
             pr: price.toString(),
             dt: transaction.getProperty(DATE_PROP) || transaction.getDate(),
             rt: excRate?.toString()
