@@ -83,6 +83,12 @@
         display: none;
       }
 
+      #error-panel {
+        display: flex;
+        justify-content: center;
+        color: red;
+      }
+
     </style>
     
   </header>
@@ -135,12 +141,28 @@
       <a id="change-view-link" onclick="changeServiceView()">Set Forward Date</a>
     </div>
 
+    <div id="error-panel"></div>
+
   </body>
 
 </html>
 
 
 <script>
+
+  let retryCount = 0;
+  const maxRetries = 5;
+
+  function retryCalculateRealizedResults(error) {
+    if (`${error}`.indexOf('not found in') < 0 && `${error}`.indexOf('decimal places') < 0 && retryCount < maxRetries) {
+      calculateRealizedResults();
+      retryCount++;
+      document.getElementById(`error-panel`).innerHTML = `Retrying ${retryCount} of ${maxRetries}`;
+    } else {
+      retryCount = 0;
+      showError(error);
+    }
+  }
 
   function showAllAccountsWaiting() {
     <? for (var i = 0; i < accounts.length; i++) { ?>
@@ -232,9 +254,7 @@
       .withSuccessHandler (result => {
         resolve (result);
       })
-      .withFailureHandler (error => {
-        reject (error);
-      })
+      .withFailureHandler(error => retryCalculateRealizedResults(error))
       [func].apply (this , runArgs) ;
     })
   
