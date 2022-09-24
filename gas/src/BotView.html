@@ -153,14 +153,33 @@
   let retryCount = 0;
   const maxRetries = 5;
 
-  function retryCalculateRealizedResults(error) {
-    if (`${error}`.indexOf('not found in') < 0 && `${error}`.indexOf('decimal places') < 0 && retryCount < maxRetries) {
-      calculateRealizedResults();
+  function retryOperation(error, funcName) {
+    if (shouldRetry(funcName) &&`${error}`.indexOf('not found in') < 0 && `${error}`.indexOf('decimal places') < 0 && retryCount < maxRetries) {
+      fireRetryOperation(funcName);
       retryCount++;
       document.getElementById(`error-panel`).innerHTML = `Retrying ${retryCount} of ${maxRetries}`;
     } else {
       retryCount = 0;
       showError(error);
+    }
+  }
+
+  function shouldRetry(funcName) {
+    if (funcName === 'calculateRealizedResults' || funcName === 'resetRealizedResults' || funcName === 'fullResetRealizedResults') {
+      return true;
+    }
+    return false;
+  }
+
+  function fireRetryOperation(funcName) {
+    if (funcName === 'calculateRealizedResults') {
+      calculateRealizedResults();
+    }
+    if (funcName === 'resetRealizedResults') {
+      resetRealizedResults();
+    }
+    if (funcName === 'fullResetRealizedResults') {
+      fullResetRealizedResults();
     }
   }
 
@@ -245,6 +264,9 @@
 
   // using promises instead
   function promiseRun (func) {
+
+    // using funcName on retry
+    let funcName = Array.prototype.slice.call(arguments)[0] + '';
     
     // this is a trick to convert the arguments array into an array, and drop the first one
     var runArgs = Array.prototype.slice.call(arguments).slice(1);
@@ -254,7 +276,7 @@
       .withSuccessHandler (result => {
         resolve (result);
       })
-      .withFailureHandler(error => retryCalculateRealizedResults(error))
+      .withFailureHandler(error => retryOperation(error, funcName))
       [func].apply (this , runArgs) ;
     })
   
