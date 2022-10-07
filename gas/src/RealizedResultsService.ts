@@ -206,6 +206,8 @@ namespace RealizedResultsService {
                         tx
                             .deleteProperty(SALE_DATE_PROP)
                             .deleteProperty(SALE_PRICE_PROP)
+                            .deleteProperty(FWD_SALE_PRICE_PROP)
+                            .deleteProperty(FWD_SALE_EXC_RATE_PROP)
                             .setAmount(originalQuantityProp)
                             .update();
                         stockAccountPurchaseTransactions.push(tx);
