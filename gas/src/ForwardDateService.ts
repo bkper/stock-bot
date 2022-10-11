@@ -50,13 +50,22 @@ namespace ForwardDateService {
         }
 
         transactions = transactions.sort(BotService.compareToFIFO);
+        
+        let copiedTransactions: Bkper.Transaction[] = [];
         let order = -transactions.length;
 
         for (const transaction of transactions) {
-            // Forward transaction
+            // Create a copy of the transaction in order to keep history
+            let transactionCopy = copyTransaction(stockBook, transaction);
+            // Forward original transaction
             forwardTransaction(transaction, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date, order);
+
+            copiedTransactions.push(transactionCopy.post());
             order++;
         }
+
+        // Check copies
+        stockBook.batchCheckTransactions(copiedTransactions);
 
         // Update stock account
         updateStockAccount(stockAccount, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date);
@@ -130,5 +139,17 @@ namespace ForwardDateService {
             }
         }
         return true;
+    }
+
+    function copyTransaction(book: Bkper.Book, transaction: Bkper.Transaction): Bkper.Transaction {
+        return book.newTransaction()
+            .setAmount(transaction.getAmount())
+            .from(transaction.getCreditAccount())
+            .to(transaction.getDebitAccount())
+            .setDate(transaction.getDate())
+            .setDescription(transaction.getDescription())
+            .setProperties(transaction.getProperties())
+            .setProperty('forward_copy', 'true')
+        ;
     }
 }
