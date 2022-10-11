@@ -24,9 +24,9 @@ namespace ForwardDateService {
         // Open amount from Local Book
         const openAmountLocal = financialBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
         // Open quantity from Stock Book
-        const openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
+        const openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalance();
         // Current price
-        const fwdPrice = !openQuantity.eq(0) ? openAmountLocal.div(openQuantity) : undefined;
+        const fwdPrice = !openQuantity.eq(0) ? openAmountLocal.div(openQuantity.abs()) : undefined;
         // Current exchange rate
         const fwdExcRate = !openAmountLocal.eq(0) ? openAmountBase.div(openAmountLocal) : undefined;
 
@@ -51,7 +51,7 @@ namespace ForwardDateService {
 
         transactions = transactions.sort(BotService.compareToFIFO);
         
-        let copiedTransactions: Bkper.Transaction[] = [];
+        let transactionsToCheck: Bkper.Transaction[] = [];
         let order = -transactions.length;
 
         for (const transaction of transactions) {
@@ -60,12 +60,25 @@ namespace ForwardDateService {
             // Forward original transaction
             forwardTransaction(transaction, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date, order);
 
-            copiedTransactions.push(transactionCopy.post());
+            transactionsToCheck.push(transactionCopy.post());
             order++;
         }
 
-        // Check copies
-        stockBook.batchCheckTransactions(copiedTransactions);
+        // Record new transaction liquidating the copies
+        const fromAccount = openQuantity.gt(0) ? stockAccount.getName() : 'Buy';
+        const toAccount = openQuantity.gt(0) ? 'Sell' : stockAccount.getName();
+        let liquidationTx = stockBook.newTransaction()
+            .setAmount(openQuantity)
+            .from(fromAccount)
+            .to(toAccount)
+            .setDate(closingDate)
+            .setDescription(`${openQuantity} units forwarded to ${date}`)
+            .post()
+        ;
+        transactionsToCheck.push(liquidationTx);
+
+        // Check copies and liquidation transaction
+        stockBook.batchCheckTransactions(transactionsToCheck);
 
         // Update stock account
         updateStockAccount(stockAccount, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date);
