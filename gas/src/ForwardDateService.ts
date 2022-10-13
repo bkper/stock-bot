@@ -55,30 +55,34 @@ namespace ForwardDateService {
         
         let newTransactions: Bkper.Transaction[] = [];
         let order = -transactions.length;
+        let unrealizedBalance = BkperApp.newAmount(0);
 
         for (const transaction of transactions) {
-            // Create and post copy of the transaction in order to keep history
-            let transactionCopy = copyTransaction(stockBook, transaction);
-            transactionCopy.post();
-            // Forward original transaction
-            forwardTransaction(transaction, transactionCopy, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date, order);
-            newTransactions.push(transactionCopy);
+
+            // Keep track of UR balance on closing day
+            const batchUR = getQuantity(transaction).times(fwdPrice.minus(getPurchaseOrSalePrice(transaction)));
+            unrealizedBalance = unrealizedBalance.plus(batchUR);
+            // Post copy of batch in order to keep history
+            let logTransaction = buildLogTransaction(stockBook, transaction).post();
+            // Forward batch
+            forwardBatch(transaction, logTransaction, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date, order);
+            
+            newTransactions.push(logTransaction);
             order++;
         }
 
-        // Record new transaction liquidating the copies
-        const fromAccount = openQuantity.lt(0) ? stockAccount.getName() : 'Buy';
-        const toAccount = openQuantity.lt(0) ? 'Sell' : stockAccount.getName();
-        let liquidationTx = stockBook.newTransaction()
-            .setAmount(openQuantity)
-            .from(fromAccount)
-            .to(toAccount)
-            .setDate(closingDate)
-            .setDescription(`${openQuantity.times(-1)} units forwarded to ${date}`)
-            .setProperty('fwd_liquidation', JSON.stringify(newTransactions.map(tx => tx.getId())))
-            .post()
-        ;
-        newTransactions.push(liquidationTx);
+        // Record UR result on closing day
+        recordForwardResult(financialBook, stockAccount, unrealizedBalance, closingDateISO);
+
+        // Record new transaction liquidating the logs
+        if (!openQuantity.eq(0)) {
+            let liquidationTransaction = buildLiquidationTransaction(stockBook, stockAccount, openQuantity, closingDate, date);
+            liquidationTransaction.
+                setProperty('fwd_liquidation', JSON.stringify(newTransactions.map(tx => tx.getId())))
+                .post()
+            ;
+            newTransactions.push(liquidationTransaction);
+        }
 
         // Check copies and liquidation transactions
         stockBook.batchCheckTransactions(newTransactions);
@@ -87,6 +91,8 @@ namespace ForwardDateService {
         updateStockAccount(stockAccount, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date);
 
         if (isForwardedDateSameOnAllAccounts(stockBook, date) && stockBook.getClosingDate() != closingDateISO) {
+            // Prevent book from closing before last account update
+            Utilities.sleep(3000);
             stockBook.setClosingDate(closingDateISO).update();
             return {
                 accountId: stockAccountId,
@@ -101,7 +107,40 @@ namespace ForwardDateService {
 
     }
 
-    function forwardTransaction(transaction: Bkper.Transaction, transactionCopy: Bkper.Transaction, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, date: string, order: number): void {
+    function recordForwardResult(book: Bkper.Book, stockAccount: StockAccount, amount: Bkper.Amount, closingDate: string): void {
+
+        const accountName = stockAccount.getName();
+        const unrealizedAccountName = `${accountName} ${UNREALIZED_SUFFIX}`;
+        const closingAccountName = `${accountName} Closing`;
+
+        let unrealizedAccount = book.getAccount(unrealizedAccountName);
+        let closingAccount = book.getAccount(closingAccountName);
+
+        if (!unrealizedAccount) {
+            unrealizedAccount = createNewAccount(book, accountName, UNREALIZED_SUFFIX);
+        }
+        if (!closingAccount) {
+            closingAccount = createNewAccount(book, accountName, "Closing");
+        }
+
+        if (amount.eq(0)) {
+            return;
+        }
+
+        const fromAccount = amount.gt(0) ? closingAccount : unrealizedAccount;
+        const toAccount = amount.gt(0) ? unrealizedAccount : closingAccount;
+
+        book.newTransaction()
+            .setAmount(amount)
+            .from(fromAccount)
+            .to(toAccount)
+            .setDate(closingDate)
+            .setDescription(`Unrealized balance on ${closingDate}`)
+            .post().check()
+        ;
+    }
+
+    function forwardBatch(transaction: Bkper.Transaction, transactionCopy: Bkper.Transaction, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, date: string, order: number): void {
         if (!transaction.getProperty(DATE_PROP)) {
             transaction.setProperty(DATE_PROP, transaction.getDate());
         }
@@ -157,7 +196,7 @@ namespace ForwardDateService {
         return true;
     }
 
-    function copyTransaction(book: Bkper.Book, transaction: Bkper.Transaction): Bkper.Transaction {
+    function buildLogTransaction(book: Bkper.Book, transaction: Bkper.Transaction): Bkper.Transaction {
         return book.newTransaction()
             .setAmount(transaction.getAmount())
             .from(transaction.getCreditAccount())
@@ -168,4 +207,67 @@ namespace ForwardDateService {
             .setProperty('forwarded', 'true')
         ;
     }
+
+    function buildLiquidationTransaction(book: Bkper.Book, stockAccount: StockAccount, quantity: Bkper.Amount, closingDate: Date, forwardDate: string): Bkper.Transaction {
+        const fromAccount = quantity.lt(0) ? stockAccount.getName() : 'Buy';
+        const toAccount = quantity.lt(0) ? 'Sell' : stockAccount.getName();
+        return book.newTransaction()
+            .setAmount(quantity)
+            .from(fromAccount)
+            .to(toAccount)
+            .setDate(closingDate)
+            .setDescription(`${quantity.times(-1)} units forwarded to ${forwardDate}`)
+        ;
+    }
+
+    function getQuantity(transaction: Bkper.Transaction): Bkper.Amount {
+        const txAmount = transaction.getAmount();
+        return BotService.isPurchase(transaction) ? txAmount : txAmount.times(-1);
+    }
+
+    function getPurchaseOrSalePrice(transaction: Bkper.Transaction): Bkper.Amount {
+        let price = BkperApp.newAmount(0);
+        if (BotService.isPurchase(transaction)) {
+            let purchasePriceProp = transaction.getProperty('fwd_purchase_price', 'purchase_price');
+            if (purchasePriceProp) {
+                price = BkperApp.newAmount(purchasePriceProp);
+            }
+        }
+        if (BotService.isSale(transaction)) {
+            let salePriceProp = transaction.getProperty('fwd_sale_price', 'sale_price');
+            if (salePriceProp) {
+                price = BkperApp.newAmount(salePriceProp);
+            }
+        }
+        return price;
+    }
+
+    function createNewAccount(book: Bkper.Book, accountName: string, suffix: string): Bkper.Account {
+        let newAccount = book.newAccount()
+            .setName(`${accountName} ${suffix}`)
+            .setType(BkperApp.AccountType.INCOMING)
+        ;
+        const groups = getAccountGroups(book, suffix);
+        groups.forEach(group => newAccount.addGroup(group));
+        newAccount.create();
+        return newAccount;
+    }
+
+    function getAccountGroups(book: Bkper.Book, suffix: string): Set<Bkper.Group> {
+        let accountNames = new Set<string>();
+        book.getAccounts().forEach(account => {
+            if (account.getName().endsWith(` ${suffix}`)) {
+                accountNames.add(account.getName());
+            }
+        })
+        let groups = new Set<Bkper.Group>();
+        accountNames.forEach(accountName => {
+            const account = book.getAccount(accountName);
+            if (account && account.getGroups()) {
+                account.getGroups().forEach(group => { groups.add(group) });
+            }
+        })
+        return groups;
+    }
+
 }
