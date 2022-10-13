@@ -14,6 +14,8 @@ namespace ForwardDateService {
         const closingDate = new Date();
         closingDate.setTime(stockBook.parseDate(date).getTime());
         closingDate.setDate(closingDate.getDate() - 1);
+        // Closing Date ISO
+        const closingDateISO = Utilities.formatDate(closingDate, stockBook.getTimeZone(), "yyyy-MM-dd");
 
         let stockBookBalancesReport = stockBook.getBalancesReport(`account:'${stockAccount.getName()}' on:${stockBook.formatDate(closingDate)}`);
         let baseBookBalancesReport = baseBook.getBalancesReport(`account:'${stockAccount.getName()}' on:${baseBook.formatDate(closingDate)}`);
@@ -24,9 +26,9 @@ namespace ForwardDateService {
         // Open amount from Local Book
         const openAmountLocal = financialBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
         // Open quantity from Stock Book
-        const openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalance();
+        const openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
         // Current price
-        const fwdPrice = !openQuantity.eq(0) ? openAmountLocal.div(openQuantity.abs()) : undefined;
+        const fwdPrice = !openQuantity.eq(0) ? openAmountLocal.div(openQuantity) : undefined;
         // Current exchange rate
         const fwdExcRate = !openAmountLocal.eq(0) ? openAmountBase.div(openAmountLocal) : undefined;
 
@@ -51,39 +53,39 @@ namespace ForwardDateService {
 
         transactions = transactions.sort(BotService.compareToFIFO);
         
-        let transactionsToCheck: Bkper.Transaction[] = [];
+        let newTransactions: Bkper.Transaction[] = [];
         let order = -transactions.length;
 
         for (const transaction of transactions) {
-            // Create a copy of the transaction in order to keep history
+            // Create and post copy of the transaction in order to keep history
             let transactionCopy = copyTransaction(stockBook, transaction);
+            transactionCopy.post();
             // Forward original transaction
-            forwardTransaction(transaction, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date, order);
-
-            transactionsToCheck.push(transactionCopy.post());
+            forwardTransaction(transaction, transactionCopy, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date, order);
+            newTransactions.push(transactionCopy);
             order++;
         }
 
         // Record new transaction liquidating the copies
-        const fromAccount = openQuantity.gt(0) ? stockAccount.getName() : 'Buy';
-        const toAccount = openQuantity.gt(0) ? 'Sell' : stockAccount.getName();
+        const fromAccount = openQuantity.lt(0) ? stockAccount.getName() : 'Buy';
+        const toAccount = openQuantity.lt(0) ? 'Sell' : stockAccount.getName();
         let liquidationTx = stockBook.newTransaction()
             .setAmount(openQuantity)
             .from(fromAccount)
             .to(toAccount)
             .setDate(closingDate)
-            .setDescription(`${openQuantity} units forwarded to ${date}`)
+            .setDescription(`${openQuantity.times(-1)} units forwarded to ${date}`)
+            .setProperty('fwd_liquidation', JSON.stringify(newTransactions.map(tx => tx.getId())))
             .post()
         ;
-        transactionsToCheck.push(liquidationTx);
+        newTransactions.push(liquidationTx);
 
-        // Check copies and liquidation transaction
-        stockBook.batchCheckTransactions(transactionsToCheck);
+        // Check copies and liquidation transactions
+        stockBook.batchCheckTransactions(newTransactions);
 
         // Update stock account
         updateStockAccount(stockAccount, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date);
 
-        const closingDateISO = Utilities.formatDate(closingDate, stockBook.getTimeZone(), "yyyy-MM-dd");
         if (isForwardedDateSameOnAllAccounts(stockBook, date) && stockBook.getClosingDate() != closingDateISO) {
             stockBook.setClosingDate(closingDateISO).update();
             return {
@@ -99,7 +101,7 @@ namespace ForwardDateService {
 
     }
 
-    function forwardTransaction(transaction: Bkper.Transaction, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, date: string, order: number): void {
+    function forwardTransaction(transaction: Bkper.Transaction, transactionCopy: Bkper.Transaction, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, date: string, order: number): void {
         if (!transaction.getProperty(DATE_PROP)) {
             transaction.setProperty(DATE_PROP, transaction.getDate());
         }
@@ -125,6 +127,7 @@ namespace ForwardDateService {
             .deleteProperty(ORIGINAL_AMOUNT_PROP)
             .setProperty(ORIGINAL_QUANTITY_PROP, transaction.getAmount().toString())
             .setProperty(ORDER_PROP, order + '')
+            .setProperty('fwd_log', transactionCopy.getId())
             .setDate(date)
             .update()
         ;
@@ -162,7 +165,7 @@ namespace ForwardDateService {
             .setDate(transaction.getDate())
             .setDescription(transaction.getDescription())
             .setProperties(transaction.getProperties())
-            .setProperty('forward_copy', 'true')
+            .setProperty('forwarded', 'true')
         ;
     }
 }
