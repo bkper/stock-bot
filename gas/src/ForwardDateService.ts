@@ -1,14 +1,73 @@
 namespace ForwardDateService {
 
     export function forwardDate(stockBookId: string, stockAccountId: string, date: string): Summary {
+        const stockBook = BkperApp.getBook(stockBookId);
+        const stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
+        let forwardedDateValue = stockAccount.getForwardedDateValue();
+        let dateValue = +(date.replaceAll('-', ''));
+        if (forwardedDateValue && dateValue < forwardedDateValue) {
+            if (!isCollectionUnlocked(stockBook)) {
+                return {
+                    accountId: stockAccountId,
+                    result: `Cannot set forward date: at least one book in the collection is locked/closed`
+                }
+            }
+            return resetAndForwardDateForAccount(stockBook, stockAccount, date);
+        } else {
+            return forwardDateForAccount(stockBook, stockAccount, date);
+        }
+    }
 
-        let stockBook = BkperApp.getBook(stockBookId);
-        let stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
-        const stockExcCode = stockAccount.getExchangeCode();
+    function resetAndForwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, date: string): Summary {
+        // Reset results
+        const resetIterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${date}`);
+        RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false, resetIterator);
+        // Fix previous forward
+        let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${stockAccount.getForwardedDate()}`);
+        let forwardedTransactions: Bkper.Transaction[] = [];
+        while (iterator.hasNext()) {
+            let tx = iterator.next();
+            if (!tx.isChecked() && tx.getProperty('fwd_log')) {
+                forwardedTransactions.push(tx);
+            }
+        }
+        let trashCan: Bkper.Transaction[] = [];
+        for (const transaction of forwardedTransactions) {
+            // Get forwarded batch previous state
+            let previousState = getForwardedBatchPreviousState(stockBook, transaction, date);
+            // Return forwarded batch to previous state
+            transaction
+                .setDate(previousState.getDate())
+                .setProperties(previousState.getProperties())
+                .deleteProperty('forwarded')
+                .update()
+            ;
+            // Delete previous state
+            if (previousState.isChecked()) {
+                previousState.uncheck();
+            }
+            trashCan.push(previousState);
+        }
+        stockBook.batchTrashTransactions(trashCan);
+        // Set new forward
+        return forwardDateForAccount(stockBook, stockAccount, date);
+    }
 
-        let baseBook = BotService.getBaseBook(stockBook);
+    function forwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, date: string): Summary {
+
+        // Do not allow forward if account needs rebuild
+        if (stockAccount.needsRebuild()) {
+            return {
+                accountId: stockAccount.getId(),
+                result: `Cannot set forward date: account needs rebuild`
+            }
+        }
+
+        const baseBook = BotService.getBaseBook(stockBook);
         const baseExcCode = BotService.getExcCode(baseBook);
-        let financialBook = BotService.getFinancialBook(stockBook, stockAccount.getExchangeCode());
+        
+        const stockExcCode = stockAccount.getExchangeCode();
+        const financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
 
         // Closing Date: Forward Date - 1 day
         const closingDate = new Date();
@@ -31,15 +90,6 @@ namespace ForwardDateService {
         const fwdPrice = !openQuantity.eq(0) ? openAmountLocal.div(openQuantity) : undefined;
         // Current exchange rate
         const fwdExcRate = !openAmountLocal.eq(0) ? openAmountBase.div(openAmountLocal) : undefined;
-
-
-        // Do not allow forward if account needs rebuild
-        if (stockAccount.needsRebuild()) {
-            return {
-                accountId: stockAccountId,
-                result: `Cannot set forward date: account needs rebuild`
-            }
-        }
 
         let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' before:${date}`);
         let transactions: Bkper.Transaction[] = [];
@@ -72,7 +122,7 @@ namespace ForwardDateService {
         }
 
         // Record UR result on closing day
-        recordForwardResult(financialBook, stockAccount, unrealizedBalance, closingDateISO);
+        recordForwardResult(financialBook, stockAccount, unrealizedBalance.round(8), closingDateISO);
 
         // Record new transaction liquidating the logs
         if (!openQuantity.eq(0)) {
@@ -95,12 +145,12 @@ namespace ForwardDateService {
             Utilities.sleep(3000);
             stockBook.setClosingDate(closingDateISO).update();
             return {
-                accountId: stockAccountId,
+                accountId: stockAccount.getId(),
                 result: `${transactions.length} forwarded to ${date} and book closed on ${stockBook.formatDate(closingDate)}`
             }
         } else {
             return {
-                accountId: stockAccountId,
+                accountId: stockAccount.getId(),
                 result: `${transactions.length} forwarded to ${date}`
             }
         }
@@ -268,6 +318,33 @@ namespace ForwardDateService {
             }
         })
         return groups;
+    }
+
+    function isCollectionUnlocked(baseBook: Bkper.Book): boolean {
+        let books = baseBook.getCollection().getBooks();
+        for (const book of books) {
+            let lockDate = book.getLockDate();
+            let closingDate = book.getClosingDate();
+            if (lockDate && lockDate !== '1900-00-00') {
+                return false;
+            }
+            if (closingDate && closingDate !== '1900-00-00') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function getForwardedBatchPreviousState(book: Bkper.Book, transaction: Bkper.Transaction, date: string): Bkper.Transaction {
+        const previousStateId = transaction.getProperty('fwd_log');
+        if (!previousStateId) {
+            return transaction;
+        }
+        const previousState = book.getTransaction(previousStateId);
+        if (previousState.getDateValue() < +(date.replaceAll('-', ''))) {
+            return previousState;
+        }
+        return getForwardedBatchPreviousState(book, previousState, date);
     }
 
 }

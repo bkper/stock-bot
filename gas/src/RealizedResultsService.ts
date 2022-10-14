@@ -75,26 +75,31 @@ namespace RealizedResultsService {
 
     }
 
-    export function resetRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, full: boolean): Summary {
+    export function resetRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, full: boolean, resetIterator?: Bkper.TransactionIterator): Summary {
 
-        let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, full));
+        let iterator: Bkper.TransactionIterator;
+        if (resetIterator) {
+            iterator = resetIterator;
+        } else {
+            iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, full));
+        }
 
         let stockAccountSaleTransactions: Bkper.Transaction[] = [];
         let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
 
         let stockExcCode = stockAccount.getExchangeCode();
-        let financialBook = BotService.getFinancialBook(stockBook, stockExcCode)
+        let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
         if (financialBook == null) {
             return;
         }
 
         const baseBook = BotService.getBaseBook(financialBook);
-        const transactions: Bkper.Transaction[] = []
+        const transactions: Bkper.Transaction[] = [];
 
         while (iterator.hasNext()) {
             let tx = iterator.next();
-            transactions.push(tx)
-            console.log(tx.getDescription())
+            transactions.push(tx);
+            console.log(`date: ${tx.getDate()} - amount: ${tx.getAmount().toString()}`);
         }
 
         for (let tx of transactions) {
@@ -102,6 +107,12 @@ namespace RealizedResultsService {
             if (tx.isChecked()) {
                 tx = tx.uncheck();
             }
+
+            // // Forward logs left behind
+            // if (tx.getProperty('forwarded') || tx.getProperty('fwd_liquidation')) {
+            //     tx.trash();
+            //     continue;
+            // }
             
             if (tx.getAgentId() == 'stock-bot') {
 
@@ -151,6 +162,8 @@ namespace RealizedResultsService {
                         .deleteProperty(FWD_SALE_PRICE_PROP)
                         .deleteProperty(FWD_PURCHASE_EXC_RATE_PROP)
                         .deleteProperty(FWD_SALE_EXC_RATE_PROP)
+                        // .deleteProperty('fwd_log')
+                    ;
                 }
 
                 if (!originalQuantityProp) {
