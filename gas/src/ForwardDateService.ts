@@ -181,7 +181,7 @@ namespace ForwardDateService {
         const toAccount = amount.gt(0) ? unrealizedAccount : closingAccount;
 
         book.newTransaction()
-            .setAmount(amount)
+            .setAmount(amount.abs())
             .from(fromAccount)
             .to(toAccount)
             .setDate(closingDate)
@@ -262,7 +262,7 @@ namespace ForwardDateService {
         const fromAccount = quantity.lt(0) ? stockAccount.getName() : 'Buy';
         const toAccount = quantity.lt(0) ? 'Sell' : stockAccount.getName();
         return book.newTransaction()
-            .setAmount(quantity)
+            .setAmount(quantity.abs())
             .from(fromAccount)
             .to(toAccount)
             .setDate(closingDate)
