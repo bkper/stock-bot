@@ -41,13 +41,11 @@ namespace ForwardDateService {
                 .deleteProperty('forwarded')
                 .update()
             ;
-            // Delete previous state
-            if (previousState.isChecked()) {
-                previousState.uncheck();
-            }
-            stockAccount.addTrash(previousState);
+            // Add previous state to trash
+            stockAccount.pushTrashTransaction(previousState);
         }
-        stockBook.batchTrashTransactions(stockAccount.getTrash());
+        // Delete trash
+        stockAccount.deleteTrashTransactions();
         // Set new forward
         return forwardDateForAccount(stockBook, stockAccount, date);
     }
@@ -343,7 +341,7 @@ namespace ForwardDateService {
         if (previousState.getDateValue() <= +(date.replaceAll('-', ''))) {
             return previousState;
         }
-        stockAccount.addTrash(previousState);
+        stockAccount.pushTrashTransaction(previousState);
         return getForwardedBatchPreviousState(book, stockAccount, previousState, date);
     }
 

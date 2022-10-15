@@ -1,7 +1,7 @@
 class StockAccount {
 
     private account: Bkper.Account;
-    public trash: Bkper.Transaction[] = [];
+    public trashTransactions: Bkper.Transaction[] = [];
 
     constructor(account: Bkper.Account) {
         this.account = account;
@@ -128,12 +128,20 @@ class StockAccount {
         return this;
     }
 
-    addTrash(transaction: Bkper.Transaction): void {
-        this.trash.push(transaction);
+    pushTrashTransaction(transaction: Bkper.Transaction): void {
+        this.trashTransactions.push(transaction);
     }
 
-    getTrash(): Bkper.Transaction[] {
-        return this.trash;
+    deleteTrashTransactions(): void {
+        for (const tx of this.trashTransactions) {
+            if (tx.isTrashed()) {
+                continue;
+            }
+            if (tx.isChecked()) {
+                tx.uncheck();
+            }
+            tx.trash();
+        }
     }
 
 }

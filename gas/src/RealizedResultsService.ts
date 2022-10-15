@@ -114,6 +114,9 @@ namespace RealizedResultsService {
             //     continue;
             // }
             // if (tx.getProperty('forwarded')) {
+            //     if (full) {
+            //         tx.trash();
+            //     }
             //     continue;
             // }
             
