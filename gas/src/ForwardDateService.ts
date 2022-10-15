@@ -19,9 +19,10 @@ namespace ForwardDateService {
     }
 
     function resetAndForwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, date: string): Summary {
-        // Reset results
-        const resetIterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${date}`);
-        RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false, resetIterator);
+
+        // Reset results up to current forwarded date
+        RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false);
+
         // Fix previous forward
         let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${stockAccount.getForwardedDate()}`);
         let forwardedTransactions: Bkper.Transaction[] = [];
@@ -41,12 +42,15 @@ namespace ForwardDateService {
                 .deleteProperty('forwarded')
                 .update()
             ;
-            // Add previous state to trash
             stockAccount.pushTrashTransaction(previousState);
         }
-        // Delete trash
         stockAccount.deleteTrashTransactions();
-        // Set new forward
+
+        // Reset results up to new forward date
+        const resetIterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${date}`);
+        RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false, resetIterator);
+
+        // Set new forward date
         return forwardDateForAccount(stockBook, stockAccount, date);
     }
 
