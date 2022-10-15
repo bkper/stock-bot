@@ -31,10 +31,9 @@ namespace ForwardDateService {
                 forwardedTransactions.push(tx);
             }
         }
-        let trashCan: Bkper.Transaction[] = [];
         for (const transaction of forwardedTransactions) {
             // Get forwarded batch previous state
-            let previousState = getForwardedBatchPreviousState(stockBook, transaction, date);
+            let previousState = getForwardedBatchPreviousState(stockBook, stockAccount, transaction, date);
             // Return forwarded batch to previous state
             transaction
                 .setDate(previousState.getDate())
@@ -46,9 +45,9 @@ namespace ForwardDateService {
             if (previousState.isChecked()) {
                 previousState.uncheck();
             }
-            trashCan.push(previousState);
+            stockAccount.addTrash(previousState);
         }
-        stockBook.batchTrashTransactions(trashCan);
+        stockBook.batchTrashTransactions(stockAccount.getTrash());
         // Set new forward
         return forwardDateForAccount(stockBook, stockAccount, date);
     }
@@ -105,13 +104,13 @@ namespace ForwardDateService {
         
         let newTransactions: Bkper.Transaction[] = [];
         let order = -transactions.length;
-        let unrealizedBalance = BkperApp.newAmount(0);
+        // let unrealizedBalance = BkperApp.newAmount(0);
 
         for (const transaction of transactions) {
 
-            // Keep track of UR balance on closing day
-            const batchUR = getQuantity(transaction).times(fwdPrice.minus(getPurchaseOrSalePrice(transaction)));
-            unrealizedBalance = unrealizedBalance.plus(batchUR);
+            // // Keep track of UR balance on closing day
+            // const batchUR = getQuantity(transaction).times(fwdPrice.minus(getPurchaseOrSalePrice(transaction)));
+            // unrealizedBalance = unrealizedBalance.plus(batchUR);
             // Post copy of batch in order to keep history
             let logTransaction = buildLogTransaction(stockBook, transaction).post();
             // Forward batch
@@ -121,8 +120,8 @@ namespace ForwardDateService {
             order++;
         }
 
-        // Record UR result on closing day
-        recordForwardResult(financialBook, stockAccount, unrealizedBalance.round(8), closingDateISO);
+        // // Record UR result on closing day
+        // recordForwardResult(financialBook, stockAccount, unrealizedBalance.round(8), closingDateISO);
 
         // Record new transaction liquidating the logs
         if (!openQuantity.eq(0)) {
@@ -335,16 +334,17 @@ namespace ForwardDateService {
         return true;
     }
 
-    function getForwardedBatchPreviousState(book: Bkper.Book, transaction: Bkper.Transaction, date: string): Bkper.Transaction {
+    function getForwardedBatchPreviousState(book: Bkper.Book, stockAccount: StockAccount, transaction: Bkper.Transaction, date: string): Bkper.Transaction {
         const previousStateId = transaction.getProperty('fwd_log');
         if (!previousStateId) {
             return transaction;
         }
         const previousState = book.getTransaction(previousStateId);
-        if (previousState.getDateValue() < +(date.replaceAll('-', ''))) {
+        if (previousState.getDateValue() <= +(date.replaceAll('-', ''))) {
             return previousState;
         }
-        return getForwardedBatchPreviousState(book, previousState, date);
+        stockAccount.addTrash(previousState);
+        return getForwardedBatchPreviousState(book, stockAccount, previousState, date);
     }
 
 }

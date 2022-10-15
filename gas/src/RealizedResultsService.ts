@@ -109,8 +109,11 @@ namespace RealizedResultsService {
             }
 
             // // Forward logs left behind
-            // if (tx.getProperty('forwarded') || tx.getProperty('fwd_liquidation')) {
+            // if (tx.getProperty('fwd_liquidation')) {
             //     tx.trash();
+            //     continue;
+            // }
+            // if (tx.getProperty('forwarded')) {
             //     continue;
             // }
             
