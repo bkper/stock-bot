@@ -12,13 +12,13 @@ namespace ForwardDateService {
                     result: `Cannot set forward date: at least one book in the collection is locked/closed`
                 }
             }
-            return resetAndForwardDateForAccount(stockBook, stockAccount, date);
+            return fixAndForwardDateForAccount(stockBook, stockAccount, date);
         } else {
             return forwardDateForAccount(stockBook, stockAccount, date, false);
         }
     }
 
-    function resetAndForwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, date: string): Summary {
+    function fixAndForwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, date: string): Summary {
 
         // Reset results up to current forwarded date
         RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false);
@@ -51,7 +51,12 @@ namespace ForwardDateService {
         RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false, resetIterator);
 
         // Set new forward date
-        return forwardDateForAccount(stockBook, stockAccount, date, true);
+        const newForward = forwardDateForAccount(stockBook, stockAccount, date, true);
+
+        return {
+            accountId: stockAccount.getId(),
+            result: `${forwardedTransactions.length} fixed and ${newForward.result}`
+        }
     }
 
     function forwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, date: string, fixingForward: boolean): Summary {
