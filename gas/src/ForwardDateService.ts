@@ -14,7 +14,7 @@ namespace ForwardDateService {
             }
             return resetAndForwardDateForAccount(stockBook, stockAccount, date);
         } else {
-            return forwardDateForAccount(stockBook, stockAccount, date);
+            return forwardDateForAccount(stockBook, stockAccount, date, false);
         }
     }
 
@@ -51,10 +51,10 @@ namespace ForwardDateService {
         RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false, resetIterator);
 
         // Set new forward date
-        return forwardDateForAccount(stockBook, stockAccount, date);
+        return forwardDateForAccount(stockBook, stockAccount, date, true);
     }
 
-    function forwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, date: string): Summary {
+    function forwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, date: string, fixingForward: boolean): Summary {
 
         // Do not allow forward if account needs rebuild
         if (stockAccount.needsRebuild()) {
@@ -81,12 +81,20 @@ namespace ForwardDateService {
         let baseBookBalancesReport = baseBook.getBalancesReport(`account:'${stockAccount.getName()}' on:${baseBook.formatDate(closingDate)}`);
         let financialBookBalancesReport = financialBook.getBalancesReport(`account:'${stockAccount.getName()}' on:${financialBook.formatDate(closingDate)}`);
 
+        let needToRecordLiquidationTx = true;
+
         // Open amount from Base Book
         const openAmountBase = baseBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
         // Open amount from Local Book
         const openAmountLocal = financialBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
         // Open quantity from Stock Book
-        const openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
+        let openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
+        if (openQuantity.eq(0) && fixingForward) {
+            openQuantity = tryOpenQuantityFromLiquidationTx(stockBook, stockAccount, closingDateISO);
+            if (!openQuantity.eq(0)) {
+                needToRecordLiquidationTx = false;
+            }
+        }
         // Current price
         const fwdPrice = !openQuantity.eq(0) ? openAmountLocal.div(openQuantity) : undefined;
         // Current exchange rate
@@ -126,7 +134,7 @@ namespace ForwardDateService {
         // recordForwardResult(financialBook, stockAccount, unrealizedBalance.round(8), closingDateISO);
 
         // Record new transaction liquidating the logs
-        if (!openQuantity.eq(0)) {
+        if (needToRecordLiquidationTx && !openQuantity.eq(0)) {
             let liquidationTransaction = buildLiquidationTransaction(stockBook, stockAccount, openQuantity, closingDate, date);
             liquidationTransaction.
                 setProperty('fwd_liquidation', JSON.stringify(newTransactions.map(tx => tx.getId())))
@@ -347,6 +355,22 @@ namespace ForwardDateService {
         }
         stockAccount.pushTrashTransaction(previousState);
         return getForwardedBatchPreviousState(book, stockAccount, previousState, date);
+    }
+
+    function tryOpenQuantityFromLiquidationTx(book: Bkper.Book, stockAccount: StockAccount, closingDate: string): Bkper.Amount {
+        let iterator = book.getTransactions(`account:'${stockAccount.getName()}' on:${closingDate}`);
+        while (iterator.hasNext()) {
+            let tx = iterator.next();
+            if (tx.getProperty('fwd_liquidation')) {
+                if (BotService.isPurchase(tx)) {
+                    return tx.getAmount();
+                }
+                if (BotService.isSale(tx)) {
+                    return tx.getAmount().times(-1);
+                }
+            }
+        }
+        return BkperApp.newAmount(0);
     }
 
 }
