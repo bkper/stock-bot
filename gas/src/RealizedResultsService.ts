@@ -99,30 +99,25 @@ namespace RealizedResultsService {
         while (iterator.hasNext()) {
             let tx = iterator.next();
             transactions.push(tx);
-            console.log(`date: ${tx.getDate()} - amount: ${tx.getAmount().toString()}`);
         }
 
         for (let tx of transactions) {
+
+            console.log(`date: ${tx.getDate()} - amount: ${tx.getAmount().toString()}`);
 
             if (tx.isChecked()) {
                 tx = tx.uncheck();
             }
 
-            // // Forward logs left behind
-            // if (tx.getProperty('fwd_liquidation')) {
-            //     tx.trash();
-            //     continue;
-            // }
-            // if (tx.getProperty('forwarded')) {
-            //     if (full) {
-            //         tx.trash();
-            //     }
-            //     continue;
-            // }
-            
+            // Forward logs & liquidation transaction
+            if (tx.getProperty('forwarded') || tx.getProperty('fwd_liquidation')) {
+                tx.trash();
+                continue;
+            }
+
             if (tx.getAgentId() == 'stock-bot') {
 
-                let i = financialBook.getTransactions(`remoteId:${tx.getId()}`)
+                let i = financialBook.getTransactions(`remoteId:${tx.getId()}`);
                 while (i.hasNext()) {
                     let financialTx = i.next();
                     if (financialTx.isChecked()) {
@@ -130,7 +125,7 @@ namespace RealizedResultsService {
                     }
                     financialTx.remove();
                 }
-                i = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`)
+                i = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`);
                 while (i.hasNext()) {
                     let mtmTx = i.next();
                     if (mtmTx.isChecked()) {
@@ -138,7 +133,7 @@ namespace RealizedResultsService {
                     }
                     mtmTx.remove();
                 }
-                i = baseBook.getTransactions(`remoteId:fx_${tx.getId()}`)
+                i = baseBook.getTransactions(`remoteId:fx_${tx.getId()}`);
                 while (i.hasNext()) {
                     let fxTx = i.next();
                     if (fxTx.isChecked()) {
@@ -147,18 +142,18 @@ namespace RealizedResultsService {
                     fxTx.remove();
                 }
 
-                let originalAmountProp = tx.getProperty(ORIGINAL_AMOUNT_PROP)
-                let originalQuantityProp = tx.getProperty(ORIGINAL_QUANTITY_PROP)
+                let originalAmountProp = tx.getProperty(ORIGINAL_AMOUNT_PROP);
+                let originalQuantityProp = tx.getProperty(ORIGINAL_QUANTITY_PROP);
 
                 if (full) {
-                    tx.setProperty(ORDER_PROP, tx.getProperty(HIST_ORDER_PROP))
+                    tx.setProperty(ORDER_PROP, tx.getProperty(HIST_ORDER_PROP));
                     if (tx.getProperty(DATE_PROP)) {
-                        tx.setDate(tx.getProperty(DATE_PROP))
+                        tx.setDate(tx.getProperty(DATE_PROP));
                     }
                     const histQuantity = tx.getProperty(HIST_QUANTITY_PROP);
                     if (histQuantity) {
-                        tx.setProperty(ORIGINAL_QUANTITY_PROP, histQuantity)
-                        originalQuantityProp = histQuantity
+                        tx.setProperty(ORIGINAL_QUANTITY_PROP, histQuantity);
+                        originalQuantityProp = histQuantity;
                     }
                     tx
                         .deleteProperty(DATE_PROP)
@@ -168,7 +163,7 @@ namespace RealizedResultsService {
                         .deleteProperty(FWD_SALE_PRICE_PROP)
                         .deleteProperty(FWD_PURCHASE_EXC_RATE_PROP)
                         .deleteProperty(FWD_SALE_EXC_RATE_PROP)
-                        // .deleteProperty('fwd_log')
+                        .deleteProperty('fwd_log')
                     ;
                 }
 
@@ -176,12 +171,12 @@ namespace RealizedResultsService {
                     tx.remove();
                 } else {
 
-                    //Fix wrong negative prices from forwarded date error
+                    // Fix wrong negative prices from forwarded date error
                     if (tx.getProperty(FWD_SALE_PRICE_PROP)) {
-                        tx.setProperty(FWD_SALE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_SALE_PRICE_PROP)).abs().toString())
+                        tx.setProperty(FWD_SALE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_SALE_PRICE_PROP)).abs().toString());
                     }
                     if (tx.getProperty(FWD_PURCHASE_PRICE_PROP)) {
-                        tx.setProperty(FWD_PURCHASE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_PURCHASE_PRICE_PROP)).abs().toString())
+                        tx.setProperty(FWD_PURCHASE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_PURCHASE_PRICE_PROP)).abs().toString());
                     }
 
                     tx
@@ -197,52 +192,53 @@ namespace RealizedResultsService {
                         .deleteProperty(FWD_PURCHASE_AMOUNT_PROP)
                         .deleteProperty(FWD_SALE_AMOUNT_PROP)
                         .deleteProperty(LIQUIDATION_LOG_PROP)
+                    ;
 
                     if (BotService.isSale(tx)) {
-                        let salePriceProp = tx.getProperty(SALE_PRICE_PROP)
-                        //OLD way to find price
+                        let salePriceProp = tx.getProperty(SALE_PRICE_PROP);
+                        // OLD way to find price
                         if (originalAmountProp && originalQuantityProp && !salePriceProp) {
-                            let salePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
-                            tx.setProperty(SALE_PRICE_PROP, salePrice.toString())
+                            let salePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp));
+                            tx.setProperty(SALE_PRICE_PROP, salePrice.toString());
                         }
                         tx
                             .deleteProperty(PURCHASE_LOG_PROP)
                             .deleteProperty(PURCHASE_PRICE_PROP)
                             .deleteProperty(FWD_PURCHASE_LOG_PROP)
                             .setAmount(originalQuantityProp)
-                            .update();
+                            .update()
+                        ;
                         stockAccountSaleTransactions.push(tx);
-
                     } else if (BotService.isPurchase(tx)) {
-                        let purchasePriceProp = tx.getProperty(PURCHASE_PRICE_PROP)
-
-                        //OLD way to find price
+                        let purchasePriceProp = tx.getProperty(PURCHASE_PRICE_PROP);
+                        // OLD way to find price
                         if (originalAmountProp && originalQuantityProp && !purchasePriceProp) {
-                            let purchasePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp))
-                            tx.setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString())
+                            let purchasePrice = BkperApp.newAmount(originalAmountProp).div(BkperApp.newAmount(originalQuantityProp));
+                            tx.setProperty(PURCHASE_PRICE_PROP, purchasePrice.toString());
                         }
-
                         tx
                             .deleteProperty(SALE_DATE_PROP)
                             .deleteProperty(SALE_PRICE_PROP)
                             .deleteProperty(FWD_SALE_PRICE_PROP)
                             .deleteProperty(FWD_SALE_EXC_RATE_PROP)
                             .setAmount(originalQuantityProp)
-                            .update();
+                            .update()
+                        ;
                         stockAccountPurchaseTransactions.push(tx);
                     }
                 }
             }
         }
 
-        stockAccount.clearNeedsRebuild()
+        stockAccount.clearNeedsRebuild();
 
         if (full) {
             stockAccount
                 .deleteRealizedDate()
                 .deleteForwardedDate()
                 .deleteForwardedExcRate()
-                .deleteForwardedPrice();
+                .deleteForwardedPrice()
+            ;
         }
 
         let forwardedDate = stockAccount.getForwardedDate();
@@ -252,12 +248,12 @@ namespace RealizedResultsService {
             stockAccount.deleteRealizedDate();
         }
 
-        stockAccount.update()
+        stockAccount.update();
 
         return {
             accountId: stockAccount.getId(),
-            result: 'Done.'
-        };;
+            result: 'Done!'
+        }
 
     }
 
