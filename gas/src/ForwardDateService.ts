@@ -116,13 +116,9 @@ namespace ForwardDateService {
         
         let newTransactions: Bkper.Transaction[] = [];
         let order = -transactions.length;
-        // let unrealizedBalance = BkperApp.newAmount(0);
 
         for (const transaction of transactions) {
 
-            // // Keep track of UR balance on closing day
-            // const batchUR = getQuantity(transaction).times(fwdPrice.minus(getPurchaseOrSalePrice(transaction)));
-            // unrealizedBalance = unrealizedBalance.plus(batchUR);
             // Post copy of batch in order to keep history
             let logTransaction = buildLogTransaction(stockBook, transaction).post();
             // Forward batch
@@ -131,9 +127,6 @@ namespace ForwardDateService {
             newTransactions.push(logTransaction);
             order++;
         }
-
-        // // Record UR result on closing day
-        // recordForwardResult(financialBook, stockAccount, unrealizedBalance.round(8), closingDateISO);
 
         // Record new transaction liquidating the logs
         if (needToRecordLiquidationTx && !openQuantity.eq(0)) {
@@ -166,39 +159,6 @@ namespace ForwardDateService {
             }
         }
 
-    }
-
-    function recordForwardResult(book: Bkper.Book, stockAccount: StockAccount, amount: Bkper.Amount, closingDate: string): void {
-
-        const accountName = stockAccount.getName();
-        const unrealizedAccountName = `${accountName} ${UNREALIZED_SUFFIX}`;
-        const closingAccountName = `${accountName} Closing`;
-
-        let unrealizedAccount = book.getAccount(unrealizedAccountName);
-        let closingAccount = book.getAccount(closingAccountName);
-
-        if (!unrealizedAccount) {
-            unrealizedAccount = createNewAccount(book, accountName, UNREALIZED_SUFFIX);
-        }
-        if (!closingAccount) {
-            closingAccount = createNewAccount(book, accountName, "Closing");
-        }
-
-        if (amount.eq(0)) {
-            return;
-        }
-
-        const fromAccount = amount.gt(0) ? closingAccount : unrealizedAccount;
-        const toAccount = amount.gt(0) ? unrealizedAccount : closingAccount;
-
-        book.newTransaction()
-            .setAmount(amount.abs())
-            .from(fromAccount)
-            .to(toAccount)
-            .setDate(closingDate)
-            .setDescription(`Unrealized balance on ${closingDate}`)
-            .post().check()
-        ;
     }
 
     function forwardBatch(transaction: Bkper.Transaction, transactionCopy: Bkper.Transaction, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, date: string, order: number): void {
@@ -279,56 +239,6 @@ namespace ForwardDateService {
             .setDate(closingDate)
             .setDescription(`${quantity.times(-1)} units forwarded to ${forwardDate}`)
         ;
-    }
-
-    function getQuantity(transaction: Bkper.Transaction): Bkper.Amount {
-        const txAmount = transaction.getAmount();
-        return BotService.isPurchase(transaction) ? txAmount : txAmount.times(-1);
-    }
-
-    function getPurchaseOrSalePrice(transaction: Bkper.Transaction): Bkper.Amount {
-        let price = BkperApp.newAmount(0);
-        if (BotService.isPurchase(transaction)) {
-            let purchasePriceProp = transaction.getProperty('fwd_purchase_price', 'purchase_price');
-            if (purchasePriceProp) {
-                price = BkperApp.newAmount(purchasePriceProp);
-            }
-        }
-        if (BotService.isSale(transaction)) {
-            let salePriceProp = transaction.getProperty('fwd_sale_price', 'sale_price');
-            if (salePriceProp) {
-                price = BkperApp.newAmount(salePriceProp);
-            }
-        }
-        return price;
-    }
-
-    function createNewAccount(book: Bkper.Book, accountName: string, suffix: string): Bkper.Account {
-        let newAccount = book.newAccount()
-            .setName(`${accountName} ${suffix}`)
-            .setType(BkperApp.AccountType.INCOMING)
-        ;
-        const groups = getAccountGroups(book, suffix);
-        groups.forEach(group => newAccount.addGroup(group));
-        newAccount.create();
-        return newAccount;
-    }
-
-    function getAccountGroups(book: Bkper.Book, suffix: string): Set<Bkper.Group> {
-        let accountNames = new Set<string>();
-        book.getAccounts().forEach(account => {
-            if (account.getName().endsWith(` ${suffix}`)) {
-                accountNames.add(account.getName());
-            }
-        })
-        let groups = new Set<Bkper.Group>();
-        accountNames.forEach(accountName => {
-            const account = book.getAccount(accountName);
-            if (account && account.getGroups()) {
-                account.getGroups().forEach(group => { groups.add(group) });
-            }
-        })
-        return groups;
     }
 
     function isCollectionUnlocked(baseBook: Bkper.Book): boolean {
