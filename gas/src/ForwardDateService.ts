@@ -7,10 +7,7 @@ namespace ForwardDateService {
         let dateValue = +(date.replaceAll('-', ''));
         if (forwardedDateValue && dateValue < forwardedDateValue) {
             if (!isCollectionUnlocked(stockBook)) {
-                return {
-                    accountId: stockAccountId,
-                    result: `Cannot set forward date: at least one book in the collection is locked/closed`
-                }
+                throw `Cannot fix forward date: at least one book in the collection is locked or closed`;
             }
             return fixAndForwardDateForAccount(stockBook, stockAccount, date);
         } else {
