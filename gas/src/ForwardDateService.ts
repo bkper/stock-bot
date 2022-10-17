@@ -7,7 +7,7 @@ namespace ForwardDateService {
         let dateValue = +(date.replaceAll('-', ''));
         if (forwardedDateValue && dateValue < forwardedDateValue) {
             if (!isCollectionUnlocked(stockBook)) {
-                throw `Cannot fix forward date: at least one book in the collection is locked or closed`;
+                throw `Cannot fix forward date: at least one book in the collection is locked/closed`;
             }
             return fixAndForwardDateForAccount(stockBook, stockAccount, date);
         } else {
@@ -15,7 +15,7 @@ namespace ForwardDateService {
         }
     }
 
-    function fixAndForwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, date: string): Summary {
+    function fixAndForwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, forwardDate: string): Summary {
 
         // Reset results up to current forwarded date
         RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false);
@@ -24,31 +24,32 @@ namespace ForwardDateService {
         let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${stockAccount.getForwardedDate()}`);
         let forwardedTransactions: Bkper.Transaction[] = [];
         while (iterator.hasNext()) {
-            let tx = iterator.next();
-            if (!tx.isChecked() && tx.getProperty('fwd_log')) {
+            const tx = iterator.next();
+            if (tx.getProperty('fwd_log')) {
                 forwardedTransactions.push(tx);
             }
         }
         for (const transaction of forwardedTransactions) {
-            // Get forwarded batch previous state
-            let previousState = getForwardedBatchPreviousState(stockBook, stockAccount, transaction, date);
-            // Return forwarded batch to previous state
+            // Get forwarded transaction previous state
+            let previousStateTx = getForwardedTransactionPreviousState(stockBook, stockAccount, transaction, forwardDate);
+            // Return forwarded transaction to previous state
             transaction
-                .setDate(previousState.getDate())
-                .setProperties(previousState.getProperties())
+                .setDate(previousStateTx.getDate())
+                .setProperties(previousStateTx.getProperties())
                 .deleteProperty('forwarded')
                 .update()
             ;
-            stockAccount.pushTrashTransaction(previousState);
+            stockAccount.pushTrash(previousStateTx);
         }
-        stockAccount.deleteTrashTransactions();
+        // Delete unnecessary transactions
+        stockAccount.cleanTrash();
 
         // Reset results up to new forward date
-        const resetIterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${date}`);
+        const resetIterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${forwardDate}`);
         RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false, resetIterator);
 
         // Set new forward date
-        const newForward = forwardDateForAccount(stockBook, stockAccount, date, true);
+        const newForward = forwardDateForAccount(stockBook, stockAccount, forwardDate, true);
 
         return {
             accountId: stockAccount.getId(),
@@ -56,7 +57,7 @@ namespace ForwardDateService {
         }
     }
 
-    function forwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, date: string, fixingForward: boolean): Summary {
+    function forwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, forwardDate: string, fixingForward: boolean): Summary {
 
         // Do not allow forward if account needs rebuild
         if (stockAccount.needsRebuild()) {
@@ -74,7 +75,7 @@ namespace ForwardDateService {
 
         // Closing Date: Forward Date - 1 day
         const closingDate = new Date();
-        closingDate.setTime(stockBook.parseDate(date).getTime());
+        closingDate.setTime(stockBook.parseDate(forwardDate).getTime());
         closingDate.setDate(closingDate.getDate() - 1);
         // Closing Date ISO
         const closingDateISO = Utilities.formatDate(closingDate, stockBook.getTimeZone(), "yyyy-MM-dd");
@@ -102,11 +103,11 @@ namespace ForwardDateService {
         // Current exchange rate
         const fwdExcRate = !openAmountLocal.eq(0) ? openAmountBase.div(openAmountLocal) : undefined;
 
-        let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' before:${date}`);
+        let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' before:${forwardDate}`);
         let transactions: Bkper.Transaction[] = [];
 
         while (iterator.hasNext()) {
-            let tx = iterator.next();
+            const tx = iterator.next();
             if (!tx.isChecked()) {
                 transactions.push(tx);
             }
@@ -114,54 +115,57 @@ namespace ForwardDateService {
 
         transactions = transactions.sort(BotService.compareToFIFO);
         
-        let newTransactions: Bkper.Transaction[] = [];
+        let logTransactionsIds: string[] = [];
+        let transactionsToCheck: Bkper.Transaction[] = [];
         let order = -transactions.length;
 
         for (const transaction of transactions) {
 
-            // Post copy of batch in order to keep history
+            // Post copy of transaction in order to keep a forward history
             let logTransaction = buildLogTransaction(stockBook, transaction).post();
-            // Forward batch
-            forwardBatch(transaction, logTransaction, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date, order);
-            
-            newTransactions.push(logTransaction);
+
+            // Forward transaction
+            forwardTransaction(transaction, logTransaction, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, forwardDate, order);
+
+            logTransactionsIds.push(logTransaction.getId());
+            transactionsToCheck.push(logTransaction);
             order++;
         }
 
         // Record new transaction liquidating the logs
         if (needToRecordLiquidationTx && !openQuantity.eq(0)) {
-            let liquidationTransaction = buildLiquidationTransaction(stockBook, stockAccount, openQuantity, closingDate, date);
-            liquidationTransaction.
-                setProperty('fwd_liquidation', JSON.stringify(newTransactions.map(tx => tx.getId())))
+            let liquidationTransaction = buildLiquidationTransaction(stockBook, stockAccount, openQuantity, closingDate, forwardDate);
+            liquidationTransaction
+                .setProperty('fwd_liquidation', JSON.stringify(logTransactionsIds))
                 .post()
             ;
-            newTransactions.push(liquidationTransaction);
+            transactionsToCheck.push(liquidationTransaction);
         }
 
-        // Check copies and liquidation transactions
-        stockBook.batchCheckTransactions(newTransactions);
+        // Check logs and liquidation transaction
+        stockBook.batchCheckTransactions(transactionsToCheck);
 
         // Update stock account
-        updateStockAccount(stockAccount, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, date);
+        updateStockAccount(stockAccount, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, forwardDate);
 
-        if (isForwardedDateSameOnAllAccounts(stockBook, date) && stockBook.getClosingDate() != closingDateISO) {
-            // Prevent book from closing before last account update
+        if (isForwardedDateSameOnAllAccounts(stockBook, forwardDate) && stockBook.getClosingDate() != closingDateISO) {
+            // Prevent book from closing before last transaction update
             Utilities.sleep(3000);
             stockBook.setClosingDate(closingDateISO).update();
             return {
                 accountId: stockAccount.getId(),
-                result: `${transactions.length} forwarded to ${date} and book closed on ${stockBook.formatDate(closingDate)}`
+                result: `${transactions.length} forwarded to ${forwardDate} and book closed on ${stockBook.formatDate(closingDate)}`
             }
         } else {
             return {
                 accountId: stockAccount.getId(),
-                result: `${transactions.length} forwarded to ${date}`
+                result: `${transactions.length} forwarded to ${forwardDate}`
             }
         }
 
     }
 
-    function forwardBatch(transaction: Bkper.Transaction, transactionCopy: Bkper.Transaction, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, date: string, order: number): void {
+    function forwardTransaction(transaction: Bkper.Transaction, logTransaction: Bkper.Transaction, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, forwardDate: string, order: number): void {
         if (!transaction.getProperty(DATE_PROP)) {
             transaction.setProperty(DATE_PROP, transaction.getDate());
         }
@@ -187,16 +191,16 @@ namespace ForwardDateService {
             .deleteProperty(ORIGINAL_AMOUNT_PROP)
             .setProperty(ORIGINAL_QUANTITY_PROP, transaction.getAmount().toString())
             .setProperty(ORDER_PROP, order + '')
-            .setProperty('fwd_log', transactionCopy.getId())
-            .setDate(date)
+            .setProperty('fwd_log', logTransaction.getId())
+            .setDate(forwardDate)
             .update()
         ;
     }
 
-    function updateStockAccount(stockAccount: StockAccount, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, date: string): void {
+    function updateStockAccount(stockAccount: StockAccount, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, forwardDate: string): void {
         stockAccount
-            .setRealizedDate(date)
-            .setForwardedDate(date)
+            .setRealizedDate(forwardDate)
+            .setForwardedDate(forwardDate)
             .setForwardedPrice(fwdPrice)
         ;
         if (stockExcCode !== baseExcCode) {
@@ -205,8 +209,8 @@ namespace ForwardDateService {
         stockAccount.update();
     }
 
-    function isForwardedDateSameOnAllAccounts(book: Bkper.Book, forwardedDate: string): boolean {
-        for (const account of book.getAccounts()) {
+    function isForwardedDateSameOnAllAccounts(stockBook: Bkper.Book, forwardedDate: string): boolean {
+        for (const account of stockBook.getAccounts()) {
             const stockAccount = new StockAccount(account)
             if (stockAccount.isPermanent() && !stockAccount.isArchived() && stockAccount.getExchangeCode()) {
                 if (stockAccount.getForwardedDate() != forwardedDate) {
@@ -217,8 +221,8 @@ namespace ForwardDateService {
         return true;
     }
 
-    function buildLogTransaction(book: Bkper.Book, transaction: Bkper.Transaction): Bkper.Transaction {
-        return book.newTransaction()
+    function buildLogTransaction(stockBook: Bkper.Book, transaction: Bkper.Transaction): Bkper.Transaction {
+        return stockBook.newTransaction()
             .setAmount(transaction.getAmount())
             .from(transaction.getCreditAccount())
             .to(transaction.getDebitAccount())
@@ -229,20 +233,20 @@ namespace ForwardDateService {
         ;
     }
 
-    function buildLiquidationTransaction(book: Bkper.Book, stockAccount: StockAccount, quantity: Bkper.Amount, closingDate: Date, forwardDate: string): Bkper.Transaction {
-        const fromAccount = quantity.lt(0) ? stockAccount.getName() : 'Buy';
-        const toAccount = quantity.lt(0) ? 'Sell' : stockAccount.getName();
-        return book.newTransaction()
+    function buildLiquidationTransaction(stockBook: Bkper.Book, stockAccount: StockAccount, quantity: Bkper.Amount, closingDate: Date, forwardDate: string): Bkper.Transaction {
+        const fromAccountName = quantity.lt(0) ? stockAccount.getName() : 'Buy';
+        const toAccountName = quantity.lt(0) ? 'Sell' : stockAccount.getName();
+        return stockBook.newTransaction()
             .setAmount(quantity.abs())
-            .from(fromAccount)
-            .to(toAccount)
+            .from(fromAccountName)
+            .to(toAccountName)
             .setDate(closingDate)
             .setDescription(`${quantity.times(-1)} units forwarded to ${forwardDate}`)
         ;
     }
 
-    function isCollectionUnlocked(baseBook: Bkper.Book): boolean {
-        let books = baseBook.getCollection().getBooks();
+    function isCollectionUnlocked(stockBook: Bkper.Book): boolean {
+        const books = stockBook.getCollection().getBooks();
         for (const book of books) {
             let lockDate = book.getLockDate();
             let closingDate = book.getClosingDate();
@@ -256,23 +260,26 @@ namespace ForwardDateService {
         return true;
     }
 
-    function getForwardedBatchPreviousState(book: Bkper.Book, stockAccount: StockAccount, transaction: Bkper.Transaction, date: string): Bkper.Transaction {
+    function getForwardedTransactionPreviousState(stockBook: Bkper.Book, stockAccount: StockAccount, transaction: Bkper.Transaction, forwardDate: string): Bkper.Transaction {
         const previousStateId = transaction.getProperty('fwd_log');
         if (!previousStateId) {
             return transaction;
         }
-        const previousState = book.getTransaction(previousStateId);
-        if (previousState.getDateValue() <= +(date.replaceAll('-', ''))) {
-            return previousState;
+        const previousStateTx = stockBook.getTransaction(previousStateId);
+        if (!previousStateTx) {
+            return transaction;
         }
-        stockAccount.pushTrashTransaction(previousState);
-        return getForwardedBatchPreviousState(book, stockAccount, previousState, date);
+        if (previousStateTx.getDateValue() <= +(forwardDate.replaceAll('-', ''))) {
+            return previousStateTx;
+        }
+        stockAccount.pushTrash(previousStateTx);
+        return getForwardedTransactionPreviousState(stockBook, stockAccount, previousStateTx, forwardDate);
     }
 
-    function tryOpenQuantityFromLiquidationTx(book: Bkper.Book, stockAccount: StockAccount, closingDate: string): Bkper.Amount {
-        let iterator = book.getTransactions(`account:'${stockAccount.getName()}' on:${closingDate}`);
+    function tryOpenQuantityFromLiquidationTx(stockBook: Bkper.Book, stockAccount: StockAccount, closingDate: string): Bkper.Amount {
+        const iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' on:${closingDate}`);
         while (iterator.hasNext()) {
-            let tx = iterator.next();
+            const tx = iterator.next();
             if (tx.getProperty('fwd_liquidation')) {
                 if (BotService.isPurchase(tx)) {
                     return tx.getAmount();
