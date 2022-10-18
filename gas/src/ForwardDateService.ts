@@ -36,7 +36,8 @@ namespace ForwardDateService {
             transaction
                 .setDate(previousStateTx.getDate())
                 .setProperties(previousStateTx.getProperties())
-                .deleteProperty('forwarded')
+                .deleteProperty('fwd_tx')
+                .deleteProperty('fwd_tx_remote_ids')
                 .update()
             ;
             stockAccount.pushTrash(previousStateTx);
@@ -222,6 +223,7 @@ namespace ForwardDateService {
     }
 
     function buildLogTransaction(stockBook: Bkper.Book, transaction: Bkper.Transaction): Bkper.Transaction {
+        const remoteIds: string[] = transaction.getRemoteIds() || [];
         return stockBook.newTransaction()
             .setAmount(transaction.getAmount())
             .from(transaction.getCreditAccount())
@@ -229,7 +231,8 @@ namespace ForwardDateService {
             .setDate(transaction.getDate())
             .setDescription(transaction.getDescription())
             .setProperties(transaction.getProperties())
-            .setProperty('forwarded', 'true')
+            .setProperty('fwd_tx', 'true')
+            .setProperty('fwd_tx_remote_ids', JSON.stringify(remoteIds))
         ;
     }
 
