@@ -231,7 +231,7 @@ namespace ForwardDateService {
             .setDate(transaction.getDate())
             .setDescription(transaction.getDescription())
             .setProperties(transaction.getProperties())
-            .setProperty('fwd_tx', 'true')
+            .setProperty('fwd_tx', transaction.getId())
             .setProperty('fwd_tx_remote_ids', JSON.stringify(remoteIds))
         ;
     }
