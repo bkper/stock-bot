@@ -11,6 +11,9 @@ namespace ForwardDateService {
                 result: `Cannot set forward date: forwarded date is already ${date}`
             }
         } else if (forwardedDateValue && dateValue < forwardedDateValue) {
+            if (!isUserBookOwner(stockBook)) {
+                throw `Cannot fix forward date: user must be book owner`;
+            }
             if (!isCollectionUnlocked(stockBook)) {
                 throw `Cannot fix forward date: collection has locked/closed book(s)`;
             }
@@ -155,8 +158,8 @@ namespace ForwardDateService {
         updateStockAccount(stockAccount, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, forwardDate);
 
         if (isForwardedDateSameOnAllAccounts(stockBook, forwardDate) && stockBook.getClosingDate() != closingDateISO) {
-            // Prevent book from closing before last transaction update
-            Utilities.sleep(3000);
+            // Prevent book from closing before last transaction check
+            Utilities.sleep(5000);
             stockBook.setClosingDate(closingDateISO).update();
             return {
                 accountId: stockAccount.getId(),
@@ -253,14 +256,18 @@ namespace ForwardDateService {
         ;
     }
 
+    function isUserBookOwner(stockBook: Bkper.Book): boolean {
+        return stockBook.getPermission() == BkperApp.Permission.OWNER;
+    }
+
     function isCollectionUnlocked(stockBook: Bkper.Book): boolean {
         const books = stockBook.getCollection().getBooks();
         for (const book of books) {
             let lockDate = book.getLockDate();
-            let closingDate = book.getClosingDate();
             if (lockDate && lockDate !== '1900-00-00') {
                 return false;
             }
+            let closingDate = book.getClosingDate();
             if (closingDate && closingDate !== '1900-00-00') {
                 return false;
             }
