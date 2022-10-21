@@ -5,9 +5,14 @@ namespace ForwardDateService {
         const stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
         let forwardedDateValue = stockAccount.getForwardedDateValue();
         let dateValue = +(date.replaceAll('-', ''));
-        if (forwardedDateValue && dateValue < forwardedDateValue) {
+        if (forwardedDateValue && dateValue == forwardedDateValue) {
+            return {
+                accountId: stockAccountId,
+                result: `Cannot set forward date: forwarded date is already ${date}`
+            }
+        } else if (forwardedDateValue && dateValue < forwardedDateValue) {
             if (!isCollectionUnlocked(stockBook)) {
-                throw `Cannot fix forward date: at least one book in the collection is locked/closed`;
+                throw `Cannot fix forward date: collection has locked/closed book(s)`;
             }
             return fixAndForwardDateForAccount(stockBook, stockAccount, date);
         } else {
