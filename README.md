@@ -22,7 +22,7 @@ The Stock Bot interacts with the following properties:
 #### Financial Books
 - ```exc_code```: Required - The book exchange code to match the ```stock_exc_code```.
 #### Instruments Book
-- ```stock_historical```: Optional - true/false - Defines if realized results calculations should consider historical values. If set to false or not present, updated values will be used instead. See [Forward Date Service](#forward-date-service).
+- ```stock_historical```: Optional - true/false - Defines if realized results calculations should consider historical costs and rates. If set to false or not present, the last Forward valuation will be used instead. See [Forward Date Service](#forward-date-service).
 - ```stock_book```: Optional - true/false - Identifies the Instruments book of the collection. If not present, decimal places must be set to 0 (zero) in the book settings.
 
 ### Group Properties
@@ -55,19 +55,20 @@ The Stock Bot adds the following properties to the generated transactions in the
 - ```original_quantity```: The original quantity of the instrument (used to rebuild FIFO gains/losses if needed).
 
 **Observation:**
-Properties starting with ```fwd``` have the same meaning as their peers. However, their values may differ if a [Forward Date](#forward-date-service) was set to that instrument.
+The properties starting with ```fwd``` above have the same meaning as their peers, however, their values may differ if a [Forward Date](#forward-date-service) was set to that instrument. In that case, there are also other ```fwd``` properties, which are references that connect forwarded transactions to their logs.
 
 
 ## Forward Date Service
 
-In order to [close a period](https://help.bkper.com/en/articles/6000644-closing-a-period) and [set a closing date](https://help.bkper.com/en/articles/5100445-book-closing-and-lock-dates) to the Stock Book, open instruments must be carried to the next period. The proper way to do so is by setting a Forward Date to the accounts in the Instruments Book.
+In order to [close a period](https://help.bkper.com/en/articles/6000644-closing-a-period) and [set a closing date](https://help.bkper.com/en/articles/5100445-book-closing-and-lock-dates) to the Stock Book, instruments must be carried to the next period. The proper way to do so is by setting a Forward Date to the accounts in the Instruments Book.
 
-Each open batch will have its date and prices updated. When the last instrument is successfully forwarded a closing date will be set on the Stock Book one day before the Forward Date.
+Each unchecked transaction will have its date, price and exchange rate updated to the current valuation, leaving a log of its previous state behind. When the last instrument is successfully forwarded a closing date will be set on the Stock Book one day before the Forward Date.
 
-Once an instrument is forwarded, future FIFO calculations will consider updated prices. To calculate gains/losses over historical prices, the property ```stock_historical``` must be set to ```true``` on the Instruments Book.
+Once an instrument is forwarded, future FIFO calculations will consider the new Forward valuation. In order to keep calculating gains/losses over the historical basis, the property ```stock_historical``` must be set to ```true``` on the Instruments Book.
 
-When forwarding instruments, the Stock Bot also adds the following properties to the transactions:
+When forwarding instruments, the Stock Bot also adds the following properties to the forwarded transactions:
 
 - ```date```: The date when the transaction has occurred.
 - ```hist_order```: The historical index the transaction had before being forwarded.
 - ```hist_quantity```: The historical quantity of the instrument (used to rebuild FIFO gains/losses if needed).
+- ```fwd_log```: The id of the forwarded transaction previous state (a copy of the transaction before being forwarded).
