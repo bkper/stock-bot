@@ -60,6 +60,12 @@ const BUY_ACCOUNT_NAME = 'Buy'
 const ORIGINAL_PURCHASE_PRICE = 'orig_purchase_price'
 const ORIGINAL_SALE_PRICE = 'orig_sale_price'
 
+// Forward fix new props
+const FWD_TX_PROP = 'fwd_tx';
+const FWD_TX_REMOTE_IDS_PROP = 'fwd_tx_remote_ids';
+const FWD_LIQUIDATION_PROP = 'fwd_liquidation';
+const FWD_LOG_PROP = 'fwd_log';
+
 
 function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   //@ts-ignore

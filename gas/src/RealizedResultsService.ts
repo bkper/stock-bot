@@ -110,7 +110,7 @@ namespace RealizedResultsService {
             }
 
             // Forward logs & liquidation transaction
-            if (tx.getProperty('fwd_tx') || tx.getProperty('fwd_liquidation')) {
+            if (tx.getProperty(FWD_TX_PROP) || tx.getProperty(FWD_LIQUIDATION_PROP)) {
                 tx.trash();
                 continue;
             }
@@ -163,7 +163,7 @@ namespace RealizedResultsService {
                         .deleteProperty(FWD_SALE_PRICE_PROP)
                         .deleteProperty(FWD_PURCHASE_EXC_RATE_PROP)
                         .deleteProperty(FWD_SALE_EXC_RATE_PROP)
-                        .deleteProperty('fwd_log')
+                        .deleteProperty(FWD_LOG_PROP)
                     ;
                 }
 

@@ -33,7 +33,7 @@ namespace ForwardDateService {
         let forwardedTransactions: Bkper.Transaction[] = [];
         while (iterator.hasNext()) {
             const tx = iterator.next();
-            if (tx.getProperty('fwd_log')) {
+            if (tx.getProperty(FWD_LOG_PROP)) {
                 forwardedTransactions.push(tx);
             }
         }
@@ -44,8 +44,8 @@ namespace ForwardDateService {
             transaction
                 .setDate(previousStateTx.getDate())
                 .setProperties(previousStateTx.getProperties())
-                .deleteProperty('fwd_tx')
-                .deleteProperty('fwd_tx_remote_ids')
+                .deleteProperty(FWD_TX_PROP)
+                .deleteProperty(FWD_TX_REMOTE_IDS_PROP)
                 .update()
             ;
             stockAccount.pushTrash(previousStateTx);
@@ -145,7 +145,7 @@ namespace ForwardDateService {
         if (needToRecordLiquidationTx && !openQuantity.eq(0)) {
             let liquidationTransaction = buildLiquidationTransaction(stockBook, stockAccount, openQuantity, closingDate, forwardDate);
             liquidationTransaction
-                .setProperty('fwd_liquidation', JSON.stringify(logTransactionsIds))
+                .setProperty(FWD_LIQUIDATION_PROP, JSON.stringify(logTransactionsIds))
                 .post()
             ;
             transactionsToCheck.push(liquidationTransaction);
@@ -200,7 +200,7 @@ namespace ForwardDateService {
             .deleteProperty(ORIGINAL_AMOUNT_PROP)
             .setProperty(ORIGINAL_QUANTITY_PROP, transaction.getAmount().toString())
             .setProperty(ORDER_PROP, order + '')
-            .setProperty('fwd_log', logTransaction.getId())
+            .setProperty(FWD_LOG_PROP, logTransaction.getId())
             .setDate(forwardDate)
             .update()
         ;
@@ -239,14 +239,14 @@ namespace ForwardDateService {
             .setDate(transaction.getDate())
             .setDescription(transaction.getDescription())
             .setProperties(transaction.getProperties())
-            .setProperty('fwd_tx', transaction.getId())
-            .setProperty('fwd_tx_remote_ids', JSON.stringify(remoteIds))
+            .setProperty(FWD_TX_PROP, transaction.getId())
+            .setProperty(FWD_TX_REMOTE_IDS_PROP, JSON.stringify(remoteIds))
         ;
     }
 
     function buildLiquidationTransaction(stockBook: Bkper.Book, stockAccount: StockAccount, quantity: Bkper.Amount, closingDate: Date, forwardDate: string): Bkper.Transaction {
-        const fromAccountName = quantity.lt(0) ? stockAccount.getName() : 'Buy';
-        const toAccountName = quantity.lt(0) ? 'Sell' : stockAccount.getName();
+        const fromAccountName = quantity.lt(0) ? stockAccount.getName() : BUY_ACCOUNT_NAME;
+        const toAccountName = quantity.lt(0) ? SELL_ACCOUNT_NAME : stockAccount.getName();
         return stockBook.newTransaction()
             .setAmount(quantity.abs())
             .from(fromAccountName)
@@ -276,7 +276,7 @@ namespace ForwardDateService {
     }
 
     function getForwardedTransactionPreviousState(stockBook: Bkper.Book, stockAccount: StockAccount, transaction: Bkper.Transaction, forwardDate: string): Bkper.Transaction {
-        const previousStateId = transaction.getProperty('fwd_log');
+        const previousStateId = transaction.getProperty(FWD_LOG_PROP);
         if (!previousStateId) {
             return transaction;
         }
@@ -295,7 +295,7 @@ namespace ForwardDateService {
         const iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' on:${closingDate}`);
         while (iterator.hasNext()) {
             const tx = iterator.next();
-            if (tx.getProperty('fwd_liquidation')) {
+            if (tx.getProperty(FWD_LIQUIDATION_PROP)) {
                 if (BotService.isPurchase(tx)) {
                     return tx.getAmount();
                 }
