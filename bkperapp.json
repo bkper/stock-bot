@@ -16,8 +16,6 @@
   "menuText": "Stock Bot",
   "menuPopupWidth": 600,
   "menuPopupHeight": 600,
-  "clientId": "783262894504-rk14vg9ogq4fpsusf87lsubc8c644bni.apps.googleusercontent.com",
-  "scopes": ["https://www.googleapis.com/auth/userinfo.email"],
   "webhookUrl": "https://us-central1-bkper-stock-bot.cloudfunctions.net/prod",
   "apiVersion": "v5",
   "events": [
