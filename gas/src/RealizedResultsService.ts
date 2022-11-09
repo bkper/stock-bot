@@ -104,7 +104,7 @@ namespace RealizedResultsService {
 
         for (let tx of transactions) {
 
-            console.log(`date: ${tx.getDate()} - amount: ${tx.getAmount().toString()}`);
+            console.log(`account: ${stockAccount.getName()} - tx id: ${tx.getId()}`);
 
             if (tx.isChecked()) {
                 tx = tx.uncheck();
@@ -354,6 +354,8 @@ namespace RealizedResultsService {
         let shortSaleLiquidationLogEntries: LiquidationLogEntry[] = [];
 
         for (const purchaseTransaction of purchaseTransactions) {
+
+            console.log(`account: ${stockAccount.getName()} - tx id: ${purchaseTransaction.getId()}`);
 
             let longSaleLiquidationLogEntries: LiquidationLogEntry[] = [];
 
