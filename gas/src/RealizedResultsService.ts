@@ -253,7 +253,7 @@ namespace RealizedResultsService {
 
         return {
             accountId: stockAccount.getId(),
-            result: 'Done!'
+            result: ''
         }
 
     }

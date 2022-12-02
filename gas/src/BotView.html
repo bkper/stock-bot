@@ -89,6 +89,10 @@
         color: red;
       }
 
+      .success-icon {
+        margin-right: 5px;
+      }
+
     </style>
     
   </header>
@@ -259,7 +263,7 @@
   }
 
   function hideAccountWaiting(summary) {
-    document.getElementById(`result-${summary.accountId}`).innerHTML = summary.result
+    document.getElementById(`result-${summary.accountId}`).innerHTML = `<img class='success-icon' src='https://storage.googleapis.com/bkper-public/addons/check.png'>Done!</img>` + ' ' + summary.result;
   }
 
   // using promises instead
