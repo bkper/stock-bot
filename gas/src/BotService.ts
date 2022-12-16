@@ -21,7 +21,6 @@ namespace BotService {
         return query;
     }
 
-
     export function calculateGainBaseNoFX(gainLocal: Bkper.Amount, purchaseRate: Bkper.Amount, saleRate: Bkper.Amount, shortSale: boolean): Bkper.Amount {
         if (!purchaseRate || !saleRate) {
             return BkperApp.newAmount(0);
@@ -46,6 +45,7 @@ namespace BotService {
         }
         return fallbackExcRate;
     }
+
     export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction, excRateProp: string): Bkper.Amount {
         if (baseBook.getProperty(EXC_CODE_PROP) == financialBook.getProperty(EXC_CODE_PROP)) {
             return undefined;
@@ -98,7 +98,6 @@ namespace BotService {
         return null;
     }
 
-
     export function getStockBook(book: Bkper.Book): Bkper.Book {
         if (book.getCollection() == null) {
             return null;
@@ -131,7 +130,6 @@ namespace BotService {
         return null;
     }
 
-
     export function isSale(transaction: Bkper.Transaction): boolean {
         return transaction.isPosted() && transaction.getDebitAccount().getType() == BkperApp.AccountType.OUTGOING;
     }
@@ -161,5 +159,46 @@ namespace BotService {
         return ret;
     }
 
+    export function getUncalculatedOrRebuildAccounts(stockBook: Bkper.Book): Bkper.Account[] {
+
+        let validationAccountsMap = new Map<string, ValidationAccount>();
+
+        for (const account of stockBook.getAccounts()) {
+            if (account.isPermanent()) {
+                validationAccountsMap.set(account.getName(), new ValidationAccount(account));
+            }
+        }
+
+        const iterator = stockBook.getTransactions(`is:unchecked`);
+        while (iterator.hasNext()) {
+            const transaction = iterator.next();
+            const account = transaction.getCreditAccount().isPermanent() ? transaction.getCreditAccount() : transaction.getDebitAccount();
+            let validationAccount = validationAccountsMap.get(account.getName());
+            if (!validationAccount) {
+                continue;
+            }
+            const contraAccount = transaction.getCreditAccount().isPermanent() ? transaction.getDebitAccount() : transaction.getCreditAccount();
+            if (contraAccount.getName() == BUY_ACCOUNT_NAME) {
+                validationAccount.pushUncheckedPurchase(transaction);
+            }
+            if (contraAccount.getName() == SELL_ACCOUNT_NAME) {
+                validationAccount.pushUncheckedSale(transaction);
+            }
+        }
+
+        let accounts: Bkper.Account[] = [];
+
+        validationAccountsMap.forEach(validationAccount => {
+            if (validationAccount.needsRebuild()) {
+                accounts.push(validationAccount.getAccount());
+                return;
+            }
+            if (validationAccount.hasUncalculatedResults()) {
+                accounts.push(validationAccount.getAccount());
+            }
+        });
+
+        return accounts;
+    }
 
 }
