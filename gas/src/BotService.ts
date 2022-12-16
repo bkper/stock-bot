@@ -149,7 +149,7 @@ namespace BotService {
         if (ret == 0) {
             const order1 = tx1.getProperty(ORDER_PROP) ? +tx1.getProperty(ORDER_PROP) : 0;
             const order2 = tx2.getProperty(ORDER_PROP) ? +tx2.getProperty(ORDER_PROP) : 0;
-            ret =  order1 - order2;
+            ret = order1 - order2;
         }
 
         if (ret == 0 && tx1.getCreatedAt() && tx2.getCreatedAt()) {
@@ -174,10 +174,7 @@ namespace BotService {
             const transaction = iterator.next();
             const account = transaction.getCreditAccount().isPermanent() ? transaction.getCreditAccount() : transaction.getDebitAccount();
             let validationAccount = validationAccountsMap.get(account.getName());
-            if (!validationAccount) {
-                continue;
-            }
-            if (validationAccount.needsRebuild()) {
+            if (!validationAccount || validationAccount.needsRebuild() || validationAccount.hasUncalculatedResults()) {
                 continue;
             }
             const contraAccount = transaction.getCreditAccount().isPermanent() ? transaction.getDebitAccount() : transaction.getCreditAccount();
@@ -192,11 +189,7 @@ namespace BotService {
         let accounts: Bkper.Account[] = [];
 
         validationAccountsMap.forEach(validationAccount => {
-            if (validationAccount.needsRebuild()) {
-                accounts.push(validationAccount.getAccount());
-                return;
-            }
-            if (validationAccount.hasUncalculatedResults()) {
+            if (validationAccount.needsRebuild() || validationAccount.hasUncalculatedResults()) {
                 accounts.push(validationAccount.getAccount());
             }
         });
