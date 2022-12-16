@@ -177,6 +177,9 @@ namespace BotService {
             if (!validationAccount) {
                 continue;
             }
+            if (validationAccount.needsRebuild()) {
+                continue;
+            }
             const contraAccount = transaction.getCreditAccount().isPermanent() ? transaction.getDebitAccount() : transaction.getCreditAccount();
             if (contraAccount.getName() == BUY_ACCOUNT_NAME) {
                 validationAccount.pushUncheckedPurchase(transaction);
