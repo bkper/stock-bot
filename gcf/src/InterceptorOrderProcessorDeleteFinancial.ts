@@ -31,11 +31,11 @@ export class InterceptorOrderProcessorDeleteFinancial extends InterceptorOrderPr
             await this.deleteOnStockBook(financialBook, transactionPayload.id);
         }
 
-        if (this.isTransactionStockGainOrLoss(transactionPayload)) {
+        if (this.isTransactionStockGainOrLoss(transactionPayload) || this.isTransactionExchangeGainOrLoss(transactionPayload)) {
             const stockBook = getStockBook(financialBook);
             if (stockBook && transactionPayload.remoteIds) {
                 for (const remoteId of transactionPayload.remoteIds) {
-                    let stockBookTransaction = await stockBook.getTransaction(remoteId);
+                    let stockBookTransaction = await stockBook.getTransaction(remoteId.replace('fx_', ''));
                     if (stockBookTransaction) {
                         await flagStockAccountForRebuildIfNeeded(stockBookTransaction);
                     }
@@ -48,6 +48,10 @@ export class InterceptorOrderProcessorDeleteFinancial extends InterceptorOrderPr
 
     private isTransactionStockGainOrLoss(transaction: bkper.Transaction): boolean {
         return transaction.agentId == 'stock-bot' && (transaction.description == '#stock_gain' || transaction.description == '#stock_loss') ? true : false;
+    }
+
+    private isTransactionExchangeGainOrLoss(transaction: bkper.Transaction): boolean {
+        return transaction.agentId == 'stock-bot' && (transaction.description == '#exchange_gain' || transaction.description == '#exchange_loss') ? true : false;
     }
 
 }
