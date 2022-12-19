@@ -1,4 +1,4 @@
-
+// Properties
 export const STOCK_BOOK_PROP = 'stock_book';
 export const STOCK_EXC_CODE_PROP = 'stock_exc_code';
 export const STOCK_FEES_ACCOUNT_PROP = 'stock_fees_account';
@@ -27,17 +27,22 @@ export const LEGACY_REALIZED_DATE_PROP = 'stock_realized_date';
 export const REALIZED_DATE_PROP = 'realized_date';
 export const STOCK_HISTORICAL_PROP = 'stock_historical';
 export const EXC_HISTORICAL_PROP = 'exc_historical';
+
+// Accounts
 export const STOCK_SELL_ACCOUNT_NAME = 'Sell';
 export const STOCK_BUY_ACCOUNT_NAME = 'Buy';
+
+// Prefixes
+export const FX_PREFIX = 'fx_';
+
+// Suffixes
 export const REALIZED_GAIN_SUFFIX = 'Realized Gain';
 export const REALIZED_LOSS_SUFFIX = 'Realized Loss';
 export const UREALIZED_SUFFIX = 'Unrealized';
 
-
-
-
-
-
-
-
-
+// Other
+export const STOCK_BOT_AGENT_ID = 'stock-bot';
+export const STOCK_GAIN_HASHTAG = '#stock_gain';
+export const STOCK_LOSS_HASHTAG = '#stock_loss';
+export const EXCHANGE_GAIN_HASHTAG = '#exchange_gain';
+export const EXCHANGE_LOSS_HASHTAG = '#exchange_loss';

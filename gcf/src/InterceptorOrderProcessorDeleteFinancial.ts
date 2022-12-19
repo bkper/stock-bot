@@ -1,6 +1,6 @@
 import { Book } from "bkper";
 import { flagStockAccountForRebuildIfNeeded, getStockBook } from "./BotService";
-import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP } from "./constants";
+import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, STOCK_BOT_AGENT_ID, STOCK_GAIN_HASHTAG, STOCK_LOSS_HASHTAG, EXCHANGE_GAIN_HASHTAG, EXCHANGE_LOSS_HASHTAG, FX_PREFIX } from "./constants";
 import { InterceptorOrderProcessorDelete } from "./InterceptorOrderProcessorDelete";
 
 export class InterceptorOrderProcessorDeleteFinancial extends InterceptorOrderProcessorDelete {
@@ -35,7 +35,7 @@ export class InterceptorOrderProcessorDeleteFinancial extends InterceptorOrderPr
             const stockBook = getStockBook(financialBook);
             if (stockBook && transactionPayload.remoteIds) {
                 for (const remoteId of transactionPayload.remoteIds) {
-                    let stockBookTransaction = await stockBook.getTransaction(remoteId.replace('fx_', ''));
+                    let stockBookTransaction = await stockBook.getTransaction(remoteId.replace(FX_PREFIX, ''));
                     if (stockBookTransaction) {
                         await flagStockAccountForRebuildIfNeeded(stockBookTransaction);
                     }
@@ -47,11 +47,11 @@ export class InterceptorOrderProcessorDeleteFinancial extends InterceptorOrderPr
     }
 
     private isTransactionStockGainOrLoss(transaction: bkper.Transaction): boolean {
-        return transaction.agentId == 'stock-bot' && (transaction.description == '#stock_gain' || transaction.description == '#stock_loss') ? true : false;
+        return transaction.agentId == STOCK_BOT_AGENT_ID && (transaction.description == STOCK_GAIN_HASHTAG || transaction.description == STOCK_LOSS_HASHTAG) ? true : false;
     }
 
     private isTransactionExchangeGainOrLoss(transaction: bkper.Transaction): boolean {
-        return transaction.agentId == 'stock-bot' && (transaction.description == '#exchange_gain' || transaction.description == '#exchange_loss') ? true : false;
+        return transaction.agentId == STOCK_BOT_AGENT_ID && (transaction.description == EXCHANGE_GAIN_HASHTAG || transaction.description == EXCHANGE_LOSS_HASHTAG) ? true : false;
     }
 
 }
