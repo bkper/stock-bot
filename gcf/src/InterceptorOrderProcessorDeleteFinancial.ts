@@ -1,4 +1,5 @@
 import { Book } from "bkper";
+import { flagStockAccountForRebuildIfNeeded, getStockBook } from "./BotService";
 import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP } from "./constants";
 import { InterceptorOrderProcessorDelete } from "./InterceptorOrderProcessorDelete";
 
@@ -29,8 +30,24 @@ export class InterceptorOrderProcessorDeleteFinancial extends InterceptorOrderPr
         } else {
             await this.deleteOnStockBook(financialBook, transactionPayload.id);
         }
-        
+
+        if (this.isTransactionStockGainOrLoss(transactionPayload)) {
+            const stockBook = getStockBook(financialBook);
+            if (stockBook && transactionPayload.remoteIds) {
+                for (const remoteId of transactionPayload.remoteIds) {
+                    let stockBookTransaction = await stockBook.getTransaction(remoteId);
+                    if (stockBookTransaction) {
+                        await flagStockAccountForRebuildIfNeeded(stockBookTransaction);
+                    }
+                }
+            }
+        }
+
         return responses.length > 0 ? responses : false;
+    }
+
+    private isTransactionStockGainOrLoss(transaction: bkper.Transaction): boolean {
+        return transaction.agentId == 'stock-bot' && (transaction.description == '#stock_gain' || transaction.description == '#stock_loss') ? true : false;
     }
 
 }
