@@ -38,6 +38,7 @@ export class InterceptorOrderProcessorDeleteFinancial extends InterceptorOrderPr
                     let stockBookTransaction = await stockBook.getTransaction(remoteId.replace(FX_PREFIX, ''));
                     if (stockBookTransaction) {
                         await flagStockAccountForRebuildIfNeeded(stockBookTransaction);
+                        break;
                     }
                 }
             }
