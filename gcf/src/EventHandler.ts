@@ -6,13 +6,15 @@ export abstract class EventHandler {
 
   protected abstract processObject(baseBook: Book, connectedBook: Book, event: bkper.Event): Promise<string>;
 
-  protected async intercept(baseBook: Book, event: bkper.Event): Promise<Result> {return {result: false}}
+  protected async intercept(baseBook: Book, event: bkper.Event): Promise<Result> {
+    return { result: false };
+  }
 
   async handleEvent(event: bkper.Event): Promise<Result> {
     let baseBook = new Book(event.book);
 
     let interceptionResponse = await this.intercept(baseBook, event);
-    if (interceptionResponse) {
+    if (interceptionResponse.result) {
       return interceptionResponse;
     }
     let responses: string[] = [];
