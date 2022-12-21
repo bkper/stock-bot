@@ -1,13 +1,14 @@
 import { Bkper, Book } from "bkper";
+import { Result } from ".";
 import { getStockBook } from "./BotService";
 
 export abstract class EventHandler {
 
   protected abstract processObject(baseBook: Book, connectedBook: Book, event: bkper.Event): Promise<string>;
 
-  protected async intercept(baseBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {return false}
+  protected async intercept(baseBook: Book, event: bkper.Event): Promise<Result> {return {result: false}}
 
-  async handleEvent(event: bkper.Event): Promise<string[] | string | boolean> {
+  async handleEvent(event: bkper.Event): Promise<Result> {
     let baseBook = new Book(event.book);
 
     let interceptionResponse = await this.intercept(baseBook, event);
@@ -26,16 +27,16 @@ export abstract class EventHandler {
         responses.push(response);
       }
     } else {
-      return 'No book with 0 decimal places found in the collection'
+      return {result: 'No book with 0 decimal places found in the collection'}
     }
 
     console.timeEnd(logtag)
 
     if (responses.length == 0) {
-      return false;
+      return {result: false};
     }
 
-    return responses;
+    return {result: responses};
   }
 
 

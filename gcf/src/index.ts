@@ -22,6 +22,12 @@ app.use(httpContext.middleware);
 app.use('/', handleEvent);
 export const doPost: HttpFunction = app;
 
+export type Result = {
+    result?: string[] | string | boolean,
+    error?: string,
+    warning?: string
+}
+
 function init(req: Request, res: Response) {
   res.setHeader('Content-Type', 'application/json');
 
@@ -42,49 +48,49 @@ async function handleEvent(req: Request, res: Response) {
   try {
 
     let event: bkper.Event = req.body
-    let result: { result: string[] | string | boolean } = { result: false };
+    let result: Result = { result: false };
 
 
     switch (event.type) {
 
       case 'TRANSACTION_POSTED':
-        result.result = await new EventHandlerTransactionPosted().handleEvent(event);
+        result = await new EventHandlerTransactionPosted().handleEvent(event);
         break;
       case 'TRANSACTION_CHECKED':
-        result.result = await new EventHandlerTransactionChecked().handleEvent(event);
+        result = await new EventHandlerTransactionChecked().handleEvent(event);
         break;
       case 'TRANSACTION_UNCHECKED':
-        result.result = await new EventHandlerTransactionUnchecked().handleEvent(event);
+        result = await new EventHandlerTransactionUnchecked().handleEvent(event);
         break;
       case 'TRANSACTION_UPDATED':
-        result.result = await new EventHandlerTransactionUpdated().handleEvent(event);
+        result = await new EventHandlerTransactionUpdated().handleEvent(event);
         break;
       case 'TRANSACTION_DELETED':
-        result.result = await new EventHandlerTransactionDeleted().handleEvent(event);
+        result = await new EventHandlerTransactionDeleted().handleEvent(event);
         break;
       case 'TRANSACTION_RESTORED':
-        result.result = await new EventHandlerTransactionRestored().handleEvent(event);
+        result = await new EventHandlerTransactionRestored().handleEvent(event);
         break;
       case 'ACCOUNT_CREATED':
-        result.result = await new EventHandlerAccountCreatedOrUpdated().handleEvent(event);
+        result = await new EventHandlerAccountCreatedOrUpdated().handleEvent(event);
         break;
       case 'ACCOUNT_UPDATED':
-        result.result = await new EventHandlerAccountCreatedOrUpdated().handleEvent(event);
+        result = await new EventHandlerAccountCreatedOrUpdated().handleEvent(event);
         break;
       case 'ACCOUNT_DELETED':
-        result.result = await new EventHandlerAccountDeleted().handleEvent(event);
+        result = await new EventHandlerAccountDeleted().handleEvent(event);
         break;
       case 'GROUP_CREATED':
-        result.result = await new EventHandlerGroupCreatedOrUpdated().handleEvent(event);
+        result = await new EventHandlerGroupCreatedOrUpdated().handleEvent(event);
         break;
       case 'GROUP_UPDATED':
-        result.result = await new EventHandlerGroupCreatedOrUpdated().handleEvent(event);
+        result = await new EventHandlerGroupCreatedOrUpdated().handleEvent(event);
         break;
       case 'GROUP_DELETED':
-        result.result = await new EventHandlerGroupCreatedOrUpdated().handleEvent(event);
+        result = await new EventHandlerGroupCreatedOrUpdated().handleEvent(event);
         break;
       case 'BOOK_UPDATED':
-        result.result = await new EventHandlerBookUpdated().handleEvent(event);
+        result = await new EventHandlerBookUpdated().handleEvent(event);
         break;
 
     }
@@ -98,7 +104,7 @@ async function handleEvent(req: Request, res: Response) {
 
 }
 
-function response(result: any): string {
+function response(result: Result): string {
   const body = JSON.stringify(result, null, 4);
   return body;
 }

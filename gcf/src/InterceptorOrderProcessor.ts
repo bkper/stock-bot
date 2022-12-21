@@ -1,28 +1,29 @@
 import { Account, AccountType, Amount, Book } from "bkper";
+import { Result } from ".";
 import { isStockBook } from "./BotService";
 import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, ORDER_PROP, PRICE_PROP, QUANTITY_PROP, SETTLEMENT_DATE, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
 
 export class InterceptorOrderProcessor {
 
-  async intercept(baseBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {
+  async intercept(baseBook: Book, event: bkper.Event): Promise<Result> {
 
     if (event.agent.id == 'exchange-bot') {
-      return false;
+      return {result: false};
     }
 
     if (isStockBook(baseBook)) {
-      return false;
+      return {result: false};
     }
 
     let operation = event.data.object as bkper.TransactionOperation;
     let transactionPayload = operation.transaction;
 
     if (!transactionPayload.posted) {
-      return false;
+      return {result: false};
     }
 
     if (this.getQuantity(baseBook, transactionPayload) == null) {
-      return false;
+      return {result: false};
     }
 
     if (this.isPurchase(baseBook, transactionPayload)) {
@@ -33,11 +34,11 @@ export class InterceptorOrderProcessor {
       return this.processSale(baseBook, transactionPayload);
     }
 
-    return false;
+    return {result: false};
 
   }
 
-  protected async processSale(baseBook: Book, transactionPayload: bkper.Transaction): Promise<string[]> {
+  protected async processSale(baseBook: Book, transactionPayload: bkper.Transaction): Promise<Result> {
     let exchangeAccount = this.getExchangeAccountOnSale(baseBook, transactionPayload);
     
     let responses: string[] = await Promise.all(
@@ -49,10 +50,10 @@ export class InterceptorOrderProcessor {
 
       responses = responses.filter(r => r != null).filter(r => typeof r === "string")
 
-    return responses;    
+    return {result: responses};    
   }
 
-  protected async processPurchase(baseBook: Book, transactionPayload: bkper.Transaction): Promise<string[]> {
+  protected async processPurchase(baseBook: Book, transactionPayload: bkper.Transaction): Promise<Result> {
     let exchangeAccount = this.getExchangeAccountOnPurchase(baseBook, transactionPayload);
     let responses: string[] = await Promise.all(
       [ 
@@ -61,7 +62,7 @@ export class InterceptorOrderProcessor {
         this.postInstrumentTradeOnPurchase(baseBook, exchangeAccount, transactionPayload)
       ]);    
       responses = responses.filter(r => r != null).filter(r => typeof r === "string")
-    return responses;
+    return {result: responses};
   }
 
   protected isPurchase(baseBook: Book, transactionPayload: bkper.Transaction): boolean {

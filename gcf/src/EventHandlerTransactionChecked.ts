@@ -1,5 +1,6 @@
 import { Account, AccountType, Amount, Book, Transaction } from "bkper";
-import { getStockExchangeCode, getRealizedDateValue } from "./BotService";
+import { Result } from ".";
+import { getRealizedDateValue, getStockExchangeCode } from "./BotService";
 import * as constants from "./constants";
 import { EventHandlerTransaction } from "./EventHandlerTransaction";
 import { InterceptorFlagRebuild } from "./InterceptorFlagRebuild";
@@ -10,7 +11,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
     return `remoteId:${transaction.id}`;
   }
 
-  async intercept(baseBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {
+  async intercept(baseBook: Book, event: bkper.Event): Promise<Result> {
     let response = await new InterceptorFlagRebuild().intercept(baseBook, event);
     return response;
   }

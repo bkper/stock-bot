@@ -1,17 +1,18 @@
 import { Book } from "bkper";
+import { Result } from ".";
 import { flagStockAccountForRebuildIfNeeded, getStockBook } from "./BotService";
 import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, STOCK_BOT_AGENT_ID, STOCK_GAIN_HASHTAG, STOCK_LOSS_HASHTAG, EXCHANGE_GAIN_HASHTAG, EXCHANGE_LOSS_HASHTAG, FX_PREFIX } from "./constants";
 import { InterceptorOrderProcessorDelete } from "./InterceptorOrderProcessorDelete";
 
 export class InterceptorOrderProcessorDeleteFinancial extends InterceptorOrderProcessorDelete {
 
-    async intercept(financialBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {
+    async intercept(financialBook: Book, event: bkper.Event): Promise<Result> {
 
         let operation = event.data.object as bkper.TransactionOperation;
         let transactionPayload = operation.transaction;
 
         if (!transactionPayload.posted) {
-            return false;
+            return {result: false};
         }
 
         let responses: string[] = [];
@@ -44,7 +45,7 @@ export class InterceptorOrderProcessorDeleteFinancial extends InterceptorOrderPr
             }
         }
 
-        return responses.length > 0 ? responses : false;
+        return {result: responses.length > 0 ? responses : false};
     }
 
     private isTransactionStockGainOrLoss(transaction: bkper.Transaction): boolean {

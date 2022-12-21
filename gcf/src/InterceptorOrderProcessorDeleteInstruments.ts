@@ -1,29 +1,30 @@
 import { Account, Book, Transaction } from "bkper";
+import { Result } from ".";
 import { getExchangeCode, getFinancialBook } from "./BotService";
 import { InterceptorOrderProcessorDelete } from "./InterceptorOrderProcessorDelete";
 
 export class InterceptorOrderProcessorDeleteInstruments extends InterceptorOrderProcessorDelete {
 
-    async intercept(stockBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {
+    async intercept(stockBook: Book, event: bkper.Event): Promise<Result> {
 
         let operation = event.data.object as bkper.TransactionOperation;
         let transactionPayload = operation.transaction;
 
         if (!transactionPayload.posted) {
-            return false;
+            return {result: false};
         }
 
         let stockTx = await stockBook.getTransaction(transactionPayload.id);
         let stockAccount = await this.getStockAccount(stockTx);
         if (!stockAccount) {
-            return false;
+            return {result: false};
         }
         let stockExcCode = await getExchangeCode(stockAccount);
         let financialBook = await getFinancialBook(stockBook, stockExcCode);
 
         this.cascadeDelete(financialBook, transactionPayload);
 
-        return `DELETED: ${stockTx.getDateFormatted()} ${stockTx.getAmount()} ${await stockTx.getCreditAccountName()} ${await stockTx.getDebitAccountName()} ${stockTx.getDescription()}`;
+        return {result: `DELETED: ${stockTx.getDateFormatted()} ${stockTx.getAmount()} ${await stockTx.getCreditAccountName()} ${await stockTx.getDebitAccountName()} ${stockTx.getDescription()}`};
     }
 
     async getStockAccount(stockTransaction: Transaction): Promise<Account> {

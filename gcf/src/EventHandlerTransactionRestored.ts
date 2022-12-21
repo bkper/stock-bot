@@ -1,10 +1,11 @@
 import { Book, Transaction } from "bkper";
+import { Result } from ".";
 import { EventHandlerTransaction } from "./EventHandlerTransaction";
 import { InterceptorOrderProcessor } from "./InterceptorOrderProcessor";
 
 export class EventHandlerTransactionRestored extends EventHandlerTransaction {
 
-  async intercept(baseBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {
+  async intercept(baseBook: Book, event: bkper.Event): Promise<Result> {
     return await new InterceptorOrderProcessor().intercept(baseBook, event);
   }
 

@@ -1,4 +1,5 @@
 import { Amount, Book, Transaction } from "bkper";
+import { Result } from ".";
 import { flagStockAccountForRebuildIfNeeded, isPurchase, isSale } from "./BotService";
 import { ORIGINAL_AMOUNT_PROP, ORIGINAL_QUANTITY_PROP, PURCHASE_PRICE_PROP, SALE_PRICE_PROP } from "./constants";
 import { EventHandlerTransaction } from "./EventHandlerTransaction";
@@ -7,7 +8,7 @@ import { InterceptorOrderProcessorDeleteFinancial } from "./InterceptorOrderProc
 
 export class EventHandlerTransactionUpdated extends EventHandlerTransaction {
 
-  async intercept(baseBook: Book, event: bkper.Event): Promise<string[] | string | boolean> {
+  async intercept(baseBook: Book, event: bkper.Event): Promise<Result> {
     await new InterceptorOrderProcessorDeleteFinancial().intercept(baseBook, event);
     return await new InterceptorOrderProcessor().intercept(baseBook, event);
   }

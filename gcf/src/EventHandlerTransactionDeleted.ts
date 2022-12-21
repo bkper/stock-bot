@@ -3,17 +3,18 @@ import { flagStockAccountForRebuildIfNeeded, isStockBook } from "./BotService";
 import { EventHandlerTransaction } from "./EventHandlerTransaction";
 import { InterceptorOrderProcessorDeleteInstruments } from "./InterceptorOrderProcessorDeleteInstruments";
 import { InterceptorOrderProcessorDeleteFinancial } from "./InterceptorOrderProcessorDeleteFinancial";
+import { Result } from ".";
 
 export class EventHandlerTransactionDeleted extends EventHandlerTransaction {
 
-  async intercept(book: Book, event: bkper.Event): Promise<string[] | string | boolean> {
-    let response;
+  async intercept(book: Book, event: bkper.Event): Promise<Result> {
+    let result: Result;
     if (isStockBook(book)) {
-      response = await new InterceptorOrderProcessorDeleteInstruments().intercept(book, event);
+      result = await new InterceptorOrderProcessorDeleteInstruments().intercept(book, event);
     } else {
-      response = await new InterceptorOrderProcessorDeleteFinancial().intercept(book, event);
+      result = await new InterceptorOrderProcessorDeleteFinancial().intercept(book, event);
     }
-    return response;
+    return result;
   }
 
   protected getTransactionQuery(transaction: bkper.Transaction): string {
