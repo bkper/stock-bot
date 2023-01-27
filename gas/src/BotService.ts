@@ -8,6 +8,14 @@ namespace BotService {
         });
     }
 
+    export function getBeforeDateIsoString(book: Bkper.Book, toDateIsoString: string): string {
+        const toDate = book.parseDate(toDateIsoString);
+        let beforeDate = new Date();
+        beforeDate.setTime(toDate.getTime());
+        beforeDate.setDate(beforeDate.getDate() + 1);
+        return Utilities.formatDate(beforeDate, book.getTimeZone(), 'yyyy-MM-dd');
+    }
+
     export function getAccountQuery(stockAccount: StockAccount, full: boolean, beforeDate?: string) {
         let query = `account:'${stockAccount.getName()}'`;
 

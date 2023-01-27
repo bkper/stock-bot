@@ -78,9 +78,9 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   return BotViewService.getBotViewTemplate(bookId, accountId, groupId);
 }
 
-function calculateRealizedResults(bookId: string, accountId: string, autoMtM: boolean, beforeDate: string): Summary {
+function calculateRealizedResults(bookId: string, accountId: string, autoMtM: boolean, toDate: string): Summary {
   if (accountId) {
-    let summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId, autoMtM, beforeDate);
+    let summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId, autoMtM, toDate);
     summary.result = JSON.stringify(summary.result);
     return summary;
   }

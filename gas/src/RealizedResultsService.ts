@@ -6,15 +6,16 @@ namespace RealizedResultsService {
         return resetRealizedResultsForAccount(stockBook, stockAccount, full);
     }
 
-    export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string, autoMtM: boolean, beforeDate: string): Summary {
+    export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string, autoMtM: boolean, toDate: string): Summary {
+
         let stockBook = BkperApp.getBook(stockBookId);
-        if (!beforeDate) {
-            beforeDate = stockBook.formatDate(new Date())
+        if (!toDate) {
+            toDate = stockBook.formatDate(new Date());
         }
 
         let stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
 
-        let historical = stockBook.getProperty(STOCK_HISTORICAL_PROP) && stockBook.getProperty(STOCK_HISTORICAL_PROP).toLowerCase() == 'true' ? true : false
+        let historical = stockBook.getProperty(STOCK_HISTORICAL_PROP) && stockBook.getProperty(STOCK_HISTORICAL_PROP).toLowerCase() == 'true' ? true : false;
 
         let summary: Summary = {
             accountId: stockAccountId,
@@ -33,6 +34,7 @@ namespace RealizedResultsService {
             return summary; //Skip
         }
 
+        const beforeDate = BotService.getBeforeDateIsoString(stockBook, toDate);
         let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, false, beforeDate));
 
         let stockAccountSaleTransactions: Bkper.Transaction[] = [];
@@ -339,7 +341,7 @@ namespace RealizedResultsService {
         let gainTotal = BkperApp.newAmount(0);
         let gainBaseNoFxTotal = BkperApp.newAmount(0);
         let gainBaseWithFxTotal = BkperApp.newAmount(0);
-        
+
         let fwdPurchaseTotal = BkperApp.newAmount(0);
         let fwdSaleTotal = BkperApp.newAmount(0);
 
@@ -388,7 +390,7 @@ namespace RealizedResultsService {
                     gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, fwdPurchaseExcRate, fwdSaleExcRate, shortSale);
                     gainBaseWithFX = BotService.calculateGainBaseWithFX(fwdPurchaseAmount, fwdPurchaseExcRate, fwdSaleAmount, fwdSaleExcRate);
                 }
-                
+
                 if (!shortSale) {
                     purchaseTotal = purchaseTotal.plus(purchaseAmount);
                     saleTotal = saleTotal.plus(saleAmount);
