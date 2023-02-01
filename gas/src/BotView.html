@@ -205,7 +205,7 @@
     disableButtons(true)
     showAllAccountsWaiting()
     await updateAccountsToDateForAll().catch(showError)
-    promiseRun('auditBooks', '<?!= book.id ?>')
+    // promiseRun('auditBooks', '<?!= book.id ?>')
     disableButtons(false)
   }
 
@@ -219,7 +219,7 @@
     disableButtons(true)
     showAllAccountsWaiting()
     await fireRealizedResultsForAll().catch(showError)
-    promiseRun('auditBooks', '<?!= book.id ?>')
+    // promiseRun('auditBooks', '<?!= book.id ?>')
     disableButtons(false)
   }
 
@@ -233,7 +233,7 @@
     disableButtons(true)
     showAllAccountsWaiting()
     await resetRealizedResultsForAll().catch(showError)
-    promiseRun('auditBooks' , '<?!= book.id ?>')
+    // promiseRun('auditBooks' , '<?!= book.id ?>')
     disableButtons(false)
   }
 
@@ -241,7 +241,7 @@
     disableButtons(true)
     showAllAccountsWaiting()
     await fullResetRealizedResultsForAll().catch(showError)
-    promiseRun('auditBooks' , '<?!= book.id ?>')
+    // promiseRun('auditBooks' , '<?!= book.id ?>')
     disableButtons(false)
   }
 

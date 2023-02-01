@@ -108,6 +108,6 @@ function fullResetRealizedResults(bookId: string, accountId: string): Summary {
   }
 }
 
-function auditBooks(bookId: string) {
-  //BotService.auditBooks(bookId);
-}
+// function auditBooks(bookId: string) {
+//   BotService.auditBooks(bookId);
+// }
