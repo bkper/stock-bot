@@ -89,7 +89,7 @@
         color: red;
       }
 
-      .success-icon {
+      .success-icon, .error-icon {
         margin-right: 5px;
       }
 
@@ -263,7 +263,11 @@
   }
 
   function hideAccountWaiting(summary) {
-    document.getElementById(`result-${summary.accountId}`).innerHTML = `<img class='success-icon' src='https://storage.googleapis.com/bkper-public/addons/check.png'>Done!</img>` + ' ' + summary.result;
+    if (summary.result.indexOf('Cannot') >= 0) {
+      document.getElementById(`result-${summary.accountId}`).innerHTML = `<img class='error-icon' src='https://storage.googleapis.com/bkper-public/addons/error.png'>Error:</img>` + ' ' + summary.result;
+    } else {
+      document.getElementById(`result-${summary.accountId}`).innerHTML = `<img class='success-icon' src='https://storage.googleapis.com/bkper-public/addons/check.png'>Done!</img>` + ' ' + summary.result;
+    }
   }
 
   // using promises instead
