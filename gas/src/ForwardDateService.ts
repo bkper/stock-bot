@@ -3,24 +3,28 @@ namespace ForwardDateService {
     export function forwardDate(stockBookId: string, stockAccountId: string, date: string): Summary {
         const stockBook = BkperApp.getBook(stockBookId);
         const stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
-        // let forwardedDateValue = stockAccount.getForwardedDateValue();
-        // let dateValue = +(date.replaceAll('-', ''));
-        // if (forwardedDateValue && dateValue == forwardedDateValue) {
-        //     return {
-        //         accountId: stockAccountId,
-        //         result: `Cannot set forward date: forwarded date is already ${date}`
-        //     }
-        // } else if (forwardedDateValue && dateValue < forwardedDateValue) {
-        //     if (!isUserBookOwner(stockBook)) {
-        //         throw `Cannot fix forward date: user must be book owner`;
-        //     }
-        //     if (!isCollectionUnlocked(stockBook)) {
-        //         throw `Cannot fix forward date: collection has locked/closed book(s)`;
-        //     }
-        //     return fixAndForwardDateForAccount(stockBook, stockAccount, date);
-        // } else {
+        let forwardedDateValue = stockAccount.getForwardedDateValue();
+        let dateValue = +(date.replaceAll('-', ''));
+        if (forwardedDateValue && dateValue == forwardedDateValue) {
+            return {
+                accountId: stockAccountId,
+                result: `Cannot set forward date: forwarded date is already ${date}`
+            }
+        } else if (forwardedDateValue && dateValue < forwardedDateValue) {
+            return {
+                accountId: stockAccountId,
+                result: `Cannot set forward date: new date is lower than current forwarded date`
+            }
+            // if (!isUserBookOwner(stockBook)) {
+            //     throw `Cannot fix forward date: user must be book owner`;
+            // }
+            // if (!isCollectionUnlocked(stockBook)) {
+            //     throw `Cannot fix forward date: collection has locked/closed book(s)`;
+            // }
+            // return fixAndForwardDateForAccount(stockBook, stockAccount, date);
+        } else {
             return forwardDateForAccount(stockBook, stockAccount, date, false);
-        // }
+        }
     }
 
     // function fixAndForwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, forwardDate: string): Summary {
@@ -93,20 +97,20 @@ namespace ForwardDateService {
         let baseBookBalancesReport = baseBook.getBalancesReport(`account:'${stockAccount.getName()}' on:${baseBook.formatDate(closingDate)}`);
         let financialBookBalancesReport = financialBook.getBalancesReport(`account:'${stockAccount.getName()}' on:${financialBook.formatDate(closingDate)}`);
 
-        // let needToRecordLiquidationTx = true;
+        let needToRecordLiquidationTx = true;
 
         // Open amount from Base Book
         const openAmountBase = baseBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
         // Open amount from Local Book
         const openAmountLocal = financialBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
         // Open quantity from Stock Book
-        const openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
-        // if (openQuantity.eq(0) && fixingForward) {
-        //     openQuantity = tryOpenQuantityFromLiquidationTx(stockBook, stockAccount, closingDateISO);
-        //     if (!openQuantity.eq(0)) {
-        //         needToRecordLiquidationTx = false;
-        //     }
-        // }
+        let openQuantity = stockBookBalancesReport.getBalancesContainer(stockAccount.getName()).getCumulativeBalanceRaw();
+        if (openQuantity.eq(0) && fixingForward) {
+            openQuantity = tryOpenQuantityFromLiquidationTx(stockBook, stockAccount, closingDateISO);
+            if (!openQuantity.eq(0)) {
+                needToRecordLiquidationTx = false;
+            }
+        }
         // Current price
         const fwdPrice = !openQuantity.eq(0) ? openAmountLocal.div(openQuantity) : undefined;
         // Current exchange rate
@@ -124,38 +128,35 @@ namespace ForwardDateService {
 
         transactions = transactions.sort(BotService.compareToFIFO);
         
-        // let logTransactionsIds: string[] = [];
-        // let transactionsToCheck: Bkper.Transaction[] = [];
+        let logTransactionsIds: string[] = [];
+        let transactionsToCheck: Bkper.Transaction[] = [];
         let order = -transactions.length;
 
         for (const transaction of transactions) {
 
-            // // Post copy of transaction in order to keep a forward history
-            // let logTransaction = buildLogTransaction(stockBook, transaction).post();
+            // Post copy of transaction in order to keep a forward history
+            let logTransaction = buildLogTransaction(stockBook, transaction).post();
 
-            // // Forward transaction
-            // forwardTransaction(transaction, logTransaction, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, forwardDate, order);
+            // Forward transaction
+            forwardTransaction(transaction, logTransaction, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, forwardDate, order);
 
-            // CURRENT WAY
-            forwardTransaction(transaction, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, forwardDate, order);
-
-            // logTransactionsIds.push(logTransaction.getId());
-            // transactionsToCheck.push(logTransaction);
+            logTransactionsIds.push(logTransaction.getId());
+            transactionsToCheck.push(logTransaction);
             order++;
         }
 
-        // // Record new transaction liquidating the logs
-        // if (needToRecordLiquidationTx && !openQuantity.eq(0)) {
-        //     let liquidationTransaction = buildLiquidationTransaction(stockBook, stockAccount, openQuantity, closingDate, forwardDate);
-        //     liquidationTransaction
-        //         .setProperty(FWD_LIQUIDATION_PROP, JSON.stringify(logTransactionsIds))
-        //         .post()
-        //     ;
-        //     transactionsToCheck.push(liquidationTransaction);
-        // }
+        // Record new transaction liquidating the logs
+        if (needToRecordLiquidationTx && !openQuantity.eq(0)) {
+            let liquidationTransaction = buildLiquidationTransaction(stockBook, stockAccount, openQuantity, closingDate, forwardDate);
+            liquidationTransaction
+                .setProperty(FWD_LIQUIDATION_PROP, JSON.stringify(logTransactionsIds))
+                .post()
+            ;
+            transactionsToCheck.push(liquidationTransaction);
+        }
 
-        // // Check logs and liquidation transaction
-        // stockBook.batchCheckTransactions(transactionsToCheck);
+        // Check logs and liquidation transaction
+        stockBook.batchCheckTransactions(transactionsToCheck);
 
         // Update stock account
         updateStockAccount(stockAccount, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, forwardDate);
@@ -177,7 +178,7 @@ namespace ForwardDateService {
 
     }
 
-    function forwardTransaction(transaction: Bkper.Transaction, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, forwardDate: string, order: number): void {
+    function forwardTransaction(transaction: Bkper.Transaction, logTransaction: Bkper.Transaction, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, forwardDate: string, order: number): void {
         if (!transaction.getProperty(DATE_PROP)) {
             transaction.setProperty(DATE_PROP, transaction.getDate());
         }
@@ -203,7 +204,7 @@ namespace ForwardDateService {
             .deleteProperty(ORIGINAL_AMOUNT_PROP)
             .setProperty(ORIGINAL_QUANTITY_PROP, transaction.getAmount().toString())
             .setProperty(ORDER_PROP, order + '')
-            // .setProperty(FWD_LOG_PROP, logTransaction.getId())
+            .setProperty(FWD_LOG_PROP, logTransaction.getId())
             .setDate(forwardDate)
             .update()
         ;

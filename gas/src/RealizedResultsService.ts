@@ -79,13 +79,12 @@ namespace RealizedResultsService {
 
     export function resetRealizedResultsForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, full: boolean, resetIterator?: Bkper.TransactionIterator): Summary {
 
-        // let iterator: Bkper.TransactionIterator;
-        // if (resetIterator) {
-        //     iterator = resetIterator;
-        // } else {
-        //     iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, full));
-        // }
-        let iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, full));
+        let iterator: Bkper.TransactionIterator;
+        if (resetIterator) {
+            iterator = resetIterator;
+        } else {
+            iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, full));
+        }
 
         let stockAccountSaleTransactions: Bkper.Transaction[] = [];
         let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
@@ -112,13 +111,13 @@ namespace RealizedResultsService {
                 tx = tx.uncheck();
             }
 
-            // // Forward logs & liquidation transaction
-            // if (tx.getProperty(FWD_TX_PROP) || tx.getProperty(FWD_LIQUIDATION_PROP)) {
-            //     tx.trash();
-            //     continue;
-            // }
-
             if (tx.getAgentId() == 'stock-bot') {
+
+                // Forward logs & liquidation transaction
+                if (tx.getProperty(FWD_TX_PROP) || tx.getProperty(FWD_LIQUIDATION_PROP)) {
+                    tx.trash();
+                    continue;
+                }
 
                 let i = financialBook.getTransactions(`remoteId:${tx.getId()}`);
                 while (i.hasNext()) {
@@ -166,7 +165,7 @@ namespace RealizedResultsService {
                         .deleteProperty(FWD_SALE_PRICE_PROP)
                         .deleteProperty(FWD_PURCHASE_EXC_RATE_PROP)
                         .deleteProperty(FWD_SALE_EXC_RATE_PROP)
-                        // .deleteProperty(FWD_LOG_PROP)
+                        .deleteProperty(FWD_LOG_PROP)
                     ;
                 }
 
