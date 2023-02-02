@@ -205,4 +205,29 @@ namespace BotService {
         return accounts;
     }
 
+    export function isAccountGoodForForward(stockBookId: string, stockAccountId: string, forwardDate: string): boolean {
+
+        const stockBook = BkperApp.getBook(stockBookId);
+        const stockAccount = stockBook.getAccount(stockAccountId);
+
+        let validationAccount = new ValidationAccount(stockAccount);
+
+        const iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' before:${forwardDate} is:unchecked`);
+        while (iterator.hasNext()) {
+            if (validationAccount.hasUncalculatedResults()) {
+                return false;
+            }
+            const batch = iterator.next();
+            const contraAccount = batch.getCreditAccount().isPermanent() ? batch.getDebitAccount() : batch.getCreditAccount();
+            if (contraAccount.getName() == BUY_ACCOUNT_NAME) {
+                validationAccount.pushUncheckedPurchase(batch);
+            }
+            if (contraAccount.getName() == SELL_ACCOUNT_NAME) {
+                validationAccount.pushUncheckedSale(batch);
+            }
+        }
+
+        return validationAccount.hasUncalculatedResults() ? false : true;
+    }
+
 }

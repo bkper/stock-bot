@@ -88,7 +88,12 @@ function calculateRealizedResults(bookId: string, accountId: string, autoMtM: bo
 
 function updateAccountsToDate(bookId: string, accountId: string, date: string): Summary {
   if (accountId) {
-    let summary = ForwardDateService.forwardDate(bookId, accountId, date);
+    let summary: Summary;
+    if (!BotService.isAccountGoodForForward(bookId, accountId, date)) {
+      summary = { accountId: accountId, result: `Cannot set forward date: account has uncalculated results` };
+    } else {
+      summary = ForwardDateService.forwardDate(bookId, accountId, date);
+    }
     summary.result = JSON.stringify(summary.result);
     return summary;
   }
