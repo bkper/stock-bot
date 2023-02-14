@@ -212,12 +212,15 @@ namespace BotService {
 
         let validationAccount = new ValidationAccount(stockAccount);
 
-        const iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' before:${forwardDate} is:unchecked`);
+        const iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' before:${forwardDate}`);
         while (iterator.hasNext()) {
             if (validationAccount.hasUncalculatedResults()) {
                 return false;
             }
             const batch = iterator.next();
+            if (batch.isChecked()) {
+                continue;
+            }
             const contraAccount = batch.getCreditAccount().isPermanent() ? batch.getDebitAccount() : batch.getCreditAccount();
             if (contraAccount.getName() == BUY_ACCOUNT_NAME) {
                 validationAccount.pushUncheckedPurchase(batch);
