@@ -29,7 +29,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
     let quantity = this.getQuantity(stockBook, transaction);
     if (quantity == null || quantity.eq(0)) {
-      return null;
+      return `Quantity is not valid: ${transaction.description}`;
     }
 
     const originalAmount = new Amount(transaction.amount);
@@ -97,8 +97,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
 
     }
 
-
-    return null;
+    return `Stock account not found: ${transaction.description}`;
 
   }
 
