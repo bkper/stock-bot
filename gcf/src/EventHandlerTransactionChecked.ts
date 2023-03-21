@@ -23,42 +23,42 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
   }
 
   protected async connectedTransactionNotFound(financialBook: Book, stockBook: Book, transaction: bkper.Transaction, stockExcCode: string): Promise<string> {
+
     let financialCreditAccount = transaction.creditAccount;
     let financialDebitAccount = transaction.debitAccount;
     let stockBookAnchor = super.buildBookAnchor(stockBook);
 
     let quantity = this.getQuantity(stockBook, transaction);
     if (quantity == null || quantity.eq(0)) {
-      return `Quantity is not valid: ${transaction.description}`;
+      return `Quantity is not valid: ${transaction.dateFormatted} ${transaction.amount} ${transaction.description}`;
     }
 
     const originalAmount = new Amount(transaction.amount);
-
-    let price = originalAmount.div(quantity);
+    const price = originalAmount.div(quantity);
 
     let stockAccount = await this.getConnectedStockAccount(financialBook, stockBook, financialCreditAccount);
 
-    
     if (stockAccount) {
-      //Selling
+      // Selling
       let stockSellAccount = await stockBook.getAccount(constants.STOCK_SELL_ACCOUNT_NAME);
       if (stockSellAccount == null) {
         stockSellAccount = await stockBook.newAccount().setName(constants.STOCK_SELL_ACCOUNT_NAME).setType(AccountType.OUTGOING).create();
       }
 
       let newTransaction = await stockBook.newTransaction()
-      .setDate(transaction.date)
-      .setAmount(quantity)
-      .setCreditAccount(stockAccount)
-      .setDebitAccount(stockSellAccount)
-      .setDescription(transaction.description)
-      .addRemoteId(transaction.id)
-      .setProperty(constants.SALE_PRICE_PROP, price.toString())
-      .setProperty(constants.ORDER_PROP, transaction.properties[constants.ORDER_PROP])
-      .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
-      .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
-      .setProperty(constants.STOCK_EXC_CODE_PROP, stockExcCode)
-      .post()
+        .setDate(transaction.date)
+        .setAmount(quantity)
+        .setCreditAccount(stockAccount)
+        .setDebitAccount(stockSellAccount)
+        .setDescription(transaction.description)
+        .addRemoteId(transaction.id)
+        .setProperty(constants.SALE_PRICE_PROP, price.toString())
+        .setProperty(constants.ORDER_PROP, transaction.properties[constants.ORDER_PROP])
+        .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
+        .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
+        .setProperty(constants.STOCK_EXC_CODE_PROP, stockExcCode)
+        .post()
+      ;
 
       this.checkLastTxDate(stockAccount, transaction);
 
@@ -66,39 +66,38 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
       return `SELL: ${stockBookAnchor}: ${record}`;
 
     } else {
+
       stockAccount = await this.getConnectedStockAccount(financialBook, stockBook, financialDebitAccount);
       if (stockAccount) {
-
-        //Buying
+        // Buying
         let stockBuyAccount = await stockBook.getAccount(constants.STOCK_BUY_ACCOUNT_NAME);
         if (stockBuyAccount == null) {
           stockBuyAccount = await stockBook.newAccount().setName(constants.STOCK_BUY_ACCOUNT_NAME).setType(AccountType.INCOMING).create();
-        }        
+        }
 
         let newTransaction = await stockBook.newTransaction()
-        .setDate(transaction.date)
-        .setAmount(quantity)
-        .setCreditAccount(stockBuyAccount)
-        .setDebitAccount(stockAccount)
-        .setDescription(transaction.description)
-        .addRemoteId(transaction.id)
-        .setProperty(constants.PURCHASE_PRICE_PROP, price.toString())
-        .setProperty(constants.ORDER_PROP, transaction.properties[constants.ORDER_PROP])
-        .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
-        .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
-        .setProperty(constants.STOCK_EXC_CODE_PROP, stockExcCode)
-        .post()
+          .setDate(transaction.date)
+          .setAmount(quantity)
+          .setCreditAccount(stockBuyAccount)
+          .setDebitAccount(stockAccount)
+          .setDescription(transaction.description)
+          .addRemoteId(transaction.id)
+          .setProperty(constants.PURCHASE_PRICE_PROP, price.toString())
+          .setProperty(constants.ORDER_PROP, transaction.properties[constants.ORDER_PROP])
+          .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
+          .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
+          .setProperty(constants.STOCK_EXC_CODE_PROP, stockExcCode)
+          .post()
+        ;
 
         this.checkLastTxDate(stockAccount, transaction);
 
         let record = `${newTransaction.getDate()} ${newTransaction.getAmount()} ${stockBuyAccount.getName()} ${stockAccount.getName()} ${newTransaction.getDescription()}`;
         return `BUY: ${stockBookAnchor}: ${record}`;
       }
-
     }
 
-    return `Stock account not found: ${transaction.description}`;
-
+    return `Stock account not found: ${transaction.dateFormatted} ${transaction.amount} ${transaction.description}`;
   }
 
   private checkLastTxDate(stockAccount: Account, transaction: bkper.Transaction) {
@@ -128,7 +127,8 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
                   .setHidden(financialGroup.hidden)
                   .setName(financialGroup.name)
                   .setProperties(financialGroup.properties)
-                  .create();
+                  .create()
+                ;
               }
               stockAccount.addGroup(stockGroup);
             }

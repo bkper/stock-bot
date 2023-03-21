@@ -20,38 +20,39 @@ export class EventHandlerTransactionUpdated extends EventHandlerTransaction {
   protected connectedTransactionNotFound(financialBook: Book, stockBook: Book, financialTransaction: bkper.Transaction, stockExcCode: string): Promise<string> {
     return null;
   }
+
   protected async connectedTransactionFound(financialBook: Book, stockBook: Book, financialTransaction: bkper.Transaction, stockTransaction: Transaction, stockExcCode: string): Promise<string> {
 
     if (!financialTransaction.posted) {
-      return `Transaction is not posted: ${financialTransaction.description}`;
+      return `Transaction is not posted: ${financialTransaction.dateFormatted} ${financialTransaction.amount} ${financialTransaction.description}`;
     }
 
     let quantity = this.getQuantity(stockBook, financialTransaction);
     if (quantity == null || quantity.eq(0)) {
-      return `Quantity is not valid: ${financialTransaction.description}`;
+      return `Quantity is not valid: ${financialTransaction.dateFormatted} ${financialTransaction.amount} ${financialTransaction.description}`;
     }
 
     if (stockTransaction.isChecked()) {
       stockTransaction.uncheck();
     }
 
-    let price = new Amount(financialTransaction.amount).div(quantity);
-    
+    const price = new Amount(financialTransaction.amount).div(quantity);
     const originalAmount = new Amount(financialTransaction.amount);
 
-    stockTransaction.setDate(financialTransaction.date)
-    .setAmount(quantity)
-    .setDescription(financialTransaction.description)
-    .setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(stockBook.getFractionDigits()))
-    .setProperty(ORIGINAL_AMOUNT_PROP, originalAmount.toString())
+    stockTransaction
+      .setDate(financialTransaction.date)
+      .setAmount(quantity)
+      .setDescription(financialTransaction.description)
+      .setProperty(ORIGINAL_QUANTITY_PROP, quantity.toFixed(stockBook.getFractionDigits()))
+      .setProperty(ORIGINAL_AMOUNT_PROP, originalAmount.toString())
     ;
 
     if (await isPurchase(stockTransaction)) {
-      stockTransaction.setProperty(PURCHASE_PRICE_PROP, price.toString())
+      stockTransaction.setProperty(PURCHASE_PRICE_PROP, price.toString());
     }
 
     if (await isSale(stockTransaction)) {
-      stockTransaction.setProperty(SALE_PRICE_PROP, price.toString())
+      stockTransaction.setProperty(SALE_PRICE_PROP, price.toString());
     }
 
     try {

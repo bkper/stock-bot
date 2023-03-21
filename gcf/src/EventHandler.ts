@@ -11,6 +11,7 @@ export abstract class EventHandler {
   }
 
   async handleEvent(event: bkper.Event): Promise<Result> {
+
     let baseBook = new Book(event.book);
 
     let interceptionResponse = await this.intercept(baseBook, event);
@@ -18,10 +19,11 @@ export abstract class EventHandler {
       return interceptionResponse;
     }
     let responses: string[] = [];
+
     let stockBook = getStockBook(baseBook);
 
     const logtag = `Handling ${event.type} event on book ${baseBook.getName()} from user ${event.user.username}`;
-    console.time(logtag)
+    console.time(logtag);
 
     if (stockBook) {
       let response = await this.processObject(baseBook, stockBook, event);
@@ -29,19 +31,17 @@ export abstract class EventHandler {
         responses.push(response);
       }
     } else {
-      return {result: 'No book with 0 decimal places found in the collection'}
+      return { result: 'No book with 0 decimal places found in the collection' };
     }
 
-    console.timeEnd(logtag)
+    console.timeEnd(logtag);
 
     if (responses.length == 0) {
-      return {result: false};
+      return { result: `No responses returned` };
     }
 
-    return {result: responses};
+    return { result: responses };
   }
-
-
 
   protected matchStockExchange(stockExcCode: string, excCode: string): boolean {
     if (stockExcCode == null || stockExcCode.trim() == '') {
@@ -52,7 +52,7 @@ export abstract class EventHandler {
       return false;
     }
     return true;
-  }  
+  }
 
   protected buildBookAnchor(book: Book) {
     return `<a href='https://app.bkper.com/b/#transactions:bookId=${book.getId()}'>${book.getName()}</a>`;
