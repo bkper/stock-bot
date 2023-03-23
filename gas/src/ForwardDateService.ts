@@ -11,64 +11,60 @@ namespace ForwardDateService {
                 result: `Cannot set forward date: forwarded date is already ${date}`
             }
         } else if (forwardedDateValue && dateValue < forwardedDateValue) {
-            return {
-                accountId: stockAccountId,
-                result: `Cannot set forward date: new date is lower than current forwarded date`
+            if (!isUserBookOwner(stockBook)) {
+                throw `Cannot fix forward date: user must be book owner`;
             }
-            // if (!isUserBookOwner(stockBook)) {
-            //     throw `Cannot fix forward date: user must be book owner`;
-            // }
-            // if (!isCollectionUnlocked(stockBook)) {
-            //     throw `Cannot fix forward date: collection has locked/closed book(s)`;
-            // }
-            // return fixAndForwardDateForAccount(stockBook, stockAccount, date);
+            if (!isCollectionUnlocked(stockBook)) {
+                throw `Cannot fix forward date: collection has locked/closed book(s)`;
+            }
+            return fixAndForwardDateForAccount(stockBook, stockAccount, date);
         } else {
             return forwardDateForAccount(stockBook, stockAccount, date, false);
         }
     }
 
-    // function fixAndForwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, forwardDate: string): Summary {
+    function fixAndForwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, forwardDate: string): Summary {
 
-    //     // Reset results up to current forwarded date
-    //     RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false);
+        // Reset results up to current forwarded date
+        RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false);
 
-    //     // Fix previous forward
-    //     let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${stockAccount.getForwardedDate()}`);
-    //     let forwardedTransactions: Bkper.Transaction[] = [];
-    //     while (iterator.hasNext()) {
-    //         const tx = iterator.next();
-    //         if (tx.getProperty(FWD_LOG_PROP)) {
-    //             forwardedTransactions.push(tx);
-    //         }
-    //     }
-    //     for (const transaction of forwardedTransactions) {
-    //         // Get forwarded transaction previous state
-    //         let previousStateTx = getForwardedTransactionPreviousState(stockBook, stockAccount, transaction, forwardDate);
-    //         // Return forwarded transaction to previous state
-    //         transaction
-    //             .setDate(previousStateTx.getDate())
-    //             .setProperties(previousStateTx.getProperties())
-    //             .deleteProperty(FWD_TX_PROP)
-    //             .deleteProperty(FWD_TX_REMOTE_IDS_PROP)
-    //             .update()
-    //         ;
-    //         stockAccount.pushTrash(previousStateTx);
-    //     }
-    //     // Delete unnecessary transactions
-    //     stockAccount.cleanTrash();
+        // Fix previous forward
+        let iterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${stockAccount.getForwardedDate()}`);
+        let forwardedTransactions: Bkper.Transaction[] = [];
+        while (iterator.hasNext()) {
+            const tx = iterator.next();
+            if (tx.getProperty(FWD_LOG_PROP)) {
+                forwardedTransactions.push(tx);
+            }
+        }
+        for (const transaction of forwardedTransactions) {
+            // Get forwarded transaction previous state
+            let previousStateTx = getForwardedTransactionPreviousState(stockBook, stockAccount, transaction, forwardDate);
+            // Return forwarded transaction to previous state
+            transaction
+                .setDate(previousStateTx.getDate())
+                .setProperties(previousStateTx.getProperties())
+                .deleteProperty(FWD_TX_PROP)
+                .deleteProperty(FWD_TX_REMOTE_IDS_PROP)
+                .update()
+            ;
+            stockAccount.pushTrash(previousStateTx);
+        }
+        // Delete unnecessary transactions
+        stockAccount.cleanTrash();
 
-    //     // Reset results up to new forward date
-    //     const resetIterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${forwardDate}`);
-    //     RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false, resetIterator);
+        // Reset results up to new forward date
+        const resetIterator = stockBook.getTransactions(`account:'${stockAccount.getName()}' after:${forwardDate}`);
+        RealizedResultsService.resetRealizedResultsForAccount(stockBook, stockAccount, false, resetIterator);
 
-    //     // Set new forward date
-    //     const newForward = forwardDateForAccount(stockBook, stockAccount, forwardDate, true);
+        // Set new forward date
+        const newForward = forwardDateForAccount(stockBook, stockAccount, forwardDate, true);
 
-    //     return {
-    //         accountId: stockAccount.getId(),
-    //         result: `${forwardedTransactions.length} fixed and ${newForward.result}`
-    //     }
-    // }
+        return {
+            accountId: stockAccount.getId(),
+            result: `${forwardedTransactions.length} fixed and ${newForward.result}`
+        }
+    }
 
     function forwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, forwardDate: string, fixingForward: boolean): Summary {
 
