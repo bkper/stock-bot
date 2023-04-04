@@ -754,45 +754,37 @@ namespace RealizedResultsService {
         gain: Bkper.Amount
     ): void {
 
-        if (gain.round(financialBook.getFractionDigits()).eq(0)) {
-            return;
-        }
-
         const date = transaction.getProperty(DATE_PROP) ? stockBook.parseDate(transaction.getProperty(DATE_PROP)) : transaction.getDateObject();
-
-
-        let total_quantity = getAccountBalance(stockBook, stockAccount, date);
+        let totalQuantity = getAccountBalance(stockBook, stockAccount, date);
         let financialInstrument = financialBook.getAccount(stockAccount.getName());
         let balance = getAccountBalance(financialBook, financialInstrument, date);
-        let newBalance = total_quantity.times(price);
+        let newBalance = totalQuantity.times(price);
 
         let amount = newBalance.minus(balance);
-
-
         if (amount.round(financialBook.getFractionDigits()).gt(0)) {
-
             financialBook.newTransaction()
                 .setDate(date)
                 .setAmount(amount)
                 .setDescription(`#mtm`)
                 .setProperty(PRICE_PROP, financialBook.formatAmount(price))
-                .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(stockBook.getFractionDigits()))
+                .setProperty(OPEN_QUANTITY_PROP, totalQuantity.toFixed(stockBook.getFractionDigits()))
                 .from(unrealizedAccount)
                 .to(financialInstrument)
                 .addRemoteId(`mtm_${transaction.getId()}`)
-                .post().check();
-
+                .post().check()
+            ;
         } else if (amount.round(financialBook.getFractionDigits()).lt(0)) {
             financialBook.newTransaction()
                 .setDate(date)
                 .setAmount(amount)
                 .setDescription(`#mtm`)
                 .setProperty(PRICE_PROP, financialBook.formatAmount(price))
-                .setProperty(OPEN_QUANTITY_PROP, total_quantity.toFixed(stockBook.getFractionDigits()))
+                .setProperty(OPEN_QUANTITY_PROP, totalQuantity.toFixed(stockBook.getFractionDigits()))
                 .from(financialInstrument)
                 .to(unrealizedAccount)
                 .addRemoteId(`mtm_${transaction.getId()}`)
-                .post().check();
+                .post().check()
+            ;
         }
     }
 
@@ -804,8 +796,6 @@ namespace RealizedResultsService {
         }
         return containers[0].getCumulativeBalance();
     }
-
-
 
     function getAccountGroups(book: Bkper.Book, gainLossSuffix: string): Set<Bkper.Group> {
         let accountNames = new Set<string>();
