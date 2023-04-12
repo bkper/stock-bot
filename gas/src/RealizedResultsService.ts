@@ -64,7 +64,9 @@ namespace RealizedResultsService {
         const baseBook = BotService.getBaseBook(financialBook);
 
         for (const saleTransaction of stockAccountSaleTransactions) {
-            processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM, historical);
+            if (stockAccountPurchaseTransactions.length > 0) {
+                processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM, historical);
+            }
         }
 
         // Check & record exchange rates if missing
