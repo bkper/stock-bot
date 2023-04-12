@@ -16,6 +16,19 @@ namespace BotService {
         return Utilities.formatDate(beforeDate, book.getTimeZone(), 'yyyy-MM-dd');
     }
 
+    function parseDateParam(dateParam: string): Date {
+        var dateSplit = dateParam.split('-');
+        let year = new Number(dateSplit[0]).valueOf();
+        let month = new Number(dateSplit[1]).valueOf() - 1;
+        let day = new Number(dateSplit[2]).valueOf();
+        var date = new Date(year, month, day, 13, 0, 0, 0);
+        return date;
+    }
+
+    export function formatDate(date: string, timeZone: string, format: string): string {
+        return Utilities.formatDate(parseDateParam(date), timeZone, format);
+    }
+
     export function getAccountQuery(stockAccount: StockAccount, full: boolean, beforeDate?: string) {
         let query = `account:'${stockAccount.getName()}'`;
 

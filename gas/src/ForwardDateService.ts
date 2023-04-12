@@ -13,19 +13,19 @@ namespace ForwardDateService {
         // Current forwarded date
         const forwardedDateValue = stockAccount.getForwardedDateValue();
 
-        // Do not allow forward if new date is equal or below the current realized date
-        if (realizedDateValue && dateValue <= realizedDateValue) {
-            return {
-                accountId: stockAccountId,
-                result: `Cannot set forward date: account has realized results up to ${stockAccount.getRealizedDate()}`
-            }
-        }
-
         // Do not allow forward if new date is equal the current forwarded date
         if (forwardedDateValue && dateValue === forwardedDateValue) {
             return {
                 accountId: stockAccountId,
-                result: `Cannot set forward date: account forwarded date is already ${stockAccount.getForwardedDate()}`
+                result: `Cannot set forward date: account forwarded date is already ${BotService.formatDate(stockAccount.getForwardedDate(), stockBook.getTimeZone(), stockBook.getDatePattern())}`
+            }
+        }
+
+        // Do not allow forward if new date is equal or below the current realized date
+        if (realizedDateValue && dateValue <= realizedDateValue) {
+            return {
+                accountId: stockAccountId,
+                result: `Cannot set forward date: account has realized results up to ${BotService.formatDate(stockAccount.getRealizedDate(), stockBook.getTimeZone(), stockBook.getDatePattern())}`
             }
         }
 
@@ -185,12 +185,12 @@ namespace ForwardDateService {
             stockBook.setClosingDate(closingDateISO).update();
             return {
                 accountId: stockAccount.getId(),
-                result: `${transactions.length} forwarded to ${forwardDate} and book closed on ${stockBook.formatDate(closingDate)}`
+                result: `${transactions.length} forwarded to ${BotService.formatDate(forwardDate, stockBook.getTimeZone(), stockBook.getDatePattern())} and book closed on ${stockBook.formatDate(closingDate)}`
             }
         } else {
             return {
                 accountId: stockAccount.getId(),
-                result: `${transactions.length} forwarded to ${forwardDate}`
+                result: `${transactions.length} forwarded to ${BotService.formatDate(forwardDate, stockBook.getTimeZone(), stockBook.getDatePattern())}`
             }
         }
 
