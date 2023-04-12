@@ -21,22 +21,28 @@ namespace ForwardDateService {
             }
         }
 
-        if (forwardedDateValue && dateValue == forwardedDateValue) {
+        // Do not allow forward if new date is equal the current forwarded date
+        if (forwardedDateValue && dateValue === forwardedDateValue) {
             return {
                 accountId: stockAccountId,
-                result: `Cannot set forward date: forwarded date is already ${date}`
+                result: `Cannot set forward date: account forwarded date is already ${stockAccount.getForwardedDate()}`
             }
-        } else if (forwardedDateValue && dateValue < forwardedDateValue) {
+        }
+
+        // Forward fix: allow only if the conditions are met
+        if (forwardedDateValue && dateValue < forwardedDateValue) {
             if (!isUserBookOwner(stockBook)) {
-                throw `Cannot fix forward date: user must be book owner`;
+                throw `Cannot lower forward date: user must be book owner`;
             }
             if (!isCollectionUnlocked(stockBook)) {
-                throw `Cannot fix forward date: collection has locked/closed book(s)`;
+                throw `Cannot lower forward date: collection has locked/closed book(s)`;
             }
             return fixAndForwardDateForAccount(stockBook, stockAccount, date);
-        } else {
-            return forwardDateForAccount(stockBook, stockAccount, date, false);
         }
+
+        // Regular forward
+        return forwardDateForAccount(stockBook, stockAccount, date, false);
+
     }
 
     function fixAndForwardDateForAccount(stockBook: Bkper.Book, stockAccount: StockAccount, forwardDate: string): Summary {
