@@ -1,10 +1,26 @@
 namespace ForwardDateService {
 
     export function forwardDate(stockBookId: string, stockAccountId: string, date: string): Summary {
+
         const stockBook = BkperApp.getBook(stockBookId);
         const stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
-        let forwardedDateValue = stockAccount.getForwardedDateValue();
-        let dateValue = +(date.replaceAll('-', ''));
+
+        // New forward date
+        const dateValue = +(date.replaceAll('-', ''));
+
+        // Current realized date
+        const realizedDateValue = stockAccount.getRealizedDateValue();
+        // Current forwarded date
+        const forwardedDateValue = stockAccount.getForwardedDateValue();
+
+        // Do not allow forward if new date is equal or below the current realized date
+        if (realizedDateValue && dateValue <= realizedDateValue) {
+            return {
+                accountId: stockAccountId,
+                result: `Cannot set forward date: account has realized results up to ${stockAccount.getRealizedDate()}`
+            }
+        }
+
         if (forwardedDateValue && dateValue == forwardedDateValue) {
             return {
                 accountId: stockAccountId,
