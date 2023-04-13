@@ -218,6 +218,22 @@ namespace BotService {
         return accounts;
     }
 
+    export function getBuyAccount(book: Bkper.Book): Bkper.Account {
+        let account = book.getAccount(BUY_ACCOUNT_NAME);
+        if (!account) {
+            account = book.newAccount().setName(BUY_ACCOUNT_NAME).setType(BkperApp.AccountType.INCOMING).create();
+        }
+        return account;
+    }
+
+    export function getSellAccount(book: Bkper.Book): Bkper.Account {
+        let account = book.getAccount(SELL_ACCOUNT_NAME);
+        if (!account) {
+            account = book.newAccount().setName(SELL_ACCOUNT_NAME).setType(BkperApp.AccountType.OUTGOING).create();
+        }
+        return account;
+    }
+
     export function isAccountGoodForForward(stockBookId: string, stockAccountId: string, forwardDate: string): boolean {
 
         const stockBook = BkperApp.getBook(stockBookId);

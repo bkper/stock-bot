@@ -15,6 +15,10 @@ class StockAccount {
         return this.account.getName();
     }
 
+    getAccount() {
+        return this.account;
+    }
+
     update() {
         this.account.update();
     }

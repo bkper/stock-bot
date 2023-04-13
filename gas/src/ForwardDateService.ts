@@ -267,12 +267,12 @@ namespace ForwardDateService {
     }
 
     function buildLiquidationTransaction(stockBook: Bkper.Book, stockAccount: StockAccount, quantity: Bkper.Amount, closingDate: Date, forwardDate: string): Bkper.Transaction {
-        const fromAccountName = quantity.lt(0) ? stockAccount.getName() : BUY_ACCOUNT_NAME;
-        const toAccountName = quantity.lt(0) ? SELL_ACCOUNT_NAME : stockAccount.getName();
+        const fromAccount = quantity.lt(0) ? stockAccount.getAccount() : BotService.getBuyAccount(stockBook);
+        const toAccount = quantity.lt(0) ? BotService.getSellAccount(stockBook) : stockAccount.getAccount();
         return stockBook.newTransaction()
             .setAmount(quantity.abs())
-            .from(fromAccountName)
-            .to(toAccountName)
+            .from(fromAccount)
+            .to(toAccount)
             .setDate(closingDate)
             .setDescription(`${quantity.times(-1)} units forwarded to ${forwardDate}`)
         ;
