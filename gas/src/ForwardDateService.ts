@@ -21,14 +21,6 @@ namespace ForwardDateService {
             }
         }
 
-        // Do not allow forward if new date is equal or below the current realized date
-        if (realizedDateValue && dateValue <= realizedDateValue) {
-            return {
-                accountId: stockAccountId,
-                result: `Cannot set forward date: account has realized results up to ${BotService.formatDate(stockAccount.getRealizedDate(), stockBook.getTimeZone(), stockBook.getDatePattern())}`
-            }
-        }
-
         // Forward fix: allow only if the conditions are met
         if (forwardedDateValue && dateValue < forwardedDateValue) {
             if (!isUserBookOwner(stockBook)) {
@@ -38,6 +30,14 @@ namespace ForwardDateService {
                 throw `Cannot lower forward date: collection has locked/closed book(s)`;
             }
             return fixAndForwardDateForAccount(stockBook, stockAccount, date);
+        }
+
+        // Do not allow forward if new date is equal or below the current realized date
+        if (realizedDateValue && dateValue <= realizedDateValue) {
+            return {
+                accountId: stockAccountId,
+                result: `Cannot set forward date: account has realized results up to ${BotService.formatDate(stockAccount.getRealizedDate(), stockBook.getTimeZone(), stockBook.getDatePattern())}`
+            }
         }
 
         // Regular forward
