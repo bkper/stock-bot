@@ -360,6 +360,9 @@ namespace RealizedResultsService {
 
         let shortSaleLiquidationLogEntries: LiquidationLogEntry[] = [];
 
+        // Control liquidation status
+        let purchaseProcessed = false;
+
         for (const purchaseTransaction of purchaseTransactions) {
 
             // Log operation status
@@ -368,9 +371,12 @@ namespace RealizedResultsService {
             let longSaleLiquidationLogEntries: LiquidationLogEntry[] = [];
 
             if (purchaseTransaction.isChecked()) {
-                //Only process unchecked ones
+                // Only process unchecked purchases
                 continue;
             }
+
+            // Processing purchase
+            purchaseProcessed = true;
 
             let shortSale = isShortSale(purchaseTransaction, saleTransaction);
 
@@ -627,7 +633,7 @@ namespace RealizedResultsService {
 
         recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, gainBaseNoFxTotal, summary);
         recordFxGain(stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, summary)
-        if (autoMtM) {
+        if (autoMtM && purchaseProcessed && !saleTransaction.getProperty(LIQUIDATION_LOG_PROP)) {
             markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, salePrice, gainTotal)
         }
 
