@@ -107,7 +107,8 @@ namespace RealizedResultsService {
 
         for (let tx of transactions) {
 
-            console.log(`account: ${stockAccount.getName()} - tx id: ${tx.getId()}`);
+            // Log operation status
+            console.log(`processing transaction: ${tx.getId()}`);
 
             if (tx.isChecked()) {
                 tx = tx.uncheck();
@@ -329,6 +330,9 @@ namespace RealizedResultsService {
 
     function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: StockAccount, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean, historical: boolean): void {
 
+        // Log operation status
+        console.log(`processing sale: ${saleTransaction.getId()}`);
+
         let salePrice: Bkper.Amount = BkperApp.newAmount(saleTransaction.getProperty(SALE_PRICE_PROP, PRICE_PROP));
         let fwdSalePrice: Bkper.Amount = saleTransaction.getProperty(FWD_SALE_PRICE_PROP) ? BkperApp.newAmount(saleTransaction.getProperty(FWD_SALE_PRICE_PROP)) : salePrice;
 
@@ -358,7 +362,8 @@ namespace RealizedResultsService {
 
         for (const purchaseTransaction of purchaseTransactions) {
 
-            console.log(`account: ${stockAccount.getName()} - tx id: ${purchaseTransaction.getId()}`);
+            // Log operation status
+            console.log(`processing purchase: ${purchaseTransaction.getId()}`);
 
             let longSaleLiquidationLogEntries: LiquidationLogEntry[] = [];
 

@@ -79,6 +79,10 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
 }
 
 function calculateRealizedResults(bookId: string, accountId: string, autoMtM: boolean, toDate: string): Summary {
+
+  // Log user inputs
+  console.log(`book id: ${bookId}, account id: ${accountId}, date input: ${toDate}, autoMtM: ${autoMtM}`);
+
   if (accountId) {
     let summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId, autoMtM, toDate);
     summary.result = JSON.stringify(summary.result);
@@ -87,6 +91,10 @@ function calculateRealizedResults(bookId: string, accountId: string, autoMtM: bo
 }
 
 function updateAccountsToDate(bookId: string, accountId: string, date: string): Summary {
+
+  // Log user inputs
+  console.log(`book id: ${bookId}, account id: ${accountId}, date input: ${date}`);
+
   if (accountId) {
     let summary: Summary;
     if (!BotService.isAccountGoodForForward(bookId, accountId, date)) {
@@ -100,6 +108,10 @@ function updateAccountsToDate(bookId: string, accountId: string, date: string): 
 }
 
 function resetRealizedResults(bookId: string, accountId: string): Summary {
+
+  // Log user inputs
+  console.log(`book id: ${bookId}, account id: ${accountId}`);
+
   if (accountId) {
     let summary = RealizedResultsService.resetRealizedResults(bookId, accountId, false);
     return summary;
@@ -107,12 +119,12 @@ function resetRealizedResults(bookId: string, accountId: string): Summary {
 }
 
 function fullResetRealizedResults(bookId: string, accountId: string): Summary {
+
+  // Log user inputs
+  console.log(`book id: ${bookId}, account id: ${accountId}`);
+
   if (accountId) {
     let summary = RealizedResultsService.resetRealizedResults(bookId, accountId, true);
     return summary;
   }
 }
-
-// function auditBooks(bookId: string) {
-//   BotService.auditBooks(bookId);
-// }

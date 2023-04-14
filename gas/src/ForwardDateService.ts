@@ -60,6 +60,10 @@ namespace ForwardDateService {
             }
         }
         for (const transaction of forwardedTransactions) {
+
+            // Log operation status
+            console.log(`processing transaction: ${transaction.getId()}`);
+
             // Get forwarded transaction previous state
             let previousStateTx = getForwardedTransactionPreviousState(stockBook, stockAccount, transaction, forwardDate);
             // Return forwarded transaction to previous state
@@ -151,6 +155,9 @@ namespace ForwardDateService {
         let order = -transactions.length;
 
         for (const transaction of transactions) {
+
+            // Log operation status
+            console.log(`processing transaction: ${transaction.getId()}`);
 
             // Post copy of transaction in order to keep a forward history
             let logTransaction = buildLogTransaction(stockBook, transaction).post();
