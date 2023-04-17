@@ -79,7 +79,6 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
 }
 
 function calculateRealizedResults(bookId: string, accountId: string, autoMtM: boolean, toDate: string): Summary {
-
   // Log user inputs
   console.log(`book id: ${bookId}, account id: ${accountId}, date input: ${toDate}, autoMtM: ${autoMtM}`);
 
@@ -90,8 +89,17 @@ function calculateRealizedResults(bookId: string, accountId: string, autoMtM: bo
   }
 }
 
-function updateAccountsToDate(bookId: string, accountId: string, date: string): Summary {
+function resetRealizedResults(bookId: string, accountId: string): Summary {
+  // Log user inputs
+  console.log(`book id: ${bookId}, account id: ${accountId}`);
 
+  if (accountId) {
+    let summary = RealizedResultsService.resetRealizedResults(bookId, accountId, false);
+    return summary;
+  }
+}
+
+function setForwardDate(bookId: string, accountId: string, date: string): Summary {
   // Log user inputs
   console.log(`book id: ${bookId}, account id: ${accountId}, date input: ${date}`);
 
@@ -107,19 +115,7 @@ function updateAccountsToDate(bookId: string, accountId: string, date: string): 
   }
 }
 
-function resetRealizedResults(bookId: string, accountId: string): Summary {
-
-  // Log user inputs
-  console.log(`book id: ${bookId}, account id: ${accountId}`);
-
-  if (accountId) {
-    let summary = RealizedResultsService.resetRealizedResults(bookId, accountId, false);
-    return summary;
-  }
-}
-
 function fullResetRealizedResults(bookId: string, accountId: string): Summary {
-
   // Log user inputs
   console.log(`book id: ${bookId}, account id: ${accountId}`);
 

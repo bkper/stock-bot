@@ -139,7 +139,7 @@
     <div class="footer" id='footer-panel'>
       <?!= enableReset ? "<button id='reset-button' class='rr-service' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
       <?!= enableFullReset ? "<button id='full-reset-button' class='fd-service' onclick='fullResetRealizedResults()'>Full Reset</button>" : "" ?>
-      <button id="forward-date-button" class='fd-service' onclick="updateAccountsToDate()">Forward Date</button>
+      <button id="forward-date-button" class='fd-service' onclick="setForwardDate()">Forward Date</button>
       <button id="calculate-button" class='rr-service' onclick="calculateRealizedResults()">Calculate</button>
       <button id="close-button" onclick="closeWindow()">Close</button>
       <a id="change-view-link" onclick="changeServiceView()">Set Forward Date</a>
@@ -157,9 +157,75 @@
   let retryCount = 0;
   const maxRetries = 5;
 
-  function retryOperation(error, funcName) {
-    if (shouldRetry(funcName) &&`${error}`.indexOf('not found in') < 0 && `${error}`.indexOf('decimal places') < 0 && retryCount < maxRetries) {
-      fireRetryOperation(funcName);
+  async function calculateRealizedResults() {
+    disableButtons(true);
+    showAccountsWaiting();
+    await fireCalculateForAll().catch(showError);
+    disableButtons(false);
+  }
+
+  async function resetRealizedResults() {
+    disableButtons(true);
+    showAccountsWaiting();
+    await fireResetForAll().catch(showError);
+    disableButtons(false);
+  }
+
+  async function setForwardDate() {
+    disableButtons(true);
+    showAccountsWaiting();
+    await fireForwardForAll().catch(showError);
+    disableButtons(false);
+  }
+
+  async function fullResetRealizedResults() {
+    disableButtons(true);
+    showAccountsWaiting();
+    await fireFullResetForAll().catch(showError);
+    disableButtons(false);
+  }
+
+  async function fireCalculateForAll() {
+    <? for (var i = 0; i < accounts.length; i++) { ?>
+      await promiseRun('calculateRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', getAutoMtM(), getDateInput()).then(hideAccountWaiting);
+    <? } ?>
+  }
+
+  async function fireResetForAll() {
+    <? for (var i = 0; i < accounts.length; i++) { ?>
+      await promiseRun('resetRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting);
+    <? } ?>
+  }
+
+  async function fireForwardForAll() {
+    <? for (var i = 0; i < accounts.length; i++) { ?>
+      await promiseRun('setForwardDate' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', getDateInput()).then(hideAccountWaiting);
+    <? } ?>
+  }
+
+  async function fireFullResetForAll() {
+    <? for (var i = 0; i < accounts.length; i++) { ?>
+      await promiseRun('fullResetRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting);
+    <? } ?>
+  }
+
+  function promiseRun(func) {
+
+    // this is a trick to convert the arguments array into an array, and drop the first one
+    var runArgs = Array.prototype.slice.call(arguments).slice(1);
+
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(result => resolve(result))
+        .withFailureHandler(error => retryOperation(error, func))
+      [func].apply(this, runArgs);
+    })
+
+  }
+
+  function retryOperation(error, func) {
+    if (shouldRetry(func) && `${error}`.indexOf('not found in') < 0 && `${error}`.indexOf('decimal places') < 0 && retryCount < maxRetries) {
+      fireRetryOperation(func);
       retryCount++;
       document.getElementById(`error-panel`).innerHTML = `Retrying ${retryCount} of ${maxRetries}`;
     } else {
@@ -169,10 +235,7 @@
   }
 
   function shouldRetry(funcName) {
-    if (funcName === 'calculateRealizedResults' || funcName === 'resetRealizedResults' || funcName === 'fullResetRealizedResults') {
-      return true;
-    }
-    return false;
+    return funcName !== 'setForwardDate' ? true : false;
   }
 
   function fireRetryOperation(funcName) {
@@ -187,79 +250,14 @@
     }
   }
 
-  function showAllAccountsWaiting() {
+  function showAccountsWaiting() {
     <? for (var i = 0; i < accounts.length; i++) { ?>
-      showAccountWaiting('<?!= accounts[i].id ?>')
+      showAccountWaiting('<?!= accounts[i].id ?>');
     <? } ?>
   }
-
-  function getAutoMtM() {
-    return document.getElementById("autoMtM").checked;
-  }
-
-  function getDateInput() {
-    return document.getElementById("forward-date").value;
-  }
-
-  async function updateAccountsToDate() {
-    disableButtons(true)
-    showAllAccountsWaiting()
-    await updateAccountsToDateForAll().catch(showError)
-    // promiseRun('auditBooks', '<?!= book.id ?>')
-    disableButtons(false)
-  }
-
-  async function updateAccountsToDateForAll() {
-    <? for (var i = 0; i < accounts.length; i++) { ?>
-      await promiseRun('updateAccountsToDate' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', getDateInput()).then(hideAccountWaiting)
-    <? } ?>
-  }
-
-  async function calculateRealizedResults() {
-    disableButtons(true)
-    showAllAccountsWaiting()
-    await fireRealizedResultsForAll().catch(showError)
-    // promiseRun('auditBooks', '<?!= book.id ?>')
-    disableButtons(false)
-  }
-
-  async function fireRealizedResultsForAll() {
-    <? for (var i = 0; i < accounts.length; i++) { ?>
-      await promiseRun('calculateRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', getAutoMtM(), getDateInput()).then(hideAccountWaiting)
-    <? } ?>
-  }
-
-  async function resetRealizedResults() {
-    disableButtons(true)
-    showAllAccountsWaiting()
-    await resetRealizedResultsForAll().catch(showError)
-    // promiseRun('auditBooks' , '<?!= book.id ?>')
-    disableButtons(false)
-  }
-
-  async function fullResetRealizedResults() {
-    disableButtons(true)
-    showAllAccountsWaiting()
-    await fullResetRealizedResultsForAll().catch(showError)
-    // promiseRun('auditBooks' , '<?!= book.id ?>')
-    disableButtons(false)
-  }
-
-  async function resetRealizedResultsForAll() {
-    <? for (var i = 0; i < accounts.length; i++) { ?>
-      await promiseRun('resetRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting)
-    <? } ?>
-  }
-
-  async function fullResetRealizedResultsForAll() {
-    <? for (var i = 0; i < accounts.length; i++) { ?>
-      await promiseRun('fullResetRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting)
-    <? } ?>
-  }
-
 
   function showAccountWaiting(accountId) {
-    document.getElementById(`result-${accountId}`).innerHTML = `<img src='https://storage.googleapis.com/bkper-public/addons/loading_3dots.gif'/>`
+    document.getElementById(`result-${accountId}`).innerHTML = `<img src='https://storage.googleapis.com/bkper-public/addons/loading_3dots.gif'/>`;
   }
 
   function hideAccountWaiting(summary) {
@@ -270,24 +268,12 @@
     }
   }
 
-  // using promises instead
-  function promiseRun (func) {
+  function getAutoMtM() {
+    return document.getElementById("autoMtM").checked;
+  }
 
-    // using funcName on retry
-    let funcName = Array.prototype.slice.call(arguments)[0] + '';
-    
-    // this is a trick to convert the arguments array into an array, and drop the first one
-    var runArgs = Array.prototype.slice.call(arguments).slice(1);
-    
-    return new Promise ((resolve, reject) => {
-      google.script.run
-      .withSuccessHandler (result => {
-        resolve (result);
-      })
-      .withFailureHandler(error => retryOperation(error, funcName))
-      [func].apply (this , runArgs) ;
-    })
-  
+  function getDateInput() {
+    return document.getElementById("forward-date").value;
   }
 
   function disableButtons(disable) {
@@ -324,8 +310,8 @@
     try {
       window.top.close();
     } catch (error) {
-      console.log("Attempt to automatically close window failed: " + error)
-      showError(error)
+      console.log("Attempt to automatically close window failed: " + error);
+      showError(error);
     }
   }
 
