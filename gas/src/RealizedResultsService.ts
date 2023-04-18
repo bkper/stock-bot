@@ -280,15 +280,19 @@ namespace RealizedResultsService {
             return;
         }
         const excRateProp = transaction.getProperty(exchangeRateProperty);
+        if (!excRateProp) {
+            const excRate = BotService.getExcRate(baseBook, financialBook, transaction, exchangeRateProperty);
+            transaction.setProperty(exchangeRateProperty, excRate?.toString());
+        }
         const fwdExcRateProp = transaction.getProperty(`fwd_${exchangeRateProperty}`);
-        if (!excRateProp && !fwdExcRateProp) {
+        if (!fwdExcRateProp) {
             const excRate = BotService.getExcRate(baseBook, financialBook, transaction, exchangeRateProperty);
             const fwdExcRate = BotService.getFwdExcRate(transaction, `fwd_${exchangeRateProperty}`, excRate);
-            transaction
-                .setProperty(exchangeRateProperty, excRate?.toString())
-                .setProperty(`fwd_${exchangeRateProperty}`, fwdExcRate?.toString())
-                .update()
-            ;
+            transaction.setProperty(`fwd_${exchangeRateProperty}`, fwdExcRate?.toString());
+        }
+        // Update transaction if necessary
+        if (!excRateProp || !fwdExcRateProp) {
+            transaction.update();
         }
     }
 
