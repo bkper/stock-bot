@@ -24,12 +24,14 @@ export class EventHandlerTransactionUpdated extends EventHandlerTransaction {
   protected async connectedTransactionFound(financialBook: Book, stockBook: Book, financialTransaction: bkper.Transaction, stockTransaction: Transaction, stockExcCode: string): Promise<string> {
 
     if (!financialTransaction.posted) {
-      return `Transaction is not posted: ${financialTransaction.dateFormatted} ${financialTransaction.amount} ${financialTransaction.description}`;
+      return null;
+      // return `Transaction is not posted: ${financialTransaction.dateFormatted} ${financialTransaction.amount} ${financialTransaction.description}`;
     }
 
     let quantity = this.getQuantity(stockBook, financialTransaction);
     if (quantity == null || quantity.eq(0)) {
-      return `Quantity is not valid: ${financialTransaction.dateFormatted} ${financialTransaction.amount} ${financialTransaction.description}`;
+      return null;
+      // return `Quantity is not valid: ${financialTransaction.dateFormatted} ${financialTransaction.amount} ${financialTransaction.description}`;
     }
 
     if (stockTransaction.isChecked()) {

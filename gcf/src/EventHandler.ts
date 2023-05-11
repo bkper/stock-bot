@@ -37,7 +37,8 @@ export abstract class EventHandler {
     console.timeEnd(logtag);
 
     if (responses.length == 0) {
-      return { result: `No responses returned` };
+      return { result: false };
+      // return { result: `No responses returned` };
     }
 
     return { result: responses };
