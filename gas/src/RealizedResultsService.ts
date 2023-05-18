@@ -312,10 +312,13 @@ namespace RealizedResultsService {
         }
     }
 
-    function logLiquidation(transaction: Bkper.Transaction): LiquidationLogEntry {
+    function logLiquidation(transaction: Bkper.Transaction, price: Bkper.Amount, excRate: Bkper.Amount): LiquidationLogEntry {
         return {
             id: transaction.getId(),
-            dt: transaction.getDate()
+            dt: transaction.getDate(),
+            qt: transaction.getAmount().toString(),
+            pr: price.toString(),
+            rt: excRate?.toString()
         }
     }
 
@@ -429,7 +432,7 @@ namespace RealizedResultsService {
                     .setProperty(FWD_PURCHASE_AMOUNT_PROP, fwdPurchaseAmount?.toString())
 
                 if (shortSale) {
-                    shortSaleLiquidationLogEntries.push(logLiquidation(purchaseTransaction));
+                    shortSaleLiquidationLogEntries.push(logLiquidation(purchaseTransaction, purchasePrice, purchaseExcRate));
                     purchaseTransaction
                         .setProperty(SALE_PRICE_PROP, salePrice.toString())
                         .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
@@ -441,7 +444,7 @@ namespace RealizedResultsService {
                         .setProperty(GAIN_AMOUNT_PROP, gain.toString())
                         .setProperty(SHORT_SALE_PROP, 'true')
                 } else {
-                    longSaleLiquidationLogEntries.push(logLiquidation(saleTransaction));
+                    longSaleLiquidationLogEntries.push(logLiquidation(saleTransaction, salePrice, saleExcRate));
                     purchaseTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(longSaleLiquidationLogEntries));
                 }
                 purchaseTransaction.update();
@@ -514,7 +517,7 @@ namespace RealizedResultsService {
                         .setProperty(GAIN_AMOUNT_PROP, gain.toString())
                         .setProperty(SHORT_SALE_PROP, 'true')
                 } else {
-                    longSaleLiquidationLogEntries.push(logLiquidation(saleTransaction));
+                    longSaleLiquidationLogEntries.push(logLiquidation(saleTransaction, salePrice, saleExcRate));
                     splittedPurchaseTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(longSaleLiquidationLogEntries));
                 }
 
@@ -527,7 +530,7 @@ namespace RealizedResultsService {
                         markToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, gain)
                     }
                     // Make sure splitted purchase transaction is already posted so it has an id
-                    shortSaleLiquidationLogEntries.push(logLiquidation(splittedPurchaseTransaction));
+                    shortSaleLiquidationLogEntries.push(logLiquidation(splittedPurchaseTransaction, purchasePrice, purchaseExcRate));
                 }
 
                 soldQuantity = soldQuantity.minus(partialBuyQuantity);
