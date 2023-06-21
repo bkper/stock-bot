@@ -136,16 +136,22 @@
       </div>
     </div>
 
-    <div class="footer" id='footer-panel'>
-      <?!= enableReset ? "<button id='reset-button' class='rr-service' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
-      <?!= enableFullReset ? "<button id='full-reset-button' class='fd-service' onclick='fullResetRealizedResults()'>Full Reset</button>" : "" ?>
-      <button id="forward-date-button" class='fd-service' onclick="setForwardDate()">Forward Date</button>
-      <button id="calculate-button" class='rr-service' onclick="calculateRealizedResults()">Calculate</button>
-      <button id="close-button" onclick="closeWindow()">Close</button>
-      <a id="change-view-link" onclick="changeServiceView()">Set Forward Date</a>
-    </div>
+    <? if (permissionGranted) { ?>
+      <div class="footer" id='footer-panel'>
+        <?!= enableReset ? "<button id='reset-button' class='rr-service' onclick='resetRealizedResults()'>Reset</button>" : "" ?>
+        <?!= enableFullReset ? "<button id='full-reset-button' class='fd-service' onclick='fullResetRealizedResults()'>Full Reset</button>" : "" ?>
+        <button id="forward-date-button" class='fd-service' onclick="setForwardDate()">Forward Date</button>
+        <button id="calculate-button" class='rr-service' onclick="calculateRealizedResults()">Calculate</button>
+        <button id="close-button" onclick="closeWindow()">Close</button>
+        <a id="change-view-link" onclick="changeServiceView()">Set Forward Date</a>
+      </div>
+    <? } ?>
 
-    <div id="error-panel"></div>
+    <div id="error-panel">
+      <? if (!permissionGranted) { ?>
+        <?!= permissionError ?>
+      <? } ?>
+    </div>
 
   </body>
 

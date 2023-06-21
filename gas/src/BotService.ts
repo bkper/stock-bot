@@ -151,6 +151,25 @@ namespace BotService {
         return null;
     }
 
+    export function getFinancialBooksExcCodesUserCanEdit(baseBook: Bkper.Book): Set<string> {
+        const collection = baseBook.getCollection();
+        if (collection) {
+            let excCodes = new Set<string>();
+            for (const book of collection.getBooks()) {
+                const bookExcCodeProp = book.getProperty(EXC_CODE_PROP, 'exchange_code');
+                if (bookExcCodeProp && canUserEditBook(book)) {
+                    excCodes.add(bookExcCodeProp);
+                }
+            }
+            return excCodes;
+        }
+        return new Set<string>();
+    }
+
+    function canUserEditBook(book: Bkper.Book): boolean {
+        return (book.getPermission() === BkperApp.Permission.OWNER || book.getPermission() === BkperApp.Permission.EDITOR) ? true : false;
+    }
+
     export function isSale(transaction: Bkper.Transaction): boolean {
         return transaction.isPosted() && transaction.getDebitAccount().getType() == BkperApp.AccountType.OUTGOING;
     }

@@ -32,6 +32,8 @@ namespace BotViewService {
         template.accounts = [];
         template.group = {}
 
+        let accountsExcCodes = new Set<string>();
+
         if (baseAccount) {
             let stockAccount = stockBook.getAccount(baseAccount.getName());
             addAccount(stockAccount);
@@ -68,10 +70,27 @@ namespace BotViewService {
                     id: stockAccount.getId(),
                     name: stockAccount.getName()
                 });
+                accountsExcCodes.add(stockAccount.getExchangeCode());
             }
         }
 
         template.accounts.sort((a: { name: string; }, b: { name: string; }) => a.name.localeCompare(b.name));
+
+        const bookExcCodesUserCanEdit = BotService.getFinancialBooksExcCodesUserCanEdit(baseBook);
+
+        let bookExcCodesUserCannotEdit: string[] = [];
+        for (const code of Array.from(accountsExcCodes)) {
+            if (!bookExcCodesUserCanEdit.has(code)) {
+                bookExcCodesUserCannotEdit.push(code);
+            }
+        }
+
+        if (bookExcCodesUserCannotEdit.length > 0) {
+            template.permissionGranted = false;
+            template.permissionError = `User needs EDITOR or OWNER permission in ${bookExcCodesUserCannotEdit.join(', ')} books`;
+        } else {
+            template.permissionGranted = true;
+        }
 
         return template.evaluate().setTitle('Stock Bot');
     }
