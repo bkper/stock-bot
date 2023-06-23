@@ -76,7 +76,7 @@ namespace BotViewService {
 
         template.accounts.sort((a: { name: string; }, b: { name: string; }) => a.name.localeCompare(b.name));
 
-        const bookExcCodesUserCanEdit = BotService.getFinancialBooksExcCodesUserCanEdit(baseBook);
+        const bookExcCodesUserCanEdit = BotService.getBooksExcCodesUserCanEdit(baseBook);
 
         let bookExcCodesUserCannotEdit: string[] = [];
         for (const code of Array.from(accountsExcCodes)) {

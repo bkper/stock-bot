@@ -151,8 +151,8 @@ namespace BotService {
         return null;
     }
 
-    export function getFinancialBooksExcCodesUserCanEdit(baseBook: Bkper.Book): Set<string> {
-        const collection = baseBook.getCollection();
+    export function getBooksExcCodesUserCanEdit(book: Bkper.Book): Set<string> {
+        const collection = book.getCollection();
         if (collection) {
             let excCodes = new Set<string>();
             for (const book of collection.getBooks()) {
