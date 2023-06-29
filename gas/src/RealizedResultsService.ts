@@ -563,7 +563,10 @@ namespace RealizedResultsService {
         if (soldQuantity.round(stockBook.getFractionDigits()).eq(0)) {
             let saleTxChanged = false;
             if (shortSaleLiquidationLogEntries.length > 0) {
-                saleTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(shortSaleLiquidationLogEntries));
+                saleTransaction
+                    .setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(shortSaleLiquidationLogEntries))
+                    .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
+                    .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
                 saleTxChanged = true;
             }
             if (purchaseLogEntries.length > 0) {
