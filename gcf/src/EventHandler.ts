@@ -38,7 +38,6 @@ export abstract class EventHandler {
 
     if (responses.length == 0) {
       return { result: false };
-      // return { result: `No responses returned` };
     }
 
     return { result: responses };

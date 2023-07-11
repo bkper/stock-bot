@@ -31,7 +31,6 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
     let quantity = this.getQuantity(stockBook, financialTransaction);
     if (quantity == null || quantity.eq(0)) {
       return null;
-      // return `Quantity is not valid: ${financialTransaction.dateFormatted} ${financialTransaction.amount} ${financialTransaction.description}`;
     }
 
     const originalAmount = new Amount(financialTransaction.amount);
@@ -99,7 +98,6 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
     }
 
     return null;
-    // return `Stock account not found: ${financialTransaction.dateFormatted} ${financialTransaction.amount} ${financialTransaction.description}`;
   }
 
   private checkLastTxDate(stockAccount: Account, transaction: bkper.Transaction) {

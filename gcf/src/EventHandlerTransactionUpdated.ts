@@ -25,13 +25,11 @@ export class EventHandlerTransactionUpdated extends EventHandlerTransaction {
 
     if (!financialTransaction.posted) {
       return null;
-      // return `Transaction is not posted: ${financialTransaction.dateFormatted} ${financialTransaction.amount} ${financialTransaction.description}`;
     }
 
     let quantity = this.getQuantity(stockBook, financialTransaction);
     if (quantity == null || quantity.eq(0)) {
       return null;
-      // return `Quantity is not valid: ${financialTransaction.dateFormatted} ${financialTransaction.amount} ${financialTransaction.description}`;
     }
 
     if (stockTransaction.isChecked()) {
