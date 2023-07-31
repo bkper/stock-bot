@@ -68,16 +68,20 @@ namespace BotService {
     }
 
     export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction, excRateProp: string): Bkper.Amount {
+
+        // Base currency
         if (baseBook.getProperty(EXC_CODE_PROP) == financialBook.getProperty(EXC_CODE_PROP)) {
             return undefined;
         }
-        if (!stockTransaction.getRemoteIds()) {
-            return undefined;
+
+        // Exc rate already set
+        if (stockTransaction.getProperty(excRateProp)) {
+            return BkperApp.newAmount(stockTransaction.getProperty(excRateProp));
         }
 
-        //Already set
-        if (stockTransaction.getProperty(excRateProp)) {
-            return BkperApp.newAmount(stockTransaction.getProperty(excRateProp))
+        // No remote ids
+        if (!stockTransaction.getRemoteIds()) {
+            return undefined;
         }
 
         for (const remoteId of stockTransaction.getRemoteIds()) {
