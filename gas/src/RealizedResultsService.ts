@@ -72,8 +72,12 @@ namespace RealizedResultsService {
         // Check & record exchange rates if missing
         checkAndRecordExchangeRates(baseBook, financialBook, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
 
-        checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
+        // Check & record Interest account MTM if necessary
+        if (stockAccount.isInterest() && autoMtM) {
+            checkAndRecordInterestMtm(stockAccount, stockBook, financialBook, toDate, summary);
+        }
 
+        checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
 
         return summary;
 
@@ -293,6 +297,27 @@ namespace RealizedResultsService {
         // Update transaction if necessary
         if (!excRateProp || !fwdExcRateProp) {
             transaction.update();
+        }
+    }
+
+    function checkAndRecordInterestMtm(stockAccount: StockAccount, stockBook: Bkper.Book, financialBook: Bkper.Book, onDateIso: string, summary: Summary): void {
+        // Find principal account on Stock Book
+        const principalAccount = BotService.getPrincipalAccount(stockBook, stockAccount.getName());
+        if (principalAccount) {
+            // Check principal account quantity
+            const principalQuantity = getAccountBalance(stockBook, principalAccount, stockBook.parseDate(onDateIso));
+            if (principalQuantity.eq(0)) {
+                // Check interest account balance
+                const interestBalance = getAccountBalance(financialBook, stockAccount, financialBook.parseDate(onDateIso));
+                if (!interestBalance.eq(0)) {
+                    // Record interest account MTM on financial book
+                    const financialAccount = financialBook.getAccount(stockAccount.getName());
+                    const financialUnrealizedAccount = getUnrealizedAccount(stockAccount, financialBook, summary, stockAccount.getExchangeCode());
+                    if (financialAccount && financialUnrealizedAccount) {
+                        recordInterestAccountMtm(financialBook, financialAccount, financialUnrealizedAccount, interestBalance, onDateIso);
+                    }
+                }
+            }
         }
     }
 
@@ -806,6 +831,28 @@ namespace RealizedResultsService {
                 .from(financialInstrument)
                 .to(unrealizedAccount)
                 .addRemoteId(`mtm_${transaction.getId()}`)
+                .post().check()
+            ;
+        }
+    }
+
+    function recordInterestAccountMtm(book: Bkper.Book, account: Bkper.Account, urAccount: Bkper.Account, amount: Bkper.Amount, date: string): void {
+        if (amount.gt(0)) {
+            book.newTransaction()
+                .setDate(date)
+                .setAmount(amount)
+                .setDescription(`#interest_mtm`)
+                .from(account)
+                .to(urAccount)
+                .post().check()
+            ;
+        } else if (amount.lt(0)) {
+            book.newTransaction()
+                .setDate(date)
+                .setAmount(amount.abs())
+                .setDescription(`#interest_mtm`)
+                .from(urAccount)
+                .to(account)
                 .post().check()
             ;
         }
