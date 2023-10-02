@@ -35,14 +35,6 @@ class StockAccount {
         return this.account.isPermanent();
     }
 
-    isInterest() {
-        const formattedAccountName = this.getName().toLowerCase().trim();
-        if (this.isPermanent() && formattedAccountName.endsWith('interest')) {
-            return true;
-        }
-        return false;
-    }
-
     getRealizedDateValue(): number | null {
         return this.getRealizedDate() ? +(this.getRealizedDate().replaceAll('-', '')) : null;
     }

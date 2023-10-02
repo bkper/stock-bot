@@ -42,10 +42,10 @@ namespace BotService {
         return query;
     }
 
-    export function getPrincipalAccount(book: Bkper.Book, interestAccountName: string): Bkper.Account | null {
-        const principalAccountFormattedName = interestAccountName.toLowerCase().trim().replace('interest', '');
-        const principalAccount = book.getAccount(principalAccountFormattedName);
-        return principalAccount || null;
+    export function getInterestAccount(book: Bkper.Book, principalAccountName: string): Bkper.Account | null {
+        const formattedInterestAccountName = `${principalAccountName.toLowerCase().trim()} interest`;
+        const interestAccount = book.getAccount(formattedInterestAccountName);
+        return interestAccount || null;
     }
 
     export function calculateGainBaseNoFX(gainLocal: Bkper.Amount, purchaseRate: Bkper.Amount, saleRate: Bkper.Amount, shortSale: boolean): Bkper.Amount {

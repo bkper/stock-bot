@@ -73,8 +73,11 @@ namespace RealizedResultsService {
         checkAndRecordExchangeRates(baseBook, financialBook, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
 
         // Check & record Interest account MTM if necessary
-        if (stockAccount.isInterest() && autoMtM) {
-            checkAndRecordInterestMtm(stockAccount, stockBook, financialBook, toDate, summary);
+        if (autoMtM) {
+            const financialInterestAccount = BotService.getInterestAccount(financialBook, stockAccount.getName());
+            if (financialInterestAccount !== null) {
+                checkAndRecordInterestMtm(stockAccount, stockBook, financialInterestAccount, financialBook, toDate, summary);
+            }
         }
 
         checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
@@ -300,23 +303,16 @@ namespace RealizedResultsService {
         }
     }
 
-    function checkAndRecordInterestMtm(stockAccount: StockAccount, stockBook: Bkper.Book, financialBook: Bkper.Book, onDateIso: string, summary: Summary): void {
-        // Find principal account on Stock Book
-        const principalAccount = BotService.getPrincipalAccount(stockBook, stockAccount.getName());
-        if (principalAccount) {
-            // Check principal account quantity
-            const principalQuantity = getAccountBalance(stockBook, principalAccount, stockBook.parseDate(onDateIso));
-            if (principalQuantity.eq(0)) {
-                // Check interest account balance
-                const interestBalance = getAccountBalance(financialBook, stockAccount, financialBook.parseDate(onDateIso));
-                if (!interestBalance.eq(0)) {
-                    // Record interest account MTM on financial book
-                    const financialAccount = financialBook.getAccount(stockAccount.getName());
-                    const financialUnrealizedAccount = getUnrealizedAccount(stockAccount, financialBook, summary, stockAccount.getExchangeCode());
-                    if (financialAccount && financialUnrealizedAccount) {
-                        recordInterestAccountMtm(financialBook, financialAccount, financialUnrealizedAccount, interestBalance, onDateIso);
-                    }
-                }
+    function checkAndRecordInterestMtm(principalStockAccount: StockAccount, stockBook: Bkper.Book, financialInterestAccount: Bkper.Account, financialBook: Bkper.Book, onDateIso: string, summary: Summary): void {
+        // Check principal account quantity on Stock Book
+        const principalQuantity = getAccountBalance(stockBook, principalStockAccount, stockBook.parseDate(onDateIso));
+        if (principalQuantity.eq(0)) {
+            // Check interest account balance on Financial Book
+            const interestBalance = getAccountBalance(financialBook, financialInterestAccount, financialBook.parseDate(onDateIso));
+            if (!interestBalance.eq(0)) {
+                // Record interest account MTM on financial book
+                const financialUnrealizedAccount = getUnrealizedAccount(financialInterestAccount, financialBook, summary, principalStockAccount.getExchangeCode());
+                recordInterestAccountMtm(financialBook, financialInterestAccount, financialUnrealizedAccount, interestBalance, onDateIso);
             }
         }
     }
@@ -675,7 +671,7 @@ namespace RealizedResultsService {
     }
 
 
-    function getUnrealizedAccount(stockAccount: StockAccount, book: Bkper.Book, summary: Summary, stockExcCode: string) {
+    function getUnrealizedAccount(stockAccount: StockAccount | Bkper.Account, book: Bkper.Book, summary: Summary, stockExcCode: string) {
         let unrealizedAccountName = `${stockAccount.getName()} ${UNREALIZED_SUFFIX}`;
         let unrealizedAccount = book.getAccount(unrealizedAccountName);
         if (unrealizedAccount == null) {
