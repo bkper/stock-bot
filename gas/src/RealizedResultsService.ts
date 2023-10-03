@@ -41,18 +41,14 @@ namespace RealizedResultsService {
         let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
 
         while (iterator.hasNext()) {
-
-            let tx = iterator.next();
-
+            const tx = iterator.next();
+            // Filter only unchecked
             if (tx.isChecked()) {
-                //Filter only unchecked
                 continue;
             }
-
             if (BotService.isSale(tx)) {
                 stockAccountSaleTransactions.push(tx);
             }
-
             if (BotService.isPurchase(tx)) {
                 stockAccountPurchaseTransactions.push(tx);
             }
@@ -75,8 +71,9 @@ namespace RealizedResultsService {
         // Check & record Interest account MTM if necessary
         if (autoMtM) {
             const financialInterestAccount = BotService.getInterestAccount(financialBook, stockAccount.getName());
-            if (financialInterestAccount !== null) {
-                checkAndRecordInterestMtm(stockAccount, stockBook, financialInterestAccount, financialBook, toDate, summary);
+            const lastTransactionId = getLastTransactionId(stockAccountSaleTransactions, stockAccountPurchaseTransactions);
+            if (financialInterestAccount && lastTransactionId) {
+                checkAndRecordInterestMtm(stockAccount, stockBook, financialInterestAccount, financialBook, toDate, lastTransactionId, summary);
             }
         }
 
@@ -303,7 +300,7 @@ namespace RealizedResultsService {
         }
     }
 
-    function checkAndRecordInterestMtm(principalStockAccount: StockAccount, stockBook: Bkper.Book, financialInterestAccount: Bkper.Account, financialBook: Bkper.Book, onDateIso: string, summary: Summary): void {
+    function checkAndRecordInterestMtm(principalStockAccount: StockAccount, stockBook: Bkper.Book, financialInterestAccount: Bkper.Account, financialBook: Bkper.Book, onDateIso: string, lastTransactionId: string, summary: Summary): void {
         // Check principal account quantity on Stock Book
         const principalQuantity = getAccountBalance(stockBook, principalStockAccount, stockBook.parseDate(onDateIso));
         if (principalQuantity.eq(0)) {
@@ -312,7 +309,7 @@ namespace RealizedResultsService {
             if (!interestBalance.eq(0)) {
                 // Record interest account MTM on financial book
                 const financialUnrealizedAccount = getUnrealizedAccount(financialInterestAccount, financialBook, summary, principalStockAccount.getExchangeCode());
-                recordInterestAccountMtm(financialBook, financialInterestAccount, financialUnrealizedAccount, interestBalance, onDateIso);
+                recordInterestAccountMtm(financialBook, financialInterestAccount, financialUnrealizedAccount, interestBalance, onDateIso, lastTransactionId);
             }
         }
     }
@@ -832,7 +829,7 @@ namespace RealizedResultsService {
         }
     }
 
-    function recordInterestAccountMtm(book: Bkper.Book, account: Bkper.Account, urAccount: Bkper.Account, amount: Bkper.Amount, date: string): void {
+    function recordInterestAccountMtm(book: Bkper.Book, account: Bkper.Account, urAccount: Bkper.Account, amount: Bkper.Amount, date: string, remoteId: string): void {
         if (amount.gt(0)) {
             book.newTransaction()
                 .setDate(date)
@@ -840,6 +837,7 @@ namespace RealizedResultsService {
                 .setDescription(`#interest_mtm`)
                 .from(account)
                 .to(urAccount)
+                .addRemoteId(`interestmtm_${remoteId}`)
                 .post().check()
             ;
         } else if (amount.lt(0)) {
@@ -849,9 +847,21 @@ namespace RealizedResultsService {
                 .setDescription(`#interest_mtm`)
                 .from(urAccount)
                 .to(account)
+                .addRemoteId(`interestmtm_${remoteId}`)
                 .post().check()
             ;
         }
+    }
+
+    function getLastTransactionId(sales: Bkper.Transaction[], purchases: Bkper.Transaction[]): string | null {
+        const transactions = [...sales.concat(purchases)].sort(BotService.compareToFIFO);
+        if (transactions.length > 0) {
+            const lastTransaction = transactions[transactions.length - 1];
+            if (lastTransaction) {
+                return lastTransaction.getId();
+            }
+        }
+        return null;
     }
 
     function getAccountBalance(book: Bkper.Book, account: Bkper.Account | StockAccount, date: Date): Bkper.Amount {
