@@ -120,19 +120,20 @@ namespace RealizedResultsService {
 
             if (tx.getAgentId() == 'stock-bot') {
 
-                // Forward logs & liquidation transaction
+                // Trash fwd log & fwd liquidation
                 if (tx.getProperty(FWD_TX_PROP) || tx.getProperty(FWD_LIQUIDATION_PROP)) {
                     tx.trash();
                     continue;
                 }
 
+                // Trash RRs, MTMs and FXs
                 let i = financialBook.getTransactions(`remoteId:${tx.getId()}`);
                 while (i.hasNext()) {
                     let financialTx = i.next();
                     if (financialTx.isChecked()) {
                         financialTx = financialTx.uncheck();
                     }
-                    financialTx.remove();
+                    financialTx.trash();
                 }
                 i = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`);
                 while (i.hasNext()) {
@@ -140,7 +141,7 @@ namespace RealizedResultsService {
                     if (mtmTx.isChecked()) {
                         mtmTx = mtmTx.uncheck();
                     }
-                    mtmTx.remove();
+                    mtmTx.trash();
                 }
                 i = financialBook.getTransactions(`remoteId:interestmtm_${tx.getId()}`);
                 while (i.hasNext()) {
@@ -148,7 +149,7 @@ namespace RealizedResultsService {
                     if (interestMtmTx.isChecked()) {
                         interestMtmTx = interestMtmTx.uncheck();
                     }
-                    interestMtmTx.remove();
+                    interestMtmTx.trash();
                 }
                 i = baseBook.getTransactions(`remoteId:fx_${tx.getId()}`);
                 while (i.hasNext()) {
@@ -156,7 +157,7 @@ namespace RealizedResultsService {
                     if (fxTx.isChecked()) {
                         fxTx = fxTx.uncheck();
                     }
-                    fxTx.remove();
+                    fxTx.trash();
                 }
 
                 let originalAmountProp = tx.getProperty(ORIGINAL_AMOUNT_PROP);
@@ -185,7 +186,7 @@ namespace RealizedResultsService {
                 }
 
                 if (!originalQuantityProp) {
-                    tx.remove();
+                    tx.trash();
                 } else {
 
                     // Fix wrong negative prices from forwarded date error
