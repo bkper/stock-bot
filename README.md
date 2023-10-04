@@ -35,27 +35,33 @@ The Stock Bot interacts with the following properties:
 
 ### Transaction Properties 
 
-- ```quantity```: Required - The quantity of the instruments to track.
+- ```instrument```: Required - The instrument name.
+- ```quantity```: Required - The quantity of the instrument stock operation to track.
+- ```trade_date```: Required - The date of the stock operation.
+- ```order```: Optional - The order of the operation, if multiple operations happened in the same day.
+- ```fees```: Optional - The value included in the transaction amount corresponding to fees. 
+- ```interest```: Optional - The value included in the transaction amount corresponding to interests. 
 
 
 ## Realized Results Service
 
-When calculating realized results, the market value of remaining instruments can be automatically adjusted on Financial Books to match the last realized price of that instrument. This valuation procedure is known as [Mark-To-Market](https://www.investopedia.com/terms/m/marktomarket.asp). 
+The process of calculating realized results follows the FIFO method. In this process, the Stock Bot can record transactions both in the Instruments and financial books.
+
+When calculating realized results, the market value of remaining instruments can be automatically adjusted on Financial Books to match the last realized price of that instrument. This valuation procedure is known as [Mark-To-Market](https://www.investopedia.com/terms/m/marktomarket.asp). For liquidated Bonds instruments, the Stock Bot can also perform this valuation on associated Interest accounts.
 
 The Stock Bot adds the following properties to the generated transactions in the Instruments Book:
 
 - ```purchase_amount/fwd_purchase_amount```: The financial amount the instrument was bought.
-- ```purchase_price/fwd_purchase_price```: The price the instrument was bought.
+- ```purchase_price/fwd_purchase_price```: The unit price the instrument was bought.
 - ```purchase_exc_rate/fwd_purchase_exc_rate```: The exchange rate (local currency to base currency) when the instrument was bought.
 - ```sale_amount/fwd_sale_amount```: The financial amount the instrument was sold.
-- ```sale_price/fwd_sale_price```: The price the instrument was sold.
+- ```sale_price/fwd_sale_price```: The unit price the instrument was sold.
 - ```sale_exc_rate/fwd_sale_exc_rate```: The exchange rate (local currency to base currency) when the instrument was sold.
 - ```sale_date```: The date when the instrument was sold.
-- ```order```: Index used to reorder transactions that happened on the same day.
 - ```original_quantity```: The original quantity of the instrument (used to rebuild FIFO gains/losses if needed).
 
-**Observation:**
-The properties starting with ```fwd``` above have the same meaning as their peers, however, their values may differ if a [Forward Date](#forward-date-service) was set to that instrument. In that case, there are also other ```fwd``` properties, which are references that connect forwarded transactions to their logs.
+**Observations:**
+Other properties can be created by the Stock Bot when it runs a process, for operational and logging purposes. The properties starting with ```fwd``` above have the same meaning as their peers, but their values may differ if a [Forward Date](#forward-date-service) was set to that instrument. In that case, there are also other ```fwd``` properties, which are references that connect forwarded transactions to their logs.
 
 
 ## Forward Date Service
@@ -64,7 +70,7 @@ In order to [close a period](https://help.bkper.com/en/articles/6000644-closing-
 
 Each unchecked transaction will have its date, price and exchange rate updated to the current valuation, leaving a log of its previous state behind. When the last instrument is successfully forwarded a closing date will be set on the Stock Book one day before the Forward Date.
 
-Once an instrument is forwarded, future FIFO calculations will consider the new Forward valuation. In order to keep calculating gains/losses over the historical basis, the property ```stock_historical``` must be set to ```true``` on the Instruments Book.
+Once an instrument is forwarded, future FIFO calculations will consider the new Forward valuation. In order to keep calculating gains/losses over the historical basis, the property ```stock_historical``` must be ```true``` on the Instruments Book.
 
 When forwarding instruments, the Stock Bot also adds the following properties to the forwarded transactions:
 
