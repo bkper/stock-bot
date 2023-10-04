@@ -209,7 +209,7 @@ namespace BotService {
         return ret;
     }
 
-    export function getUncalculatedOrRebuildAccounts(stockBook: Bkper.Book): Bkper.Account[] {
+    export function getUncalculatedAccounts(stockBook: Bkper.Book): Bkper.Account[] {
 
         let validationAccountsMap = new Map<string, ValidationAccount>();
 
@@ -219,7 +219,7 @@ namespace BotService {
             }
         }
 
-        const iterator = stockBook.getTransactions(`is:unchecked`);
+        const iterator = stockBook.getTransactions(BotService.getUncalculatedAccountsQuery(stockBook));
         while (iterator.hasNext()) {
             const transaction = iterator.next();
             const account = transaction.getCreditAccount().isPermanent() ? transaction.getCreditAccount() : transaction.getDebitAccount();
@@ -238,13 +238,25 @@ namespace BotService {
 
         let accounts: Bkper.Account[] = [];
 
-        validationAccountsMap.forEach(validationAccount => {
+        for (const validationAccount of validationAccountsMap.values()) {
             if (validationAccount.needsRebuild() || validationAccount.hasUncalculatedResults()) {
                 accounts.push(validationAccount.getAccount());
             }
-        });
+        }
 
         return accounts;
+    }
+
+    export function getUncalculatedAccountsQuery(stockBook: Bkper.Book): string {
+        const closingDateIso = stockBook.getClosingDate();
+        if (closingDateIso && closingDateIso !== '1900-00-00') {
+            const closingDate = stockBook.parseDate(closingDateIso);
+            let oppeningDate = new Date();
+            oppeningDate.setTime(closingDate.getTime());
+            oppeningDate.setDate(oppeningDate.getDate() + 1);
+            return `after:${Utilities.formatDate(oppeningDate, stockBook.getTimeZone(), 'yyyy-MM-dd')} is:unchecked`;
+        }
+        return `is:unchecked`;
     }
 
     export function getBuyAccount(book: Bkper.Book): Bkper.Account {

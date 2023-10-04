@@ -49,7 +49,7 @@ namespace BotViewService {
                 }
             }
         } else {
-            for (const account of BotService.getUncalculatedOrRebuildAccounts(stockBook)) {
+            for (const account of BotService.getUncalculatedAccounts(stockBook)) {
                 addAccount(account);
             }
             template.enableReset = false;
