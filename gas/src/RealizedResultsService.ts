@@ -142,6 +142,14 @@ namespace RealizedResultsService {
                     }
                     mtmTx.remove();
                 }
+                i = financialBook.getTransactions(`remoteId:interestmtm_${tx.getId()}`);
+                while (i.hasNext()) {
+                    let interestMtmTx = i.next();
+                    if (interestMtmTx.isChecked()) {
+                        interestMtmTx = interestMtmTx.uncheck();
+                    }
+                    interestMtmTx.remove();
+                }
                 i = baseBook.getTransactions(`remoteId:fx_${tx.getId()}`);
                 while (i.hasNext()) {
                     let fxTx = i.next();
