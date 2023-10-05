@@ -1,55 +1,48 @@
 namespace BotViewService {
 
-    export function getBotViewTemplate(baseBookId: string, baseAccountId: string, baseGroupId: string): GoogleAppsScript.HTML.HtmlOutput {
+    export function getBotViewTemplate(bookId: string, accountId: string, groupId: string): GoogleAppsScript.HTML.HtmlOutput {
 
-        let baseBook = BkperApp.getBook(baseBookId);
-        let baseAccount = baseBook.getAccount(baseAccountId);
-        let baseGroup = baseBook.getGroup(baseGroupId);
+        const book = BkperApp.getBook(bookId);
+        const account = book.getAccount(accountId);
+        const group = book.getGroup(groupId);
 
-        let stockBook = BotService.getStockBook(baseBook);
-
+        const stockBook = BotService.getStockBook(book);
         if (stockBook == null) {
             throw 'No book with 0 decimal places found in the collection';
         }
 
         const template = HtmlService.createTemplateFromFile('BotView');
-
-        template.dateToday = Utilities.formatDate(new Date(), baseBook.getTimeZone(), 'yyyy-MM-dd');
-
+        template.dateToday = Utilities.formatDate(new Date(), book.getTimeZone(), 'yyyy-MM-dd');
         template.enableReset = true;
 
-        if (stockBook.getPermission() == BkperApp.Permission.OWNER && checkIfAllBooksAreUnlocked(baseBook)) {
+        if (stockBook.getPermission() == BkperApp.Permission.OWNER && checkIfAllBooksAreUnlocked(book)) {
             template.enableFullReset = true;
         } else {
             template.enableFullReset = false;
         }
 
-        template.book = {
-            id: stockBook.getId(),
-            name: stockBook.getName(),
-        }
-
+        template.book = { id: stockBook.getId(), name: stockBook.getName() };
         template.accounts = [];
-        template.group = {}
+        template.group = {};
 
         let accountsExcCodes = new Set<string>();
 
-        if (baseAccount) {
-            let stockAccount = stockBook.getAccount(baseAccount.getName());
+        if (account) {
+            let stockAccount = stockBook.getAccount(account.getName());
             addAccount(stockAccount);
-        } else if (baseGroup) {
-            let stockGroup = stockBook.getGroup(baseGroup.getName());
+        } else if (group) {
+            let stockGroup = stockBook.getGroup(group.getName());
             if (stockGroup) {
                 template.group = {
-                    id: baseGroup.getId(),
-                    name: baseGroup.getName()
+                    id: group.getId(),
+                    name: group.getName()
                 }
                 for (const account of stockGroup.getAccounts()) {
                     addAccount(account);
                 }
             }
         } else {
-            for (const account of BotService.getUncalculatedAccounts(stockBook)) {
+            for (const account of BotService.getUncalculatedAccounts(stockBook, BotService.getBaseBook(book))) {
                 addAccount(account);
             }
             template.enableReset = false;
@@ -62,10 +55,10 @@ namespace BotViewService {
             }
             const stockAccount = new StockAccount(account);
             if (!stockAccount.isPermanent() || stockAccount.isArchived() || !stockAccount.getExchangeCode()) {
-                //bypass non permanent accounts
+                // bypass non permanent accounts
                 return;
             }
-            if (baseAccount == null || (baseAccount != null && baseAccount.getNormalizedName() == stockAccount.getNormalizedName())) {
+            if (account == null || (account != null && account.getNormalizedName() == stockAccount.getNormalizedName())) {
                 template.accounts.push({
                     id: stockAccount.getId(),
                     name: stockAccount.getName()
@@ -76,7 +69,7 @@ namespace BotViewService {
 
         template.accounts.sort((a: { name: string; }, b: { name: string; }) => a.name.localeCompare(b.name));
 
-        const bookExcCodesUserCanEdit = BotService.getBooksExcCodesUserCanEdit(baseBook);
+        const bookExcCodesUserCanEdit = BotService.getBooksExcCodesUserCanEdit(book);
 
         let bookExcCodesUserCannotEdit: string[] = [];
         for (const code of Array.from(accountsExcCodes)) {

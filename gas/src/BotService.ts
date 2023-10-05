@@ -110,8 +110,8 @@ namespace BotService {
 
     export function getBaseBook(book: Bkper.Book): Bkper.Book {
         if (book.getCollection() == null) {
-            //@ts-ignore
-            console.log(`Collection of book ${book.getName()} id ${book.getId()}: ${book.wrapped}`)
+            // @ts-ignore
+            console.log(`Collection of book ${book.getName()} id ${book.getId()}: ${book.wrapped}`);
             return null;
         }
         let connectedBooks = book.getCollection().getBooks();
@@ -209,7 +209,9 @@ namespace BotService {
         return ret;
     }
 
-    export function getUncalculatedAccounts(stockBook: Bkper.Book): Bkper.Account[] {
+    export function getUncalculatedAccounts(stockBook: Bkper.Book, baseBook?: Bkper.Book): Bkper.Account[] {
+
+        const baseBookCurrency = baseBook ? BotService.getExcCode(baseBook) : undefined;
 
         let validationAccountsMap = new Map<string, ValidationAccount>();
 
@@ -236,15 +238,19 @@ namespace BotService {
             }
         }
 
-        let accounts: Bkper.Account[] = [];
+        let uncalculatedAccounts: Bkper.Account[] = [];
 
         for (const validationAccount of validationAccountsMap.values()) {
             if (validationAccount.needsRebuild() || validationAccount.hasUncalculatedResults()) {
-                accounts.push(validationAccount.getAccount());
+                uncalculatedAccounts.push(validationAccount.getAccount());
+                continue;
+            }
+            if (baseBookCurrency && validationAccount.hasExchangeRatesMissing(baseBookCurrency)) {
+                uncalculatedAccounts.push(validationAccount.getAccount());
             }
         }
 
-        return accounts;
+        return uncalculatedAccounts;
     }
 
     export function getUncalculatedAccountsQuery(stockBook: Bkper.Book): string {
