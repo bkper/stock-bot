@@ -11,9 +11,13 @@ The process of tracking realized gains and losses upon sales follows the FIFO ([
 
 Financial and Instruments Books **must be in the same [Collection](https://help.bkper.com/en/articles/4208937-collections)**.
 
-Only a single Instruments Book should be defined per Collection.
+A single Instruments Book must be defined per Collection.
 
 The Instruments Book is identified by a single book in the Collection with the **decimal places set to 0 (zero)** or by the ```stock_book``` property set to ```true```.
+
+A single Base Book can be defined per Collection. See [Realized Results Service](#realized-results-service).
+
+The Base Book is identified by the ```exc_base``` property set to ```true```.
 
 The Stock Bot interacts with the following properties:
 
@@ -45,7 +49,7 @@ The Stock Bot interacts with the following properties:
 
 ## Realized Results Service
 
-The process of calculating realized results follows the FIFO method. In this process, the Stock Bot can record transactions both in the Instruments and financial books.
+The process of calculating realized results follows the FIFO method. In this process, the Stock Bot can record transactions in the Instruments and financial books. If a Base Book is defined in the collection, realized exchange results will be recorded separately from stock market realized results.
 
 When calculating realized results, the market value of remaining instruments can be automatically adjusted on Financial Books to match the last realized price of that instrument. This valuation procedure is known as [Mark-To-Market](https://www.investopedia.com/terms/m/marktomarket.asp). For liquidated Bonds instruments, the Stock Bot can also perform this valuation on associated Interest accounts.
 
