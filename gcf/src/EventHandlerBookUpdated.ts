@@ -1,35 +1,30 @@
 import { Book } from "bkper";
 import { STOCK_HISTORICAL_PROP, EXC_HISTORICAL_PROP } from "./constants";
 import { EventHandler } from "./EventHandler";
-import { isStockBook, getBaseBooks } from "./BotService";
+import { isStockBook, getBaseBook } from "./BotService";
 
 export class EventHandlerBookUpdated extends EventHandler {
 
     protected async processObject(book: Book, connectedBook: Book, event: bkper.Event): Promise<string> {
 
         let response = '';
-        const baseBooks = getBaseBooks(book);
+        const baseBook = getBaseBook(book);
 
         if (isStockBook(book)) {
             const stockHistorical = book.getProperty(STOCK_HISTORICAL_PROP);
-            let anchors: string[] = [];
-            for (const baseBook of baseBooks) {
-                if (stockHistorical !== baseBook.getProperty(EXC_HISTORICAL_PROP)) {
-                    baseBook.setProperty(EXC_HISTORICAL_PROP, stockHistorical);
-                    anchors.push(this.buildBookAnchor(baseBook));
-                }
+            if (stockHistorical != baseBook.getProperty(EXC_HISTORICAL_PROP)) {
+                baseBook.setProperty(EXC_HISTORICAL_PROP, stockHistorical);
+                response += ` ${EXC_HISTORICAL_PROP}: ${stockHistorical}`;
             }
-            response += `${anchors.join(', ')}: ${EXC_HISTORICAL_PROP}: ${stockHistorical}`;
         }
 
         if (response !== '') {
-            for (const baseBook of baseBooks) {
-                await baseBook.update();
-            }
-            return response;
+            await baseBook.update();
+            return `${this.buildBookAnchor(baseBook)}: ${response}`;
         }
 
         return null;
+
     }
 
 }

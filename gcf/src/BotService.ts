@@ -11,30 +11,25 @@ export function isStockBook(book: Book): boolean {
   return false;
 }
 
-export function getBaseBooks(book: Book): Set<Book> {
+export function getBaseBook(book: Book): Book {
   const collection = book.getCollection();
   // No collection found
   if (collection == null) {
     return null;
   }
-  let baseBooks = new Set<Book>();
   const connectedBooks = collection.getBooks();
   for (const connectedBook of connectedBooks) {
     if (connectedBook.getProperty(EXC_BASE_PROP)) {
-      baseBooks.add(connectedBook);
+      return connectedBook;
     }
   }
-  // One or more base books found
-  if (baseBooks.size > 0) {
-    return baseBooks;
-  }
-  // No base books found: return all financial books
+  // No base book found: return USD book
   for (const connectedBook of connectedBooks) {
-    if (!isStockBook(connectedBook)) {
-      baseBooks.add(connectedBook);
+    if (getExcCode(connectedBook) === 'USD') {
+      return connectedBook;
     }
   }
-  return baseBooks;
+  return null;
 }
 
 export function getStockBook(book: Book): Book {
