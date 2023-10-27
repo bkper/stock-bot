@@ -75,6 +75,11 @@ namespace BotService {
 
     export function getExcRate(baseBook: Bkper.Book, financialBook: Bkper.Book, stockTransaction: Bkper.Transaction, excRateProp: string): Bkper.Amount {
 
+        // No base book defined
+        if (!BotService.hasBaseBookDefined(financialBook)) {
+            return undefined;
+        }
+
         // Base currency
         if (baseBook.getProperty(EXC_CODE_PROP) == financialBook.getProperty(EXC_CODE_PROP)) {
             return undefined;
@@ -127,6 +132,19 @@ namespace BotService {
         }
         console.log('No base book')
         return null;
+    }
+
+    export function hasBaseBookDefined(book: Bkper.Book): boolean {
+        if (book.getCollection() == null) {
+            return false;
+        }
+        let connectedBooks = book.getCollection().getBooks();
+        for (const connectedBook of connectedBooks) {
+            if (connectedBook.getProperty(EXC_BASE_PROP)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     export function getStockBook(book: Bkper.Book): Bkper.Book {

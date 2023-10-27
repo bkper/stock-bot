@@ -748,11 +748,12 @@ namespace RealizedResultsService {
                 .setDate(gainDate)
                 .setAmount(gain)
                 .setDescription(`#stock_gain`)
-                .setProperty(EXC_AMOUNT_PROP, isBaseBook ? null : gainBaseNoFX.abs().toString())
-                .setProperty(EXC_CODE_PROP, isBaseBook ? null : BotService.getExcCode(baseBook))
+                .setProperty(EXC_AMOUNT_PROP, getStockGainLossTransactionExcAmountProp(financialBook, isBaseBook, gainBaseNoFX))
+                .setProperty(EXC_CODE_PROP, getStockGainLossTransactionExcCodeProp(financialBook, isBaseBook, baseBook))
                 .from(realizedGainAccount)
                 .to(unrealizedAccount)
-                .post().check();
+                .post().check()
+            ;
 
         } else if (gain.round(financialBook.getFractionDigits()).lt(0)) {
 
@@ -778,13 +779,28 @@ namespace RealizedResultsService {
                 .setDate(gainDate)
                 .setAmount(gain)
                 .setDescription(`#stock_loss`)
-                .setProperty(EXC_AMOUNT_PROP, isBaseBook ? null : gainBaseNoFX.abs().toString())
-                .setProperty(EXC_CODE_PROP, isBaseBook ? null : BotService.getExcCode(baseBook))
+                .setProperty(EXC_AMOUNT_PROP, getStockGainLossTransactionExcAmountProp(financialBook, isBaseBook, gainBaseNoFX))
+                .setProperty(EXC_CODE_PROP, getStockGainLossTransactionExcCodeProp(financialBook, isBaseBook, baseBook))
                 .from(unrealizedAccount)
                 .to(realizedLossAccount)
-                .post().check();
+                .post().check()
+            ;
 
         }
+    }
+
+    function getStockGainLossTransactionExcAmountProp(financialBook: Bkper.Book, isBaseBook: boolean, gainBaseNoFX: Bkper.Amount): string {
+        if (!BotService.hasBaseBookDefined(financialBook)) {
+            return null;
+        }
+        return isBaseBook ? null : gainBaseNoFX.abs().toString();
+    }
+
+    function getStockGainLossTransactionExcCodeProp(financialBook: Bkper.Book, isBaseBook: boolean, baseBook: Bkper.Book): string {
+        if (!BotService.hasBaseBookDefined(financialBook)) {
+            return null;
+        }
+        return isBaseBook ? null : BotService.getExcCode(baseBook);
     }
 
     function trackAccountCreated(summary: Summary, stockExcCode: string, account: Bkper.Account) {
