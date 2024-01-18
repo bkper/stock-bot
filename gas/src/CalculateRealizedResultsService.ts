@@ -17,7 +17,8 @@ namespace RealizedResultsService {
         };
 
         if (stockAccount.needsRebuild()) {
-            resetRealizedResultsForAccount(stockBook, stockAccount, false);
+            // Reset sync for now
+            resetRealizedResultsForAccountSync(stockBook, stockAccount, false);
             stockBook = BkperApp.getBook(stockBookId);
             stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
         }
