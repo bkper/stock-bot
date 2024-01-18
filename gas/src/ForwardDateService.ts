@@ -17,7 +17,9 @@ namespace ForwardDateService {
         if (forwardedDateValue && dateValue === forwardedDateValue) {
             return {
                 accountId: stockAccountId,
-                result: `Cannot set forward date: account forwarded date is already ${BotService.formatDate(stockAccount.getForwardedDate(), stockBook.getTimeZone(), stockBook.getDatePattern())}`
+                completed: true,
+                result: `Cannot set forward date: account forwarded date is already ${BotService.formatDate(stockAccount.getForwardedDate(), stockBook.getTimeZone(), stockBook.getDatePattern())}`,
+                error: true
             }
         }
 
@@ -36,7 +38,9 @@ namespace ForwardDateService {
         if (realizedDateValue && dateValue <= realizedDateValue) {
             return {
                 accountId: stockAccountId,
-                result: `Cannot set forward date: account has realized results up to ${BotService.formatDate(stockAccount.getRealizedDate(), stockBook.getTimeZone(), stockBook.getDatePattern())}`
+                completed: true,
+                result: `Cannot set forward date: account has realized results up to ${BotService.formatDate(stockAccount.getRealizedDate(), stockBook.getTimeZone(), stockBook.getDatePattern())}`,
+                error: true
             }
         }
 
@@ -88,6 +92,7 @@ namespace ForwardDateService {
 
         return {
             accountId: stockAccount.getId(),
+            completed: true,
             result: `${forwardedTransactions.length} fixed and ${newForward.result}`
         }
     }
@@ -98,7 +103,9 @@ namespace ForwardDateService {
         if (stockAccount.needsRebuild()) {
             return {
                 accountId: stockAccount.getId(),
-                result: `Cannot set forward date: account needs rebuild`
+                completed: true,
+                result: `Cannot set forward date: account needs rebuild`,
+                error: true
             }
         }
 
@@ -192,11 +199,13 @@ namespace ForwardDateService {
             stockBook.setClosingDate(closingDateISO).update();
             return {
                 accountId: stockAccount.getId(),
+                completed: true,
                 result: `${transactions.length} forwarded to ${BotService.formatDate(forwardDate, stockBook.getTimeZone(), stockBook.getDatePattern())} and book closed on ${stockBook.formatDate(closingDate)}`
             }
         } else {
             return {
                 accountId: stockAccount.getId(),
+                completed: true,
                 result: `${transactions.length} forwarded to ${BotService.formatDate(forwardDate, stockBook.getTimeZone(), stockBook.getDatePattern())}`
             }
         }

@@ -267,10 +267,14 @@
   }
 
   function hideAccountWaiting(summary) {
-    if (summary.result.indexOf('Cannot') >= 0) {
-      document.getElementById(`result-${summary.accountId}`).innerHTML = `<img class='error-icon' src='https://storage.googleapis.com/bkper-public/addons/error.png'>Error:</img>` + ' ' + summary.result;
+    if (summary.completed) {
+      if (summary.error) {
+        document.getElementById(`result-${summary.accountId}`).innerHTML = `<img class='error-icon' src='https://storage.googleapis.com/bkper-public/addons/error.png'>Error:</img>` + ' ' + summary.result;
+      } else {
+        document.getElementById(`result-${summary.accountId}`).innerHTML = `<img class='success-icon' src='https://storage.googleapis.com/bkper-public/addons/check.png'>Done!</img>` + ' ' + summary.result;
+      }
     } else {
-      document.getElementById(`result-${summary.accountId}`).innerHTML = `<img class='success-icon' src='https://storage.googleapis.com/bkper-public/addons/check.png'>Done!</img>` + ' ' + summary.result;
+      document.getElementById(`result-${summary.accountId}`).innerHTML = summary.result;
     }
   }
 

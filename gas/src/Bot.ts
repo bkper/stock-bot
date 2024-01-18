@@ -106,7 +106,7 @@ function setForwardDate(bookId: string, accountId: string, date: string): Summar
   if (accountId) {
     let summary: Summary;
     if (!BotService.isAccountGoodForForward(bookId, accountId, date)) {
-      summary = { accountId: accountId, result: `Cannot set forward date: account has uncalculated results` };
+      summary = { accountId: accountId, completed: true, result: `Cannot set forward date: account has uncalculated results`, error: true };
     } else {
       summary = ForwardDateService.forwardDate(bookId, accountId, date);
     }

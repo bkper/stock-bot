@@ -13,20 +13,23 @@ namespace RealizedResultsService {
 
         let summary: Summary = {
             accountId: stockAccountId,
+            completed: false,
             result: {}
         };
 
         if (stockAccount.needsRebuild()) {
             // Reset sync for now
-            resetRealizedResultsForAccountSync(stockBook, stockAccount, false);
+            RealizedResultsService.resetRealizedResultsForAccountSync(stockBook, stockAccount, false);
             stockBook = BkperApp.getBook(stockBookId);
             stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
         }
 
         let stockExcCode = stockAccount.getExchangeCode();
         let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
+        // Skip
         if (financialBook == null) {
-            return summary; //Skip
+            summary.completed = true;
+            return summary;
         }
 
         const beforeDate = BotService.getBeforeDateIsoString(stockBook, toDate);
@@ -74,6 +77,7 @@ namespace RealizedResultsService {
 
         checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
 
+        summary.completed = true;
         return summary;
 
     }

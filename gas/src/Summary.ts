@@ -1,4 +1,6 @@
 interface Summary {
-  accountId: string;
-  result: any;
+    accountId: string;
+    completed: boolean;
+    result: any;
+    error?: boolean;
 }

@@ -193,12 +193,13 @@ namespace RealizedResultsService {
 
         return {
             accountId: stockAccount.getId(),
+            completed: true,
             result: ''
         }
 
     }
 
-    function resetRealizedResultsForAccountAsync(stockBook: Bkper.Book, stockAccount: StockAccount, full: boolean, resetIterator?: Bkper.TransactionIterator): Summary {
+    export function resetRealizedResultsForAccountAsync(stockBook: Bkper.Book, stockAccount: StockAccount, full: boolean, resetIterator?: Bkper.TransactionIterator): Summary {
 
         let iterator: Bkper.TransactionIterator;
         if (resetIterator) {
@@ -406,6 +407,7 @@ namespace RealizedResultsService {
 
         return {
             accountId: stockAccount.getId(),
+            completed: true,
             result: ''
         }
 
