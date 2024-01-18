@@ -18,10 +18,10 @@ namespace RealizedResultsService {
         };
 
         if (stockAccount.needsRebuild()) {
-            // Reset sync for now
-            RealizedResultsService.resetRealizedResultsForAccountSync(stockBook, stockAccount, false);
-            stockBook = BkperApp.getBook(stockBookId);
-            stockAccount = new StockAccount(stockBook.getAccount(stockAccountId));
+            // Reset async
+            RealizedResultsService.resetRealizedResultsForAccountAsync(stockBook, stockAccount, false);
+            summary.result = `Account needs rebuild: reseting async...`;
+            return summary;
         }
 
         let stockExcCode = stockAccount.getExchangeCode();
