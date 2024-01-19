@@ -208,13 +208,19 @@ namespace RealizedResultsService {
             iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, full));
         }
 
-        // let stockAccountSaleTransactions: Bkper.Transaction[] = [];
-        // let stockAccountPurchaseTransactions: Bkper.Transaction[] = [];
+        // Summary
+        let summary: Summary = {
+            accountId: stockAccount.getId(),
+            completed: false,
+            result: {}
+        };
 
         const stockExcCode = stockAccount.getExchangeCode();
         const financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
+        // Skip
         if (financialBook == null) {
-            return;
+            summary.completed = true;
+            return summary;
         }
 
         const baseBook = BotService.getBaseBook(financialBook);
@@ -225,7 +231,7 @@ namespace RealizedResultsService {
             transactions.push(tx);
         }
 
-        // Store transactions to be updated or trashed
+        // Store transactions to update or trash
         let stockBookTransactionsToUpdate: Bkper.Transaction[] = [];
         let stockBookTransactionsToTrash: Bkper.Transaction[] = [];
         let financialBookTransactionsToTrash: Bkper.Transaction[] = [];
@@ -282,6 +288,7 @@ namespace RealizedResultsService {
                     baseBookTransactionsToTrash.push(fxTx);
                 }
 
+                // Reset properties
                 let originalAmountProp = tx.getProperty(ORIGINAL_AMOUNT_PROP);
                 let originalQuantityProp = tx.getProperty(ORIGINAL_QUANTITY_PROP);
 
@@ -348,7 +355,6 @@ namespace RealizedResultsService {
                             .setAmount(originalQuantityProp)
                         ;
                         stockBookTransactionsToUpdate.push(tx);
-                        // stockAccountSaleTransactions.push(tx);
                     } else if (BotService.isPurchase(tx)) {
                         let purchasePriceProp = tx.getProperty(PURCHASE_PRICE_PROP);
                         // OLD way to find price
@@ -364,13 +370,12 @@ namespace RealizedResultsService {
                             .setAmount(originalQuantityProp)
                         ;
                         stockBookTransactionsToUpdate.push(tx);
-                        // stockAccountPurchaseTransactions.push(tx);
                     }
                 }
             }
         }
 
-        // Run batch operations
+        // Fire batch operations
         if (stockBookTransactionsToUpdate.length > 0) {
             stockBook.batchUpdateTransactions(stockBookTransactionsToUpdate);
         }
@@ -386,7 +391,6 @@ namespace RealizedResultsService {
 
         // Update account
         stockAccount.clearNeedsRebuild();
-
         if (full) {
             stockAccount
                 .deleteRealizedDate()
@@ -405,11 +409,8 @@ namespace RealizedResultsService {
 
         stockAccount.update();
 
-        return {
-            accountId: stockAccount.getId(),
-            completed: true,
-            result: ''
-        }
+        summary.completed = true;
+        return summary;
 
     }
 
