@@ -13,14 +13,13 @@ namespace RealizedResultsService {
 
         let summary: Summary = {
             accountId: stockAccountId,
-            completed: false,
             result: {}
         };
 
         if (stockAccount.needsRebuild()) {
             // Reset async
             RealizedResultsService.resetRealizedResultsForAccountAsync(stockBook, stockAccount, false);
-            summary.result = `Account needs rebuild: reseting async...`;
+            summary.result = "Account needs rebuild: reseting async...";
             return summary;
         }
 
@@ -28,7 +27,6 @@ namespace RealizedResultsService {
         let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
         // Skip
         if (financialBook == null) {
-            summary.completed = true;
             return summary;
         }
 
@@ -77,7 +75,7 @@ namespace RealizedResultsService {
 
         checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
 
-        summary.completed = true;
+        summary.result = `Done! ${JSON.stringify(summary.result)}`;
         return summary;
 
     }

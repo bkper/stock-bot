@@ -68,60 +68,70 @@ const FWD_LOG_PROP = 'fwd_log';
 
 
 function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
-  //@ts-ignore
+
+  // @ts-ignore
   let bookId = e.parameter.bookId;
-  //@ts-ignore
+  // @ts-ignore
   let accountId = e.parameter.accountId;
-  //@ts-ignore
+  // @ts-ignore
   let groupId = e.parameter.groupId;
 
   return BotViewService.getBotViewTemplate(bookId, accountId, groupId);
 }
 
 function calculateRealizedResults(bookId: string, accountId: string, autoMtM: boolean, toDate: string): Summary {
+
   // Log user inputs
   console.log(`book id: ${bookId}, account id: ${accountId}, date input: ${toDate}, autoMtM: ${autoMtM}`);
 
   if (accountId) {
-    let summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId, autoMtM, toDate);
+    const summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId, autoMtM, toDate);
     summary.result = JSON.stringify(summary.result);
     return summary;
   }
+
 }
 
 function resetRealizedResults(bookId: string, accountId: string): Summary {
+
   // Log user inputs
   console.log(`book id: ${bookId}, account id: ${accountId}`);
 
   if (accountId) {
-    let summary = RealizedResultsService.resetRealizedResults(bookId, accountId, false);
+    const summary = RealizedResultsService.resetRealizedResults(bookId, accountId, false);
     summary.result = JSON.stringify(summary.result);
     return summary;
   }
+
+}
+
+function fullResetRealizedResults(bookId: string, accountId: string): Summary {
+
+  // Log user inputs
+  console.log(`book id: ${bookId}, account id: ${accountId}`);
+
+  if (accountId) {
+    const summary = RealizedResultsService.resetRealizedResults(bookId, accountId, true);
+    summary.result = JSON.stringify(summary.result);
+    return summary;
+  }
+
 }
 
 function setForwardDate(bookId: string, accountId: string, date: string): Summary {
+
   // Log user inputs
   console.log(`book id: ${bookId}, account id: ${accountId}, date input: ${date}`);
 
   if (accountId) {
     let summary: Summary;
     if (!BotService.isAccountGoodForForward(bookId, accountId, date)) {
-      summary = { accountId: accountId, completed: true, result: `Cannot set forward date: account has uncalculated results`, error: true };
+      summary = { accountId: accountId, result: `Cannot set forward date: account has uncalculated results`, error: true };
     } else {
       summary = ForwardDateService.forwardDate(bookId, accountId, date);
     }
     summary.result = JSON.stringify(summary.result);
     return summary;
   }
-}
 
-function fullResetRealizedResults(bookId: string, accountId: string): Summary {
-  // Log user inputs
-  console.log(`book id: ${bookId}, account id: ${accountId}`);
-
-  if (accountId) {
-    let summary = RealizedResultsService.resetRealizedResults(bookId, accountId, true);
-    return summary;
-  }
 }

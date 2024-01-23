@@ -21,7 +21,10 @@ namespace RealizedResultsService {
         let stockExcCode = stockAccount.getExchangeCode();
         let financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
         if (financialBook == null) {
-            return;
+            return {
+                accountId: stockAccount.getId(),
+                result: {}
+            }
         }
 
         const baseBook = BotService.getBaseBook(financialBook);
@@ -193,8 +196,7 @@ namespace RealizedResultsService {
 
         return {
             accountId: stockAccount.getId(),
-            completed: true,
-            result: ''
+            result: 'Done!'
         }
 
     }
@@ -211,7 +213,6 @@ namespace RealizedResultsService {
         // Summary
         let summary: Summary = {
             accountId: stockAccount.getId(),
-            completed: false,
             result: ''
         };
 
@@ -219,7 +220,6 @@ namespace RealizedResultsService {
         const financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
         // Skip
         if (financialBook == null) {
-            summary.completed = true;
             return summary;
         }
 
@@ -409,8 +409,7 @@ namespace RealizedResultsService {
 
         stockAccount.update();
 
-        summary.completed = true;
-        summary.result = `Reseting async...`;
+        summary.result = 'Reseting async...';
         return summary;
 
     }
