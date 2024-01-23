@@ -95,6 +95,7 @@ function resetRealizedResults(bookId: string, accountId: string): Summary {
 
   if (accountId) {
     let summary = RealizedResultsService.resetRealizedResults(bookId, accountId, false);
+    summary.result = JSON.stringify(summary.result);
     return summary;
   }
 }

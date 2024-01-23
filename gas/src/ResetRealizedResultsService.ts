@@ -212,7 +212,7 @@ namespace RealizedResultsService {
         let summary: Summary = {
             accountId: stockAccount.getId(),
             completed: false,
-            result: {}
+            result: ''
         };
 
         const stockExcCode = stockAccount.getExchangeCode();
@@ -243,7 +243,7 @@ namespace RealizedResultsService {
             console.log(`processing transaction: ${tx.getId()}`);
 
             if (tx.isChecked()) {
-                tx = tx.uncheck();
+                tx.setChecked(false);
             }
 
             if (tx.getAgentId() == 'stock-bot') {
@@ -259,7 +259,7 @@ namespace RealizedResultsService {
                 while (i.hasNext()) {
                     let financialTx = i.next();
                     if (financialTx.isChecked()) {
-                        financialTx = financialTx.uncheck();
+                        financialTx.setChecked(false);
                     }
                     financialBookTransactionsToTrash.push(financialTx);
                 }
@@ -267,7 +267,7 @@ namespace RealizedResultsService {
                 while (i.hasNext()) {
                     let mtmTx = i.next();
                     if (mtmTx.isChecked()) {
-                        mtmTx = mtmTx.uncheck();
+                        mtmTx.setChecked(false);
                     }
                     financialBookTransactionsToTrash.push(mtmTx);
                 }
@@ -275,7 +275,7 @@ namespace RealizedResultsService {
                 while (i.hasNext()) {
                     let interestMtmTx = i.next();
                     if (interestMtmTx.isChecked()) {
-                        interestMtmTx = interestMtmTx.uncheck();
+                        interestMtmTx.setChecked(false);
                     }
                     financialBookTransactionsToTrash.push(interestMtmTx);
                 }
@@ -283,7 +283,7 @@ namespace RealizedResultsService {
                 while (i.hasNext()) {
                     let fxTx = i.next();
                     if (fxTx.isChecked()) {
-                        fxTx = fxTx.uncheck();
+                        fxTx.setChecked(false);
                     }
                     baseBookTransactionsToTrash.push(fxTx);
                 }
@@ -377,16 +377,16 @@ namespace RealizedResultsService {
 
         // Fire batch operations
         if (stockBookTransactionsToUpdate.length > 0) {
-            stockBook.batchUpdateTransactions(stockBookTransactionsToUpdate);
+            stockBook.batchUpdateTransactions(stockBookTransactionsToUpdate, true);
         }
         if (stockBookTransactionsToTrash.length > 0) {
-            stockBook.batchTrashTransactions(stockBookTransactionsToTrash);
+            stockBook.batchTrashTransactions(stockBookTransactionsToTrash, true);
         }
         if (financialBookTransactionsToTrash.length > 0) {
-            financialBook.batchTrashTransactions(financialBookTransactionsToTrash);
+            financialBook.batchTrashTransactions(financialBookTransactionsToTrash, true);
         }
         if (baseBookTransactionsToTrash.length > 0) {
-            baseBook.batchTrashTransactions(baseBookTransactionsToTrash);
+            baseBook.batchTrashTransactions(baseBookTransactionsToTrash, true);
         }
 
         // Update account
@@ -410,6 +410,7 @@ namespace RealizedResultsService {
         stockAccount.update();
 
         summary.completed = true;
+        summary.result = `Reseting async...`;
         return summary;
 
     }
