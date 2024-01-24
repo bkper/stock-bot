@@ -254,38 +254,49 @@ namespace RealizedResultsService {
                     continue;
                 }
 
-                // Trash RRs, MTMs and FXs
-                let i = financialBook.getTransactions(`remoteId:${tx.getId()}`);
-                while (i.hasNext()) {
-                    let financialTx = i.next();
-                    if (financialTx.isChecked()) {
-                        financialTx.setChecked(false);
+                // Trash transactions connected to liquidations
+                if (isLiquidationTransaction(tx)) {
+
+                    // Trash RRs
+                    let i = financialBook.getTransactions(`remoteId:${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let financialTx = i.next();
+                        if (financialTx.isChecked()) {
+                            financialTx.setChecked(false);
+                        }
+                        financialBookTransactionsToTrash.push(financialTx);
                     }
-                    financialBookTransactionsToTrash.push(financialTx);
-                }
-                i = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`);
-                while (i.hasNext()) {
-                    let mtmTx = i.next();
-                    if (mtmTx.isChecked()) {
-                        mtmTx.setChecked(false);
+
+                    // Trash MTMs
+                    i = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let mtmTx = i.next();
+                        if (mtmTx.isChecked()) {
+                            mtmTx.setChecked(false);
+                        }
+                        financialBookTransactionsToTrash.push(mtmTx);
                     }
-                    financialBookTransactionsToTrash.push(mtmTx);
-                }
-                i = financialBook.getTransactions(`remoteId:interestmtm_${tx.getId()}`);
-                while (i.hasNext()) {
-                    let interestMtmTx = i.next();
-                    if (interestMtmTx.isChecked()) {
-                        interestMtmTx.setChecked(false);
+
+                    // Trash Interest MTMs
+                    i = financialBook.getTransactions(`remoteId:interestmtm_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let interestMtmTx = i.next();
+                        if (interestMtmTx.isChecked()) {
+                            interestMtmTx.setChecked(false);
+                        }
+                        financialBookTransactionsToTrash.push(interestMtmTx);
                     }
-                    financialBookTransactionsToTrash.push(interestMtmTx);
-                }
-                i = baseBook.getTransactions(`remoteId:fx_${tx.getId()}`);
-                while (i.hasNext()) {
-                    let fxTx = i.next();
-                    if (fxTx.isChecked()) {
-                        fxTx.setChecked(false);
+
+                    // Trash FXs
+                    i = baseBook.getTransactions(`remoteId:fx_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let fxTx = i.next();
+                        if (fxTx.isChecked()) {
+                            fxTx.setChecked(false);
+                        }
+                        baseBookTransactionsToTrash.push(fxTx);
                     }
-                    baseBookTransactionsToTrash.push(fxTx);
+
                 }
 
                 // Reset properties
@@ -314,10 +325,11 @@ namespace RealizedResultsService {
                     ;
                 }
 
+                // Trash splitted transaction
                 if (!originalQuantityProp) {
                     stockBookTransactionsToTrash.push(tx);
+                // Reset parent transaction
                 } else {
-
                     // Fix wrong negative prices from forwarded date error
                     if (tx.getProperty(FWD_SALE_PRICE_PROP)) {
                         tx.setProperty(FWD_SALE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_SALE_PRICE_PROP)).abs().toString());
@@ -325,7 +337,6 @@ namespace RealizedResultsService {
                     if (tx.getProperty(FWD_PURCHASE_PRICE_PROP)) {
                         tx.setProperty(FWD_PURCHASE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_PURCHASE_PRICE_PROP)).abs().toString());
                     }
-
                     tx
                         .deleteProperty(GAIN_AMOUNT_PROP)
                         .deleteProperty(PURCHASE_AMOUNT_PROP)
@@ -340,7 +351,7 @@ namespace RealizedResultsService {
                         .deleteProperty(FWD_SALE_AMOUNT_PROP)
                         .deleteProperty(LIQUIDATION_LOG_PROP)
                     ;
-
+                    // Sales
                     if (BotService.isSale(tx)) {
                         let salePriceProp = tx.getProperty(SALE_PRICE_PROP);
                         // OLD way to find price
@@ -355,6 +366,7 @@ namespace RealizedResultsService {
                             .setAmount(originalQuantityProp)
                         ;
                         stockBookTransactionsToUpdate.push(tx);
+                    // Purchases
                     } else if (BotService.isPurchase(tx)) {
                         let purchasePriceProp = tx.getProperty(PURCHASE_PRICE_PROP);
                         // OLD way to find price
@@ -412,6 +424,10 @@ namespace RealizedResultsService {
         summary.result = 'Reseting async...';
         return summary;
 
+    }
+
+    function isLiquidationTransaction(transaction: Bkper.Transaction): boolean {
+        return transaction.getProperty(GAIN_AMOUNT_PROP) ? true : false;
     }
 
 }
