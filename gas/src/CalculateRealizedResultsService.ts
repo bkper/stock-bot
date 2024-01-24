@@ -11,16 +11,12 @@ namespace RealizedResultsService {
 
         let historical = stockBook.getProperty(STOCK_HISTORICAL_PROP) && stockBook.getProperty(STOCK_HISTORICAL_PROP).toLowerCase() == 'true' ? true : false;
 
-        let summary: Summary = {
-            accountId: stockAccountId,
-            result: {}
-        };
+        const summary = new Summary(stockAccount.getId());
 
         if (stockAccount.needsRebuild()) {
-            // Reset async
+            // Fire reset async
             RealizedResultsService.resetRealizedResultsForAccountAsync(stockBook, stockAccount, false);
-            summary.result = "Account needs rebuild: reseting async...";
-            return summary;
+            return summary.rebuild();
         }
 
         let stockExcCode = stockAccount.getExchangeCode();
@@ -75,8 +71,7 @@ namespace RealizedResultsService {
 
         checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
 
-        summary.result = `Done! ${JSON.stringify(summary.result)}`;
-        return summary;
+        return summary.done();
 
     }
 
@@ -609,10 +604,7 @@ namespace RealizedResultsService {
     }
 
     function trackAccountCreated(summary: Summary, stockExcCode: string, account: Bkper.Account) {
-        if (summary.result[stockExcCode] == null) {
-            summary.result[stockExcCode] = [];
-        }
-        summary.result[stockExcCode].push(account.getName());
+        summary.pushAccount(stockExcCode, account.getName());
     }
 
     function markToMarket(

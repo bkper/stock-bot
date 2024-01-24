@@ -299,7 +299,7 @@ namespace BotService {
         return account;
     }
 
-    export function isAccountGoodForForward(stockBookId: string, stockAccountId: string, forwardDate: string): boolean {
+    export function isAccountUncalculated(stockBookId: string, stockAccountId: string, forwardDate: string): boolean {
 
         const stockBook = BkperApp.getBook(stockBookId);
         const stockAccount = stockBook.getAccount(stockAccountId);
@@ -324,7 +324,7 @@ namespace BotService {
             }
         }
 
-        return validationAccount.hasUncalculatedResults() ? false : true;
+        return validationAccount.hasUncalculatedResults() ? true : false;
     }
 
 }

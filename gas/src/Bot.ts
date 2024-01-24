@@ -86,8 +86,7 @@ function calculateRealizedResults(bookId: string, accountId: string, autoMtM: bo
 
   if (accountId) {
     const summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId, autoMtM, toDate);
-    summary.result = JSON.stringify(summary.result);
-    return summary;
+    return summary.json();
   }
 
 }
@@ -99,8 +98,7 @@ function resetRealizedResults(bookId: string, accountId: string): Summary {
 
   if (accountId) {
     const summary = RealizedResultsService.resetRealizedResults(bookId, accountId, false);
-    summary.result = JSON.stringify(summary.result);
-    return summary;
+    return summary.json();
   }
 
 }
@@ -112,8 +110,7 @@ function fullResetRealizedResults(bookId: string, accountId: string): Summary {
 
   if (accountId) {
     const summary = RealizedResultsService.resetRealizedResults(bookId, accountId, true);
-    summary.result = JSON.stringify(summary.result);
-    return summary;
+    return summary.json();
   }
 
 }
@@ -124,14 +121,8 @@ function setForwardDate(bookId: string, accountId: string, date: string): Summar
   console.log(`book id: ${bookId}, account id: ${accountId}, date input: ${date}`);
 
   if (accountId) {
-    let summary: Summary;
-    if (!BotService.isAccountGoodForForward(bookId, accountId, date)) {
-      summary = { accountId: accountId, result: `Cannot set forward date: account has uncalculated results`, error: true };
-    } else {
-      summary = ForwardDateService.forwardDate(bookId, accountId, date);
-    }
-    summary.result = JSON.stringify(summary.result);
-    return summary;
+    const summary = ForwardDateService.forwardDate(bookId, accountId, date);
+    return summary.json();
   }
 
 }
