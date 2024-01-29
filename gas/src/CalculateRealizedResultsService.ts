@@ -379,7 +379,7 @@ namespace RealizedResultsService {
                 // Store transaction to be created: create temporaty id as remoteId in order to wrap up c
                 splittedPurchaseTransaction
                     .setChecked(true)
-                    .addRemoteId(`rrp_id_${BotService.generateId()}`)
+                    .addRemoteId(`${processor.generateTemporaryId()}`)
                 ;
                 processor.setStockBookTransactionToCreate(splittedPurchaseTransaction);
 
@@ -520,7 +520,7 @@ namespace RealizedResultsService {
                 // Store transaction to be created: create temporaty id as remoteId in order to wrap up c
                 splittedSaleTransaction
                     .setChecked(true)
-                    .addRemoteId(`rrp_id_${BotService.generateId()}`)
+                    .addRemoteId(`${processor.generateTemporaryId()}`)
                 ;
                 processor.setStockBookTransactionToCreate(splittedSaleTransaction);
 
@@ -606,7 +606,7 @@ namespace RealizedResultsService {
                 trackAccountCreated(summary, stockExcCode, realizedGainAccount);
             }
 
-            const remoteId = transaction.getId() || BotService.getRrpTemporaryId(transaction);
+            const remoteId = transaction.getId() || processor.getTemporaryId(transaction);
 
             const rrTransaction = financialBook.newTransaction()
                 .addRemoteId(remoteId)
@@ -643,7 +643,7 @@ namespace RealizedResultsService {
                 trackAccountCreated(summary, stockExcCode, realizedLossAccount);
             }
 
-            const remoteId = transaction.getId() || BotService.getRrpTemporaryId(transaction);
+            const remoteId = transaction.getId() || processor.getTemporaryId(transaction);
 
             const rrTransaction = financialBook.newTransaction()
                 .addRemoteId(remoteId)
@@ -700,7 +700,7 @@ namespace RealizedResultsService {
         const balance = getAccountBalance(financialBook, financialInstrument, date);
         const newBalance = totalQuantity.times(price);
 
-        const remoteId = transaction.getId() || BotService.getRrpTemporaryId(transaction);
+        const remoteId = transaction.getId() || processor.getTemporaryId(transaction);
 
         const amount = newBalance.minus(balance.plus(processor.getMtmBalance()));
         if (amount.round(financialBook.getFractionDigits()).gt(0)) {
@@ -841,7 +841,7 @@ namespace RealizedResultsService {
         }
 
         const fxGain = gainBaseWithFx.minus(gainBaseNoFx);
-        const remoteId = transaction.getId() || BotService.getRrpTemporaryId(transaction);
+        const remoteId = transaction.getId() || processor.getTemporaryId(transaction);
 
         if (fxGain.round(baseBook.getFractionDigits()).gt(0)) {
 

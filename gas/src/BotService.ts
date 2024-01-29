@@ -327,18 +327,4 @@ namespace BotService {
         return validationAccount.hasUncalculatedResults() ? true : false;
     }
 
-    // Move to processor?
-    export function generateId(): string {
-        return `${Utilities.getUuid()}`;
-    }
-
-    export function getRrpTemporaryId(transaction: Bkper.Transaction): string {
-        for (const remoteId of transaction.getRemoteIds()) {
-            if (remoteId.startsWith('rrp_id_')) {
-                return remoteId;
-            }
-        }
-        return '';
-    }
-
 }

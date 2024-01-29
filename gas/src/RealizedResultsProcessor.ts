@@ -18,6 +18,19 @@ class RealizedResultsProcessor {
         this.baseBook = baseBook;
     }
 
+    generateTemporaryId(): string {
+        return `rrp_id_${Utilities.getUuid()}`;
+    }
+
+    getTemporaryId(transaction: Bkper.Transaction): string {
+        for (const remoteId of transaction.getRemoteIds()) {
+            if (remoteId.startsWith('rrp_id_')) {
+                return remoteId;
+            }
+        }
+        return '';
+    }
+
     private getRemoteId(transaction: Bkper.Transaction): string {
         const remoteIds = transaction.getRemoteIds();
         return remoteIds.length > 0 ? remoteIds[0] : '';
@@ -71,7 +84,7 @@ class RealizedResultsProcessor {
         // Fix remoteIds references on RR, FX and MTM transactions
         for (const newStockBookTx of newStockBookTransactions) {
 
-            const oldId = BotService.getRrpTemporaryId(newStockBookTx);
+            const oldId = this.getTemporaryId(newStockBookTx);
             const newId = newStockBookTx.getId();
 
             // RR
