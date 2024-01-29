@@ -34,8 +34,13 @@ class Summary {
         return this;
     }
 
-    resetAsync(): this {
+    resetingAsync(): this {
         this.result = 'Reseting async...';
+        return this;
+    }
+
+    calculatingAsync(): this {
+        this.result = 'Calculating async...';
         return this;
     }
 

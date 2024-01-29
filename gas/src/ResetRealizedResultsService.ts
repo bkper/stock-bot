@@ -409,7 +409,7 @@ namespace RealizedResultsService {
 
         stockAccount.update();
 
-        return new Summary(stockAccount.getId()).resetAsync();
+        return new Summary(stockAccount.getId()).resetingAsync();
 
     }
 

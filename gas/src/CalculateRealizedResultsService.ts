@@ -1,6 +1,6 @@
 namespace RealizedResultsService {
 
-    export function calculateRealizedResultsForAccount(stockBookId: string, stockAccountId: string, autoMtM: boolean, toDate: string): Summary {
+    export function calculateRealizedResultsForAccountAsync(stockBookId: string, stockAccountId: string, autoMtM: boolean, toDate: string): Summary {
 
         let stockBook = BkperApp.getBook(stockBookId);
         if (!toDate) {
@@ -51,45 +51,51 @@ namespace RealizedResultsService {
 
         const baseBook = BotService.getBaseBook(financialBook);
 
+        // Processor
+        const processor = new RealizedResultsProcessor(stockBook, financialBook, baseBook);
+
         // Process sales
         for (const saleTransaction of stockAccountSaleTransactions) {
             if (stockAccountPurchaseTransactions.length > 0) {
-                processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM, historical);
+                processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM, historical, processor);
             }
         }
 
         // Check & record exchange rates if missing
-        checkAndRecordExchangeRates(baseBook, financialBook, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
+        checkAndRecordExchangeRates(baseBook, financialBook, stockAccountSaleTransactions, stockAccountPurchaseTransactions, processor);
 
         // Check & record Interest account MTM if necessary
         if (autoMtM) {
             const financialInterestAccount = BotService.getInterestAccount(financialBook, stockAccount.getName());
             const lastTransactionId = getLastTransactionId(stockAccountSaleTransactions, stockAccountPurchaseTransactions);
             if (financialInterestAccount && lastTransactionId) {
-                checkAndRecordInterestMtm(stockAccount, stockBook, financialInterestAccount, financialBook, toDate, lastTransactionId, summary);
+                checkAndRecordInterestMtm(stockAccount, stockBook, financialInterestAccount, financialBook, toDate, lastTransactionId, summary, processor);
             }
         }
 
+        // Fire batch operations
+        processor.fireBatchOperations();
+
         checkLastTxDate(stockAccount, stockAccountSaleTransactions, stockAccountPurchaseTransactions);
 
-        return summary.done();
+        return summary.calculatingAsync();
 
     }
 
-    function checkAndRecordExchangeRates(baseBook: Bkper.Book, financialBook: Bkper.Book, saleTransactions: Bkper.Transaction[], purchaseTransactions: Bkper.Transaction[]): void {
+    function checkAndRecordExchangeRates(baseBook: Bkper.Book, financialBook: Bkper.Book, saleTransactions: Bkper.Transaction[], purchaseTransactions: Bkper.Transaction[], processor: RealizedResultsProcessor): void {
         for (const saleTx of saleTransactions) {
             if (!saleTx.isChecked()) {
-                recordExcRateProp(baseBook, financialBook, saleTx, SALE_EXC_RATE_PROP);
+                recordExcRateProp(baseBook, financialBook, saleTx, SALE_EXC_RATE_PROP, processor);
             }
         }
         for (const purchaseTx of purchaseTransactions) {
             if (!purchaseTx.isChecked()) {
-                recordExcRateProp(baseBook, financialBook, purchaseTx, PURCHASE_EXC_RATE_PROP);
+                recordExcRateProp(baseBook, financialBook, purchaseTx, PURCHASE_EXC_RATE_PROP, processor);
             }
         }
     }
 
-    function recordExcRateProp(baseBook: Bkper.Book, financialBook: Bkper.Book, transaction: Bkper.Transaction, exchangeRateProperty: string): void {
+    function recordExcRateProp(baseBook: Bkper.Book, financialBook: Bkper.Book, transaction: Bkper.Transaction, exchangeRateProperty: string, processor: RealizedResultsProcessor): void {
         if (transaction.isChecked()) {
             return;
         }
@@ -106,11 +112,13 @@ namespace RealizedResultsService {
         }
         // Update transaction if necessary
         if (!excRateProp || !fwdExcRateProp) {
-            transaction.update();
+            // transaction.update();
+            // Store transaction to be updated
+            processor.setStockBookTransactionToUpdate(transaction);
         }
     }
 
-    function checkAndRecordInterestMtm(principalStockAccount: StockAccount, stockBook: Bkper.Book, financialInterestAccount: Bkper.Account, financialBook: Bkper.Book, onDateIso: string, lastTransactionId: string, summary: Summary): void {
+    function checkAndRecordInterestMtm(principalStockAccount: StockAccount, stockBook: Bkper.Book, financialInterestAccount: Bkper.Account, financialBook: Bkper.Book, onDateIso: string, lastTransactionId: string, summary: Summary, processor: RealizedResultsProcessor): void {
         // Check principal account quantity on Stock Book
         const principalQuantity = getAccountBalance(stockBook, principalStockAccount, stockBook.parseDate(onDateIso));
         if (principalQuantity.eq(0)) {
@@ -119,7 +127,7 @@ namespace RealizedResultsService {
             if (!interestBalance.eq(0)) {
                 // Record interest account MTM on financial book
                 const financialUnrealizedAccount = getUnrealizedAccount(financialInterestAccount, financialBook, summary, principalStockAccount.getExchangeCode());
-                recordInterestAccountMtm(financialBook, financialInterestAccount, financialUnrealizedAccount, interestBalance, onDateIso, lastTransactionId);
+                recordInterestAccountMtm(financialBook, financialInterestAccount, financialUnrealizedAccount, interestBalance, onDateIso, lastTransactionId, processor);
             }
         }
     }
@@ -163,7 +171,7 @@ namespace RealizedResultsService {
         return BotService.compareToFIFO(saleTransaction, purchaseTransaction) < 0;
     }
 
-    function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: StockAccount, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean, historical: boolean): void {
+    function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: StockAccount, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean, historical: boolean, processor: RealizedResultsProcessor): void {
 
         // Log operation status
         console.log(`processing sale: ${saleTransaction.getId()}`);
@@ -280,17 +288,24 @@ namespace RealizedResultsService {
                     longSaleLiquidationLogEntries.push(logLiquidation(saleTransaction, salePrice, saleExcRate));
                     purchaseTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(longSaleLiquidationLogEntries));
                 }
-                purchaseTransaction.update();
+
+                // purchaseTransaction.update();
+                // Store transaction to be updated
+                purchaseTransaction.setChecked(true);
+                processor.setStockBookTransactionToUpdate(purchaseTransaction);
 
                 if (shortSale) {
-                    recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, gainBaseNoFX, summary);
-                    recordFxGain(stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, gainBaseWithFX, gainBaseNoFX, summary);
+                    // RR
+                    addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, gainBaseNoFX, summary, processor);
+                    // FX
+                    addFxResult(stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, gainBaseWithFX, gainBaseNoFX, summary, processor);
+                    // MTM
                     if (autoMtM) {
-                        markToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, gain);
+                        addMarkToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, gain, processor);
                     }
                 }
 
-                purchaseTransaction.check();
+                // purchaseTransaction.check();
 
                 soldQuantity = soldQuantity.minus(purchaseQuantity);
 
@@ -320,8 +335,11 @@ namespace RealizedResultsService {
                     .setAmount(remainingBuyQuantity)
                     .setProperty(PURCHASE_EXC_RATE_PROP, purchaseExcRate?.toString())
                     .setProperty(FWD_PURCHASE_EXC_RATE_PROP, fwdPurchaseExcRate?.toString())
-                    .update()
+                    // .update()
                 ;
+                // Store transaction to be updated
+                processor.setStockBookTransactionToUpdate(purchaseTransaction);
+
                 let splittedPurchaseTransaction = stockBook.newTransaction()
                     .setDate(purchaseTransaction.getDate())
                     .setAmount(partialBuyQuantity)
@@ -355,14 +373,24 @@ namespace RealizedResultsService {
                     splittedPurchaseTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(longSaleLiquidationLogEntries));
                 }
 
-                // Post & check splitted purchase: ID is required in order to post RR, FX and MTM transactions 
-                splittedPurchaseTransaction.post().check();
+                // Post & check splitted purchase: ID is required in order to post RR, FX and MTM transactions
+                // splittedPurchaseTransaction.post().check();
+
+                // Store transaction to be created: create temporaty id as remoteId in order to wrap up c
+                splittedPurchaseTransaction
+                    .setChecked(true)
+                    .addRemoteId(`rrp_id_${BotService.generateId()}`)
+                ;
+                processor.setStockBookTransactionToCreate(splittedPurchaseTransaction);
 
                 if (shortSale) {
-                    recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, gainBaseNoFX, summary);
-                    recordFxGain(stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, gainBaseWithFX, gainBaseNoFX, summary);
+                    // RR
+                    addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, gainBaseNoFX, summary, processor);
+                    // FX
+                    addFxResult(stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, gainBaseWithFX, gainBaseNoFX, summary, processor);
+                    // MTM
                     if (autoMtM) {
-                        markToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, gain);
+                        addMarkToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, gain, processor);
                     }
                     shortSaleLiquidationLogEntries.push(logLiquidation(splittedPurchaseTransaction, purchasePrice, purchaseExcRate));
                 }
@@ -424,10 +452,18 @@ namespace RealizedResultsService {
                 }
                 saleTxChanged = true;
             }
+            // if (saleTxChanged) {
+            //     saleTransaction.update();
+            // }
+            // saleTransaction.check();
             if (saleTxChanged) {
-                saleTransaction.update();
+                // Store transaction to be updated
+                saleTransaction.setChecked(true);
+                processor.setStockBookTransactionToUpdate(saleTransaction);
+            } else {
+                // Store transaction to be checked
+                processor.setStockBookTransactionToCheck(saleTransaction);
             }
-            saleTransaction.check();
 
         // Sold quantity GT zero: update sale + update & check splitted sale transaction
         } else if (soldQuantity.round(stockBook.getFractionDigits()).gt(0)) {
@@ -440,8 +476,11 @@ namespace RealizedResultsService {
                     .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
                     .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
                     .setAmount(soldQuantity)
-                    .update()
+                    // .update()
                 ;
+                // Store transaction to be updated
+                processor.setStockBookTransactionToUpdate(saleTransaction);
+
                 let splittedSaleTransaction = stockBook.newTransaction()
                     .setDate(saleTransaction.getDate())
                     .setAmount(remainingSaleQuantity)
@@ -475,19 +514,29 @@ namespace RealizedResultsService {
                     }
                 }
 
-                splittedSaleTransaction.post().check();
+                // Post & check: ID is required in order to post RR, FX and MTM transactions
+                // splittedSaleTransaction.post().check();
 
-                // Override to have the RR, FX and MtM associated to the splitted on
+                // Store transaction to be created: create temporaty id as remoteId in order to wrap up c
+                splittedSaleTransaction
+                    .setChecked(true)
+                    .addRemoteId(`rrp_id_${BotService.generateId()}`)
+                ;
+                processor.setStockBookTransactionToCreate(splittedSaleTransaction);
+
+                // Override to have the RR, FX and MTM associated to the splitted tx
                 saleTransaction = splittedSaleTransaction;
             }
 
         }
 
-        // Record RR, FX and MTM transactions
-        recordRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, gainBaseNoFxTotal, summary);
-        recordFxGain(stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, summary);
+        // RR
+        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, gainBaseNoFxTotal, summary, processor);
+        // FX
+        addFxResult(stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, summary, processor);
+        // MTM
         if (autoMtM && purchaseProcessed && !saleTransaction.getProperty(LIQUIDATION_LOG_PROP)) {
-            markToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, salePrice, gainTotal);
+            addMarkToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, salePrice, gainTotal, processor);
         }
 
     }
@@ -522,7 +571,7 @@ namespace RealizedResultsService {
         return unrealizedFxAccount;
     }
 
-    function recordRealizedResult(
+    function addRealizedResult(
         baseBook: Bkper.Book,
         stockAccount: StockAccount,
         stockExcCode: string,
@@ -531,35 +580,36 @@ namespace RealizedResultsService {
         transaction: Bkper.Transaction,
         gain: Bkper.Amount,
         gainBaseNoFX: Bkper.Amount,
-        summary: Summary
+        summary: Summary,
+        processor: RealizedResultsProcessor
     ) {
-        const gainDate = transaction.getProperty(DATE_PROP) || transaction.getDate();
 
-        let isBaseBook = baseBook.getId() == financialBook.getId();
+        const gainDate = transaction.getProperty(DATE_PROP) || transaction.getDate();
+        const isBaseBook = baseBook.getId() == financialBook.getId();
 
         if (gain.round(financialBook.getFractionDigits()).gt(0)) {
 
-            let realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
+            const realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
             let realizedGainAccount = financialBook.getAccount(realizedGainAccountName);
 
+            // Fallback to old XXX Realized Gain account
             if (realizedGainAccount == null) {
-                //Fallback to old XXX Gain default
                 realizedGainAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Gain`);
             }
 
-
+            // Create new XXX Realized account
             if (realizedGainAccount == null) {
-                realizedGainAccount = financialBook.newAccount()
-                    .setName(realizedGainAccountName)
-                    .setType(BkperApp.AccountType.INCOMING);
+                realizedGainAccount = financialBook.newAccount().setName(realizedGainAccountName).setType(BkperApp.AccountType.INCOMING);
                 let groups = getAccountGroups(financialBook, REALIZED_SUFFIX);
                 groups.forEach(group => realizedGainAccount.addGroup(group));
                 realizedGainAccount.create();
                 trackAccountCreated(summary, stockExcCode, realizedGainAccount);
             }
 
-            financialBook.newTransaction()
-                .addRemoteId(transaction.getId())
+            const remoteId = transaction.getId() || BotService.getRrpTemporaryId(transaction);
+
+            const rrTransaction = financialBook.newTransaction()
+                .addRemoteId(remoteId)
                 .setDate(gainDate)
                 .setAmount(gain)
                 .setDescription(`#stock_gain`)
@@ -567,30 +617,36 @@ namespace RealizedResultsService {
                 .setProperty(EXC_CODE_PROP, getStockGainLossTransactionExcCodeProp(financialBook, isBaseBook, baseBook))
                 .from(realizedGainAccount)
                 .to(unrealizedAccount)
-                .post().check()
+                .setChecked(true)
+                // .post().check()
             ;
+
+            // Store transaction to be created
+            processor.setFinancialBookTransactionToCreate(rrTransaction);
 
         } else if (gain.round(financialBook.getFractionDigits()).lt(0)) {
 
-            let realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
+            const realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
             let realizedLossAccount = financialBook.getAccount(realizedLossAccountName);
 
+            // Fallback to old XXX Realized Loss account
             if (realizedLossAccount == null) {
-                //Fallback to old XXX Loss account
                 realizedLossAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Loss`);
             }
+
+            // Create new XXX Realized account
             if (realizedLossAccount == null) {
-                realizedLossAccount = financialBook.newAccount()
-                    .setName(realizedLossAccountName)
-                    .setType(BkperApp.AccountType.OUTGOING);
+                realizedLossAccount = financialBook.newAccount().setName(realizedLossAccountName).setType(BkperApp.AccountType.OUTGOING);
                 let groups = getAccountGroups(financialBook, REALIZED_SUFFIX);
                 groups.forEach(group => realizedLossAccount.addGroup(group));
                 realizedLossAccount.create();
                 trackAccountCreated(summary, stockExcCode, realizedLossAccount);
             }
 
-            financialBook.newTransaction()
-                .addRemoteId(transaction.getId())
+            const remoteId = transaction.getId() || BotService.getRrpTemporaryId(transaction);
+
+            const rrTransaction = financialBook.newTransaction()
+                .addRemoteId(remoteId)
                 .setDate(gainDate)
                 .setAmount(gain)
                 .setDescription(`#stock_loss`)
@@ -598,8 +654,12 @@ namespace RealizedResultsService {
                 .setProperty(EXC_CODE_PROP, getStockGainLossTransactionExcCodeProp(financialBook, isBaseBook, baseBook))
                 .from(unrealizedAccount)
                 .to(realizedLossAccount)
-                .post().check()
+                .setChecked(true)
+                // .post().check()
             ;
+
+            // Store transaction to be created
+            processor.setFinancialBookTransactionToCreate(rrTransaction);
 
         }
     }
@@ -622,25 +682,29 @@ namespace RealizedResultsService {
         summary.pushAccount(stockExcCode, account.getName());
     }
 
-    function markToMarket(
+    function addMarkToMarket(
         stockBook: Bkper.Book,
         transaction: Bkper.Transaction,
         stockAccount: StockAccount,
         financialBook: Bkper.Book,
         unrealizedAccount: Bkper.Account,
         price: Bkper.Amount,
-        gain: Bkper.Amount
+        gain: Bkper.Amount,
+        processor: RealizedResultsProcessor
     ): void {
 
-        const date = transaction.getProperty(DATE_PROP) ? stockBook.parseDate(transaction.getProperty(DATE_PROP)) : transaction.getDateObject();
-        let totalQuantity = getAccountBalance(stockBook, stockAccount, date);
-        let financialInstrument = financialBook.getAccount(stockAccount.getName());
-        let balance = getAccountBalance(financialBook, financialInstrument, date);
-        let newBalance = totalQuantity.times(price);
+        // const date = transaction.getProperty(DATE_PROP) ? stockBook.parseDate(transaction.getProperty(DATE_PROP)) : transaction.getDateObject();
+        const date = transaction.getProperty(DATE_PROP) ? stockBook.parseDate(transaction.getProperty(DATE_PROP)) : stockBook.parseDate(transaction.getDate());
+        const totalQuantity = getAccountBalance(stockBook, stockAccount, date);
+        const financialInstrument = financialBook.getAccount(stockAccount.getName());
+        const balance = getAccountBalance(financialBook, financialInstrument, date);
+        const newBalance = totalQuantity.times(price);
 
-        let amount = newBalance.minus(balance);
+        const remoteId = transaction.getId() || BotService.getRrpTemporaryId(transaction);
+
+        const amount = newBalance.minus(balance.plus(processor.getMtmBalance()));
         if (amount.round(financialBook.getFractionDigits()).gt(0)) {
-            financialBook.newTransaction()
+            const mtmTx = financialBook.newTransaction()
                 .setDate(date)
                 .setAmount(amount)
                 .setDescription(`#mtm`)
@@ -648,11 +712,13 @@ namespace RealizedResultsService {
                 .setProperty(OPEN_QUANTITY_PROP, totalQuantity.toFixed(stockBook.getFractionDigits()))
                 .from(unrealizedAccount)
                 .to(financialInstrument)
-                .addRemoteId(`mtm_${transaction.getId()}`)
-                .post().check()
+                .addRemoteId(`mtm_${remoteId}`)
+                .setChecked(true)
+                // .post().check()
             ;
+            processor.setFinancialBookTransactionToCreate(mtmTx);
         } else if (amount.round(financialBook.getFractionDigits()).lt(0)) {
-            financialBook.newTransaction()
+            const mtmTx = financialBook.newTransaction()
                 .setDate(date)
                 .setAmount(amount)
                 .setDescription(`#mtm`)
@@ -660,33 +726,39 @@ namespace RealizedResultsService {
                 .setProperty(OPEN_QUANTITY_PROP, totalQuantity.toFixed(stockBook.getFractionDigits()))
                 .from(financialInstrument)
                 .to(unrealizedAccount)
-                .addRemoteId(`mtm_${transaction.getId()}`)
-                .post().check()
+                .addRemoteId(`mtm_${remoteId}`)
+                .setChecked(true)
+                // .post().check()
             ;
+            processor.setFinancialBookTransactionToCreate(mtmTx);
         }
     }
 
-    function recordInterestAccountMtm(book: Bkper.Book, account: Bkper.Account, urAccount: Bkper.Account, amount: Bkper.Amount, date: string, remoteId: string): void {
+    function recordInterestAccountMtm(book: Bkper.Book, account: Bkper.Account, urAccount: Bkper.Account, amount: Bkper.Amount, date: string, remoteId: string, processor: RealizedResultsProcessor): void {
         if (amount.gt(0)) {
-            book.newTransaction()
+            const interestMtmTx = book.newTransaction()
                 .setDate(date)
                 .setAmount(amount)
                 .setDescription(`#interest_mtm`)
                 .from(account)
                 .to(urAccount)
                 .addRemoteId(`interestmtm_${remoteId}`)
-                .post().check()
+                .setChecked(true)
+                // .post().check()
             ;
+            processor.setFinancialBookTransactionToCreate(interestMtmTx);
         } else if (amount.lt(0)) {
-            book.newTransaction()
+            const interestMtmTx = book.newTransaction()
                 .setDate(date)
                 .setAmount(amount.abs())
                 .setDescription(`#interest_mtm`)
                 .from(urAccount)
                 .to(account)
                 .addRemoteId(`interestmtm_${remoteId}`)
-                .post().check()
+                .setChecked(true)
+                // .post().check()
             ;
+            processor.setFinancialBookTransactionToCreate(interestMtmTx);
         }
     }
 
@@ -732,35 +804,34 @@ namespace RealizedResultsService {
     }
 
 
-    function recordFxGain(
+    function addFxResult(
         stockExcCode: string,
         baseBook: Bkper.Book,
         unrealizedFxAccount: Bkper.Account,
         transaction: Bkper.Transaction,
         gainBaseWithFx: Bkper.Amount,
         gainBaseNoFx: Bkper.Amount,
-        summary: Summary
+        summary: Summary,
+        processor: RealizedResultsProcessor
     ): void {
 
         const gainDate = transaction.getProperty(DATE_PROP) || transaction.getDate();
 
         if (!gainBaseWithFx) {
-            console.log('Missing gain with FX')
+            console.log('Missing gain with FX');
             return;
         }
-
         if (!gainBaseNoFx) {
-            console.log('Missing gain no FX')
+            console.log('Missing gain no FX');
             return;
         }
 
-        let excAccountName = getExcAccountName(baseBook, unrealizedFxAccount, stockExcCode);
+        const excAccountName = getExcAccountName(baseBook, unrealizedFxAccount, stockExcCode);
 
-        //Verify Exchange account created
+        // Verify Exchange account created
         let excAccount = baseBook.getAccount(excAccountName);
         if (excAccount == null) {
-            excAccount = baseBook.newAccount()
-                .setName(excAccountName);
+            excAccount = baseBook.newAccount().setName(excAccountName);
             let groups = getExcAccountGroups(baseBook);
             groups.forEach(group => excAccount.addGroup(group));
             let type = getExcAccountType(baseBook);
@@ -770,30 +841,41 @@ namespace RealizedResultsService {
         }
 
         const fxGain = gainBaseWithFx.minus(gainBaseNoFx);
+        const remoteId = transaction.getId() || BotService.getRrpTemporaryId(transaction);
 
         if (fxGain.round(baseBook.getFractionDigits()).gt(0)) {
 
-            baseBook.newTransaction()
-                .addRemoteId(`fx_` + transaction.getId())
+            const fxTransaction = baseBook.newTransaction()
+                .addRemoteId(`fx_` + remoteId)
                 .setDate(gainDate)
                 .setAmount(fxGain)
                 .setDescription(`#exchange_gain`)
                 .setProperty(EXC_AMOUNT_PROP, '0')
                 .from(excAccount)
                 .to(unrealizedFxAccount)
-                .post().check();
+                .setChecked(true)
+                // .post().check();
+            ;
+
+            // Store transaction to be created
+            processor.setBaseBookTransactionToCreate(fxTransaction);
 
         } else if (fxGain.round(baseBook.getFractionDigits()).lt(0)) {
 
-            baseBook.newTransaction()
-                .addRemoteId(`fx_` + transaction.getId())
+            const fxTransaction = baseBook.newTransaction()
+                .addRemoteId(`fx_` + remoteId)
                 .setDate(gainDate)
                 .setAmount(fxGain)
                 .setDescription(`#exchange_loss`)
                 .setProperty(EXC_AMOUNT_PROP, '0')
                 .from(unrealizedFxAccount)
                 .to(excAccount)
-                .post().check();
+                .setChecked(true)
+                // .post().check();
+            ;
+
+            // Store transaction to be created
+            processor.setBaseBookTransactionToCreate(fxTransaction);
 
         }
 

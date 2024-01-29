@@ -85,7 +85,7 @@ function calculateRealizedResults(bookId: string, accountId: string, autoMtM: bo
   console.log(`book id: ${bookId}, account id: ${accountId}, date input: ${toDate}, autoMtM: ${autoMtM}`);
 
   if (accountId) {
-    const summary = RealizedResultsService.calculateRealizedResultsForAccount(bookId, accountId, autoMtM, toDate);
+    const summary = RealizedResultsService.calculateRealizedResultsForAccountAsync(bookId, accountId, autoMtM, toDate);
     return summary.json();
   }
 
