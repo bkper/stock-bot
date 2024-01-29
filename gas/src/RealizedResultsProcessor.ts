@@ -10,7 +10,7 @@ class RealizedResultsProcessor {
     private financialBookTransactionsToCreateMap = new Map<string, Bkper.Transaction>();
     private baseBookTransactionsToCreateMap = new Map<string, Bkper.Transaction>();
 
-    private mtmBalance = BkperApp.newAmount(0);
+    private mtmTransactionsSet = new Set<Bkper.Transaction>();
 
     constructor(stockBook: Bkper.Book, financialBook: Bkper.Book, baseBook: Bkper.Book) {
         this.stockBook = stockBook;
@@ -60,10 +60,9 @@ class RealizedResultsProcessor {
     setFinancialBookTransactionToCreate(transaction: Bkper.Transaction): void {
         // Use remoteId as key since transaction does not have an id yet
         this.financialBookTransactionsToCreateMap.set(this.getRemoteId(transaction), transaction);
-        // Update MTM balance
+        // Store MTM transaction
         if (this.isMtmTransaction(transaction)) {
-            const amount = transaction.getCreditAccount().isPermanent() ? transaction.getAmount().times(-1) : transaction.getAmount();
-            this.mtmBalance = this.mtmBalance.plus(amount);
+            this.mtmTransactionsSet = this.mtmTransactionsSet.add(transaction);
         }
     }
 
@@ -72,8 +71,19 @@ class RealizedResultsProcessor {
         this.baseBookTransactionsToCreateMap.set(this.getRemoteId(transaction), transaction);
     }
 
-    getMtmBalance(): Bkper.Amount {
-        return this.mtmBalance;
+    private getDateValue(isoDate: string): number {
+        return +(isoDate.replaceAll('-', ''));
+    }
+
+    getMtmBalance(onIsoDate: string): Bkper.Amount {
+        let balance = BkperApp.newAmount(0);
+        for (const mtmTransaction of Array.from(this.mtmTransactionsSet.values())) {
+            if (this.getDateValue(mtmTransaction.getDate()) <= this.getDateValue(onIsoDate)) {
+                const amount = mtmTransaction.getCreditAccount().isPermanent() ? mtmTransaction.getAmount().times(-1) : mtmTransaction.getAmount();
+                balance = balance.plus(amount);
+            }
+        }
+        return balance;
     }
 
     fireBatchOperations(): void {

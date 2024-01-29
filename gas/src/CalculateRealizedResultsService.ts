@@ -693,16 +693,19 @@ namespace RealizedResultsService {
         processor: RealizedResultsProcessor
     ): void {
 
-        // const date = transaction.getProperty(DATE_PROP) ? stockBook.parseDate(transaction.getProperty(DATE_PROP)) : transaction.getDateObject();
-        const date = transaction.getProperty(DATE_PROP) ? stockBook.parseDate(transaction.getProperty(DATE_PROP)) : stockBook.parseDate(transaction.getDate());
+        // Remote id
+        const remoteId = transaction.getId() || processor.getTemporaryId(transaction);
+        // Date
+        const isoDate = transaction.getProperty(DATE_PROP) || transaction.getDate();
+        const date = stockBook.parseDate(isoDate);
+        // Quantity amount
         const totalQuantity = getAccountBalance(stockBook, stockAccount, date);
+        // Financial amount
         const financialInstrument = financialBook.getAccount(stockAccount.getName());
         const balance = getAccountBalance(financialBook, financialInstrument, date);
         const newBalance = totalQuantity.times(price);
+        const amount = newBalance.minus(balance.plus(processor.getMtmBalance(isoDate)));
 
-        const remoteId = transaction.getId() || processor.getTemporaryId(transaction);
-
-        const amount = newBalance.minus(balance.plus(processor.getMtmBalance()));
         if (amount.round(financialBook.getFractionDigits()).gt(0)) {
             const mtmTx = financialBook.newTransaction()
                 .setDate(date)
