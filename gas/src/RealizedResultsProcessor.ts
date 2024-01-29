@@ -6,7 +6,6 @@ class RealizedResultsProcessor {
 
     private stockBookTransactionsToCreate = new Map<string, Bkper.Transaction>();
     private stockBookTransactionsToUpdateMap = new Map<string, Bkper.Transaction>();
-    private stockBookTransactionsToCheckMap = new Map<string, Bkper.Transaction>();
     private financialBookTransactionsToCreateMap = new Map<string, Bkper.Transaction>();
     private baseBookTransactionsToCreateMap = new Map<string, Bkper.Transaction>();
 
@@ -51,10 +50,6 @@ class RealizedResultsProcessor {
 
     setStockBookTransactionToUpdate(transaction: Bkper.Transaction): void {
         this.stockBookTransactionsToUpdateMap.set(transaction.getId(), transaction);
-    }
-
-    setStockBookTransactionToCheck(transaction: Bkper.Transaction): void {
-        this.stockBookTransactionsToCheckMap.set(transaction.getId(), transaction);
     }
 
     setFinancialBookTransactionToCreate(transaction: Bkper.Transaction): void {
@@ -117,7 +112,6 @@ class RealizedResultsProcessor {
 
         // Fire other batch operations
         this.fireBatchUpdateStockBookTransactions();
-        this.fireBatchCheckStockBookTransactions();
         this.fireBatchCreateFinancialBookTransactions();
         this.fireBatchCreateBaseBookTransactions();
 
@@ -137,14 +131,6 @@ class RealizedResultsProcessor {
         const stockBookTransactionsToUpdate = Array.from(this.stockBookTransactionsToUpdateMap.values());
         if (stockBookTransactionsToUpdate.length > 0) {
             this.stockBook.batchUpdateTransactions(stockBookTransactionsToUpdate, true);
-        }
-    }
-
-    // Stock book: check
-    private fireBatchCheckStockBookTransactions(): void {
-        const stockBookTransactionsToCheck = Array.from(this.stockBookTransactionsToCheckMap.values());
-        if (stockBookTransactionsToCheck.length > 0) {
-            this.stockBook.batchCheckTransactions(stockBookTransactionsToCheck);
         }
     }
 

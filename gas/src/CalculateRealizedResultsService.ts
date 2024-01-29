@@ -301,7 +301,7 @@ namespace RealizedResultsService {
                     addFxResult(stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, gainBaseWithFX, gainBaseNoFX, summary, processor);
                     // MTM
                     if (autoMtM) {
-                        addMarkToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, gain, processor);
+                        addMarkToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, processor);
                     }
                 }
 
@@ -390,7 +390,7 @@ namespace RealizedResultsService {
                     addFxResult(stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, gainBaseWithFX, gainBaseNoFX, summary, processor);
                     // MTM
                     if (autoMtM) {
-                        addMarkToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, gain, processor);
+                        addMarkToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, processor);
                     }
                     shortSaleLiquidationLogEntries.push(logLiquidation(splittedPurchaseTransaction, purchasePrice, purchaseExcRate));
                 }
@@ -456,14 +456,10 @@ namespace RealizedResultsService {
             //     saleTransaction.update();
             // }
             // saleTransaction.check();
-            if (saleTxChanged) {
-                // Store transaction to be updated
-                saleTransaction.setChecked(true);
-                processor.setStockBookTransactionToUpdate(saleTransaction);
-            } else {
-                // Store transaction to be checked
-                processor.setStockBookTransactionToCheck(saleTransaction);
-            }
+
+            // Store transaction to be updated
+            saleTransaction.setChecked(true);
+            processor.setStockBookTransactionToUpdate(saleTransaction);
 
         // Sold quantity GT zero: update sale + update & check splitted sale transaction
         } else if (soldQuantity.round(stockBook.getFractionDigits()).gt(0)) {
@@ -536,7 +532,7 @@ namespace RealizedResultsService {
         addFxResult(stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, summary, processor);
         // MTM
         if (autoMtM && purchaseProcessed && !saleTransaction.getProperty(LIQUIDATION_LOG_PROP)) {
-            addMarkToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, salePrice, gainTotal, processor);
+            addMarkToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, salePrice, processor);
         }
 
     }
@@ -689,7 +685,6 @@ namespace RealizedResultsService {
         financialBook: Bkper.Book,
         unrealizedAccount: Bkper.Account,
         price: Bkper.Amount,
-        gain: Bkper.Amount,
         processor: RealizedResultsProcessor
     ): void {
 
