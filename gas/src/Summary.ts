@@ -50,6 +50,12 @@ class Summary {
         return this;
     }
 
+    lockError(): this {
+        this.error = true;
+        this.result = 'Please review lock/closing dates in the collection';
+        return this;
+    }
+
     json(): this {
         this.result = JSON.stringify(this.result);
         return this;

@@ -59,6 +59,10 @@ namespace RealizedResultsService {
             if (stockAccountPurchaseTransactions.length > 0) {
                 processSale(baseBook, financialBook, stockExcCode, stockBook, stockAccount, saleTransaction, stockAccountPurchaseTransactions, summary, autoMtM, historical, processor);
             }
+            // Abort if any transaction is locked
+            if (processor.hasLockedTransaction()) {
+                return summary.lockError();
+            }
         }
 
         // Check & record exchange rates if missing

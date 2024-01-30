@@ -11,6 +11,8 @@ class RealizedResultsProcessor {
 
     private mtmTransactionsSet = new Set<Bkper.Transaction>();
 
+    private isAnyTransactionLocked = false;
+
     constructor(stockBook: Bkper.Book, financialBook: Bkper.Book, baseBook: Bkper.Book) {
         this.stockBook = stockBook;
         this.financialBook = financialBook;
@@ -43,16 +45,29 @@ class RealizedResultsProcessor {
         return false;
     }
 
+    private checkTransactionLocked(transaction: Bkper.Transaction): void {
+        if (transaction.isLocked()) {
+            this.isAnyTransactionLocked = true;
+        }
+    }
+
+    hasLockedTransaction(): boolean {
+        return this.isAnyTransactionLocked;
+    }
+
     setStockBookTransactionToCreate(transaction: Bkper.Transaction): void {
+        this.checkTransactionLocked(transaction);
         // Use remoteId as key since transaction does not have an id yet
         this.stockBookTransactionsToCreate.set(this.getRemoteId(transaction), transaction);
     }
 
     setStockBookTransactionToUpdate(transaction: Bkper.Transaction): void {
+        this.checkTransactionLocked(transaction);
         this.stockBookTransactionsToUpdateMap.set(transaction.getId(), transaction);
     }
 
     setFinancialBookTransactionToCreate(transaction: Bkper.Transaction): void {
+        this.checkTransactionLocked(transaction);
         // Use remoteId as key since transaction does not have an id yet
         this.financialBookTransactionsToCreateMap.set(this.getRemoteId(transaction), transaction);
         // Store MTM transaction
@@ -62,6 +77,7 @@ class RealizedResultsProcessor {
     }
 
     setBaseBookTransactionToCreate(transaction: Bkper.Transaction): void {
+        this.checkTransactionLocked(transaction);
         // Use remoteId as key since transaction does not have an id yet
         this.baseBookTransactionsToCreateMap.set(this.getRemoteId(transaction), transaction);
     }
