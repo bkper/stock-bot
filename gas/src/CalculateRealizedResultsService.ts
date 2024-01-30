@@ -52,7 +52,7 @@ namespace RealizedResultsService {
         const baseBook = BotService.getBaseBook(financialBook);
 
         // Processor
-        const processor = new RealizedResultsProcessor(stockBook, financialBook, baseBook);
+        const processor = new CalculateRealizedResultsProcessor(stockBook, financialBook, baseBook);
 
         // Process sales
         for (const saleTransaction of stockAccountSaleTransactions) {
@@ -86,7 +86,7 @@ namespace RealizedResultsService {
 
     }
 
-    function checkAndRecordExchangeRates(baseBook: Bkper.Book, financialBook: Bkper.Book, saleTransactions: Bkper.Transaction[], purchaseTransactions: Bkper.Transaction[], processor: RealizedResultsProcessor): void {
+    function checkAndRecordExchangeRates(baseBook: Bkper.Book, financialBook: Bkper.Book, saleTransactions: Bkper.Transaction[], purchaseTransactions: Bkper.Transaction[], processor: CalculateRealizedResultsProcessor): void {
         for (const saleTx of saleTransactions) {
             if (!saleTx.isChecked()) {
                 recordExcRateProp(baseBook, financialBook, saleTx, SALE_EXC_RATE_PROP, processor);
@@ -99,7 +99,7 @@ namespace RealizedResultsService {
         }
     }
 
-    function recordExcRateProp(baseBook: Bkper.Book, financialBook: Bkper.Book, transaction: Bkper.Transaction, exchangeRateProperty: string, processor: RealizedResultsProcessor): void {
+    function recordExcRateProp(baseBook: Bkper.Book, financialBook: Bkper.Book, transaction: Bkper.Transaction, exchangeRateProperty: string, processor: CalculateRealizedResultsProcessor): void {
         if (transaction.isChecked()) {
             return;
         }
@@ -122,7 +122,7 @@ namespace RealizedResultsService {
         }
     }
 
-    function checkAndRecordInterestMtm(principalStockAccount: StockAccount, stockBook: Bkper.Book, financialInterestAccount: Bkper.Account, financialBook: Bkper.Book, onDateIso: string, lastTransactionId: string, summary: Summary, processor: RealizedResultsProcessor): void {
+    function checkAndRecordInterestMtm(principalStockAccount: StockAccount, stockBook: Bkper.Book, financialInterestAccount: Bkper.Account, financialBook: Bkper.Book, onDateIso: string, lastTransactionId: string, summary: Summary, processor: CalculateRealizedResultsProcessor): void {
         // Check principal account quantity on Stock Book
         const principalQuantity = getAccountBalance(stockBook, principalStockAccount, stockBook.parseDate(onDateIso));
         if (principalQuantity.eq(0)) {
@@ -175,7 +175,7 @@ namespace RealizedResultsService {
         return BotService.compareToFIFO(saleTransaction, purchaseTransaction) < 0;
     }
 
-    function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: StockAccount, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean, historical: boolean, processor: RealizedResultsProcessor): void {
+    function processSale(baseBook: Bkper.Book, financialBook: Bkper.Book, stockExcCode: string, stockBook: Bkper.Book, stockAccount: StockAccount, saleTransaction: Bkper.Transaction, purchaseTransactions: Bkper.Transaction[], summary: Summary, autoMtM: boolean, historical: boolean, processor: CalculateRealizedResultsProcessor): void {
 
         // Log operation status
         console.log(`processing sale: ${saleTransaction.getId()}`);
@@ -566,7 +566,7 @@ namespace RealizedResultsService {
         gain: Bkper.Amount,
         gainBaseNoFX: Bkper.Amount,
         summary: Summary,
-        processor: RealizedResultsProcessor
+        processor: CalculateRealizedResultsProcessor
     ) {
 
         const gainDate = transaction.getProperty(DATE_PROP) || transaction.getDate();
@@ -672,7 +672,7 @@ namespace RealizedResultsService {
         financialBook: Bkper.Book,
         unrealizedAccount: Bkper.Account,
         price: Bkper.Amount,
-        processor: RealizedResultsProcessor
+        processor: CalculateRealizedResultsProcessor
     ): void {
 
         // Remote id
@@ -717,7 +717,7 @@ namespace RealizedResultsService {
         }
     }
 
-    function recordInterestAccountMtm(book: Bkper.Book, account: Bkper.Account, urAccount: Bkper.Account, amount: Bkper.Amount, date: string, remoteId: string, processor: RealizedResultsProcessor): void {
+    function recordInterestAccountMtm(book: Bkper.Book, account: Bkper.Account, urAccount: Bkper.Account, amount: Bkper.Amount, date: string, remoteId: string, processor: CalculateRealizedResultsProcessor): void {
         if (amount.gt(0)) {
             const interestMtmTx = book.newTransaction()
                 .setDate(date)
@@ -792,7 +792,7 @@ namespace RealizedResultsService {
         gainBaseWithFx: Bkper.Amount,
         gainBaseNoFx: Bkper.Amount,
         summary: Summary,
-        processor: RealizedResultsProcessor
+        processor: CalculateRealizedResultsProcessor
     ): void {
 
         const gainDate = transaction.getProperty(DATE_PROP) || transaction.getDate();

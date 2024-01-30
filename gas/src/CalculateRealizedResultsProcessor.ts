@@ -1,4 +1,4 @@
-class RealizedResultsProcessor {
+class CalculateRealizedResultsProcessor {
 
     private stockBook: Bkper.Book;
     private financialBook: Bkper.Book;
@@ -20,12 +20,12 @@ class RealizedResultsProcessor {
     }
 
     generateTemporaryId(): string {
-        return `rrp_id_${Utilities.getUuid()}`;
+        return `crrp_id_${Utilities.getUuid()}`;
     }
 
     getTemporaryId(transaction: Bkper.Transaction): string {
         for (const remoteId of transaction.getRemoteIds()) {
-            if (remoteId.startsWith('rrp_id_')) {
+            if (remoteId.startsWith('crrp_id_')) {
                 return remoteId;
             }
         }
