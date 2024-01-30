@@ -204,11 +204,14 @@ namespace RealizedResultsService {
             iterator = stockBook.getTransactions(BotService.getAccountQuery(stockAccount, full));
         }
 
+        // Summary
+        const summary = new Summary(stockAccount.getId());
+
         const stockExcCode = stockAccount.getExchangeCode();
         const financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
         // Skip
         if (financialBook == null) {
-            return new Summary(stockAccount.getId());
+            return summary;
         }
 
         const baseBook = BotService.getBaseBook(financialBook);
@@ -219,11 +222,8 @@ namespace RealizedResultsService {
             transactions.push(tx);
         }
 
-        // Store transactions to update or trash
-        let stockBookTransactionsToUpdate: Bkper.Transaction[] = [];
-        let stockBookTransactionsToTrash: Bkper.Transaction[] = [];
-        let financialBookTransactionsToTrash: Bkper.Transaction[] = [];
-        let baseBookTransactionsToTrash: Bkper.Transaction[] = [];
+        // Processor
+        const processor = new ResetRealizedResultsProcessor(stockBook, financialBook, baseBook);
 
         for (let tx of transactions) {
 
@@ -238,51 +238,56 @@ namespace RealizedResultsService {
 
                 // Trash fwd log & fwd liquidation
                 if (tx.getProperty(FWD_TX_PROP) || tx.getProperty(FWD_LIQUIDATION_PROP)) {
-                    stockBookTransactionsToTrash.push(tx);
+                    // Store transaction to be trashed
+                    processor.setStockBookTransactionToTrash(tx);
                     continue;
                 }
 
                 // Trash transactions connected to liquidations
                 if (isLiquidationTransaction(tx)) {
 
-                    // Trash RRs
+                    // RRs
                     let i = financialBook.getTransactions(`remoteId:${tx.getId()}`);
                     while (i.hasNext()) {
-                        let financialTx = i.next();
-                        if (financialTx.isChecked()) {
-                            financialTx.setChecked(false);
+                        let rrTx = i.next();
+                        if (rrTx.isChecked()) {
+                            rrTx.setChecked(false);
                         }
-                        financialBookTransactionsToTrash.push(financialTx);
+                        // Store transaction to be trashed
+                        processor.setFinancialBookTransactionToTrash(rrTx);
                     }
 
-                    // Trash MTMs
+                    // MTMs
                     i = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`);
                     while (i.hasNext()) {
                         let mtmTx = i.next();
                         if (mtmTx.isChecked()) {
                             mtmTx.setChecked(false);
                         }
-                        financialBookTransactionsToTrash.push(mtmTx);
+                        // Store transaction to be trashed
+                        processor.setFinancialBookTransactionToTrash(mtmTx);
                     }
 
-                    // Trash Interest MTMs
+                    // Interest MTMs
                     i = financialBook.getTransactions(`remoteId:interestmtm_${tx.getId()}`);
                     while (i.hasNext()) {
                         let interestMtmTx = i.next();
                         if (interestMtmTx.isChecked()) {
                             interestMtmTx.setChecked(false);
                         }
-                        financialBookTransactionsToTrash.push(interestMtmTx);
+                        // Store transaction to be trashed
+                        processor.setFinancialBookTransactionToTrash(interestMtmTx);
                     }
 
-                    // Trash FXs
+                    // FXs
                     i = baseBook.getTransactions(`remoteId:fx_${tx.getId()}`);
                     while (i.hasNext()) {
                         let fxTx = i.next();
                         if (fxTx.isChecked()) {
                             fxTx.setChecked(false);
                         }
-                        baseBookTransactionsToTrash.push(fxTx);
+                        // Store transaction to be trashed
+                        processor.setBaseBookTransactionToTrash(fxTx);
                     }
 
                 }
@@ -315,9 +320,13 @@ namespace RealizedResultsService {
 
                 // Trash splitted transaction
                 if (!originalQuantityProp) {
-                    stockBookTransactionsToTrash.push(tx);
-                // Reset parent transaction
+
+                    // Store transaction to be trashed
+                    processor.setStockBookTransactionToTrash(tx);
+
+                    // Reset parent transaction
                 } else {
+
                     // Fix wrong negative prices from forwarded date error
                     if (tx.getProperty(FWD_SALE_PRICE_PROP)) {
                         tx.setProperty(FWD_SALE_PRICE_PROP, BkperApp.newAmount(tx.getProperty(FWD_SALE_PRICE_PROP)).abs().toString());
@@ -353,7 +362,8 @@ namespace RealizedResultsService {
                             .deleteProperty(FWD_PURCHASE_LOG_PROP)
                             .setAmount(originalQuantityProp)
                         ;
-                        stockBookTransactionsToUpdate.push(tx);
+                        // Store transaction to be updated
+                        processor.setStockBookTransactionToUpdate(tx);
                     // Purchases
                     } else if (BotService.isPurchase(tx)) {
                         let purchasePriceProp = tx.getProperty(PURCHASE_PRICE_PROP);
@@ -369,25 +379,21 @@ namespace RealizedResultsService {
                             .deleteProperty(FWD_SALE_EXC_RATE_PROP)
                             .setAmount(originalQuantityProp)
                         ;
-                        stockBookTransactionsToUpdate.push(tx);
+                        // Store transaction to be updated
+                        processor.setStockBookTransactionToUpdate(tx);
                     }
+
                 }
             }
         }
 
+        // Abort if any transaction is locked
+        if (processor.hasLockedTransaction()) {
+            return summary.lockError();
+        }
+
         // Fire batch operations
-        if (stockBookTransactionsToUpdate.length > 0) {
-            stockBook.batchUpdateTransactions(stockBookTransactionsToUpdate, true);
-        }
-        if (stockBookTransactionsToTrash.length > 0) {
-            stockBook.batchTrashTransactions(stockBookTransactionsToTrash, true);
-        }
-        if (financialBookTransactionsToTrash.length > 0) {
-            financialBook.batchTrashTransactions(financialBookTransactionsToTrash, true);
-        }
-        if (baseBookTransactionsToTrash.length > 0) {
-            baseBook.batchTrashTransactions(baseBookTransactionsToTrash, true);
-        }
+        processor.fireBatchOperations();
 
         // Update account
         stockAccount.clearNeedsRebuild();
@@ -409,7 +415,7 @@ namespace RealizedResultsService {
 
         stockAccount.update();
 
-        return new Summary(stockAccount.getId()).resetingAsync();
+        return summary.resetingAsync();
 
     }
 
