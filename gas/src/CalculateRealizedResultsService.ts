@@ -289,7 +289,6 @@ namespace RealizedResultsService {
                     purchaseTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(longSaleLiquidationLogEntries));
                 }
 
-                // purchaseTransaction.update();
                 // Store transaction to be updated
                 purchaseTransaction.setChecked(true);
                 processor.setStockBookTransactionToUpdate(purchaseTransaction);
@@ -304,8 +303,6 @@ namespace RealizedResultsService {
                         addMarkToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, processor);
                     }
                 }
-
-                // purchaseTransaction.check();
 
                 soldQuantity = soldQuantity.minus(purchaseQuantity);
 
@@ -335,7 +332,6 @@ namespace RealizedResultsService {
                     .setAmount(remainingBuyQuantity)
                     .setProperty(PURCHASE_EXC_RATE_PROP, purchaseExcRate?.toString())
                     .setProperty(FWD_PURCHASE_EXC_RATE_PROP, fwdPurchaseExcRate?.toString())
-                    // .update()
                 ;
                 // Store transaction to be updated
                 processor.setStockBookTransactionToUpdate(purchaseTransaction);
@@ -373,10 +369,7 @@ namespace RealizedResultsService {
                     splittedPurchaseTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(longSaleLiquidationLogEntries));
                 }
 
-                // Post & check splitted purchase: ID is required in order to post RR, FX and MTM transactions
-                // splittedPurchaseTransaction.post().check();
-
-                // Store transaction to be created: create temporaty id as remoteId in order to wrap up c
+                // Store transaction to be created: generate temporaty id in order to wrap up connections later
                 splittedPurchaseTransaction
                     .setChecked(true)
                     .addRemoteId(`${processor.generateTemporaryId()}`)
@@ -452,10 +445,6 @@ namespace RealizedResultsService {
                 }
                 saleTxChanged = true;
             }
-            // if (saleTxChanged) {
-            //     saleTransaction.update();
-            // }
-            // saleTransaction.check();
 
             // Store transaction to be updated
             saleTransaction.setChecked(true);
@@ -472,7 +461,6 @@ namespace RealizedResultsService {
                     .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
                     .setProperty(FWD_SALE_EXC_RATE_PROP, fwdSaleExcRate?.toString())
                     .setAmount(soldQuantity)
-                    // .update()
                 ;
                 // Store transaction to be updated
                 processor.setStockBookTransactionToUpdate(saleTransaction);
@@ -510,10 +498,7 @@ namespace RealizedResultsService {
                     }
                 }
 
-                // Post & check: ID is required in order to post RR, FX and MTM transactions
-                // splittedSaleTransaction.post().check();
-
-                // Store transaction to be created: create temporaty id as remoteId in order to wrap up c
+                // Store transaction to be created: generate temporaty id in order to wrap up connections later
                 splittedSaleTransaction
                     .setChecked(true)
                     .addRemoteId(`${processor.generateTemporaryId()}`)
@@ -614,7 +599,6 @@ namespace RealizedResultsService {
                 .from(realizedGainAccount)
                 .to(unrealizedAccount)
                 .setChecked(true)
-                // .post().check()
             ;
 
             // Store transaction to be created
@@ -651,7 +635,6 @@ namespace RealizedResultsService {
                 .from(unrealizedAccount)
                 .to(realizedLossAccount)
                 .setChecked(true)
-                // .post().check()
             ;
 
             // Store transaction to be created
@@ -712,7 +695,6 @@ namespace RealizedResultsService {
                 .to(financialInstrument)
                 .addRemoteId(`mtm_${remoteId}`)
                 .setChecked(true)
-                // .post().check()
             ;
             processor.setFinancialBookTransactionToCreate(mtmTx);
         } else if (amount.round(financialBook.getFractionDigits()).lt(0)) {
@@ -726,7 +708,6 @@ namespace RealizedResultsService {
                 .to(unrealizedAccount)
                 .addRemoteId(`mtm_${remoteId}`)
                 .setChecked(true)
-                // .post().check()
             ;
             processor.setFinancialBookTransactionToCreate(mtmTx);
         }
@@ -742,7 +723,6 @@ namespace RealizedResultsService {
                 .to(urAccount)
                 .addRemoteId(`interestmtm_${remoteId}`)
                 .setChecked(true)
-                // .post().check()
             ;
             processor.setFinancialBookTransactionToCreate(interestMtmTx);
         } else if (amount.lt(0)) {
@@ -754,7 +734,6 @@ namespace RealizedResultsService {
                 .to(account)
                 .addRemoteId(`interestmtm_${remoteId}`)
                 .setChecked(true)
-                // .post().check()
             ;
             processor.setFinancialBookTransactionToCreate(interestMtmTx);
         }
@@ -800,7 +779,6 @@ namespace RealizedResultsService {
 
         return groups;
     }
-
 
     function addFxResult(
         stockExcCode: string,
@@ -852,7 +830,6 @@ namespace RealizedResultsService {
                 .from(excAccount)
                 .to(unrealizedFxAccount)
                 .setChecked(true)
-                // .post().check();
             ;
 
             // Store transaction to be created
@@ -869,7 +846,6 @@ namespace RealizedResultsService {
                 .from(unrealizedFxAccount)
                 .to(excAccount)
                 .setChecked(true)
-                // .post().check();
             ;
 
             // Store transaction to be created
@@ -878,7 +854,6 @@ namespace RealizedResultsService {
         }
 
     }
-
 
     function getExcAccountName(baseBook: Bkper.Book, connectedAccount: Bkper.Account, connectedCode: string): string {
         let excAccount = connectedAccount.getProperty(EXC_ACCOUNT_PROP)
@@ -957,6 +932,5 @@ namespace RealizedResultsService {
 
         return BkperApp.AccountType.LIABILITY;
     }
-
 
 }
