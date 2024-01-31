@@ -8,7 +8,7 @@ namespace BotViewService {
 
         const stockBook = BotService.getStockBook(book);
         if (stockBook == null) {
-            throw 'No book with 0 decimal places found in the collection';
+            throw 'Stock Book not found in the collection';
         }
 
         const template = HtmlService.createTemplateFromFile('BotView');

@@ -44,15 +44,15 @@ class Summary {
         return this;
     }
 
-    forwardError(errorMsg: string): this {
+    lockError(): this {
         this.error = true;
-        this.result = errorMsg;
+        this.result = 'Please review books lock/closing dates in the collection';
         return this;
     }
 
-    lockError(): this {
+    forwardError(errorMsg: string): this {
         this.error = true;
-        this.result = 'Please review lock/closing dates in the collection';
+        this.result = errorMsg;
         return this;
     }
 
