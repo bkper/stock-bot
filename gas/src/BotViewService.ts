@@ -67,7 +67,13 @@ namespace BotViewService {
             }
         }
 
+        // Batch size
+        const batchSize = 15;
+
         template.accounts.sort((a: { name: string; }, b: { name: string; }) => a.name.localeCompare(b.name));
+        // @ts-ignore
+        const accountIds = template.accounts.map(a => a.id);
+        template.chunckedAccountsIds = BotService.chunk(accountIds, batchSize);
 
         const bookExcCodesUserCanEdit = BotService.getBooksExcCodesUserCanEdit(book);
 

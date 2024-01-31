@@ -8,6 +8,18 @@ namespace BotService {
         });
     }
 
+    export function chunk(data: any[], size: number): any[][] {
+        const quotient = Math.floor(data.length / size);
+        const remainder = data.length % size;
+        const numberOfChunks = (remainder == 0) ? quotient : quotient + 1;
+        let result: any[][][] = [];
+        for (let i = 0; i < numberOfChunks; i++) {
+            let chunk = data.slice(size * i, size * (i + 1));
+            result.push(chunk);
+        }
+        return result;
+    }
+
     export function getBeforeDateIsoString(book: Bkper.Book, toDateIsoString: string): string {
         const toDate = book.parseDate(toDateIsoString);
         let beforeDate = new Date();

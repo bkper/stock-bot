@@ -160,6 +160,7 @@
 
 <script>
 
+  // Retry
   let retryCount = 0;
   const maxRetries = 5;
 
@@ -177,13 +178,6 @@
     disableButtons(false);
   }
 
-  async function setForwardDate() {
-    disableButtons(true);
-    showAccountsWaiting();
-    await fireForwardForAll().catch(showError);
-    disableButtons(false);
-  }
-
   async function fullResetRealizedResults() {
     disableButtons(true);
     showAccountsWaiting();
@@ -191,15 +185,28 @@
     disableButtons(false);
   }
 
+  async function setForwardDate() {
+    disableButtons(true);
+    showAccountsWaiting();
+    await fireForwardForAll().catch(showError);
+    disableButtons(false);
+  }
+
   async function fireCalculateForAll() {
-    <? for (var i = 0; i < accounts.length; i++) { ?>
-      await promiseRun('calculateRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>', getAutoMtM(), getDateInput()).then(hideAccountWaiting);
+    <? for (var i = 0; i < chunckedAccountsIds.length; i++) { ?>
+      await runChunk('calculateRealizedResults', <?!= chunckedAccountsIds[i] ?>);
     <? } ?>
   }
 
   async function fireResetForAll() {
-    <? for (var i = 0; i < accounts.length; i++) { ?>
-      await promiseRun('resetRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting);
+    <? for (var i = 0; i < chunckedAccountsIds.length; i++) { ?>
+      await runChunk('resetRealizedResults', <?!= chunckedAccountsIds[i] ?>);
+    <? } ?>
+  }
+
+  async function fireFullResetForAll() {
+    <? for (var i = 0; i < chunckedAccountsIds.length; i++) { ?>
+      await runChunk('fullResetRealizedResults', <?!= chunckedAccountsIds[i] ?>);
     <? } ?>
   }
 
@@ -209,10 +216,26 @@
     <? } ?>
   }
 
-  async function fireFullResetForAll() {
-    <? for (var i = 0; i < accounts.length; i++) { ?>
-      await promiseRun('fullResetRealizedResults' , '<?!= book.id ?>', '<?!= accounts[i].id ?>').then(hideAccountWaiting);
-    <? } ?>
+  function runChunk(func) {
+
+    // this is a trick to convert the arguments array into an array, and drop the first one
+    const chunkIds = Array.prototype.slice.call(arguments).slice(1);
+
+    let promises = [];
+    for (var i = 0; i < chunkIds.length; i++) {
+      // Calculate
+      if (func == 'calculateRealizedResults') {
+        promises.push(promiseRun(func , '<?!= book.id ?>', `${chunkIds[i]}`, getAutoMtM(), getDateInput()).then(hideAccountWaiting));
+      // Reset
+      } else if (func == 'resetRealizedResults') {
+        promises.push(promiseRun(func , '<?!= book.id ?>', `${chunkIds[i]}`).then(hideAccountWaiting));
+      // Full reset
+      } else if (func == 'fullResetRealizedResults') {
+        promises.push(promiseRun(func , '<?!= book.id ?>', `${chunkIds[i]}`).then(hideAccountWaiting));
+      }
+    }
+
+    return Promise.all(promises);
   }
 
   function promiseRun(func) {
