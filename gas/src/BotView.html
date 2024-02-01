@@ -160,10 +160,6 @@
 
 <script>
 
-  // Retry
-  let retryCount = 0;
-  const maxRetries = 5;
-
   async function calculateRealizedResults() {
     disableButtons(true);
     showAccountsWaiting();
@@ -245,38 +241,14 @@
 
     return new Promise((resolve, reject) => {
       google.script.run
-        .withSuccessHandler(result => resolve(result))
-        .withFailureHandler(error => retryOperation(error, func))
+        .withSuccessHandler((result) => resolve(result))
+        .withFailureHandler((error) => {
+          let summary = { accountId: runArgs[1], error: true, result: error };
+          resolve(summary);
+        })
       [func].apply(this, runArgs);
     })
 
-  }
-
-  function retryOperation(error, func) {
-    if (shouldRetry(func) && `${error}`.indexOf('not found in') < 0 && `${error}`.indexOf('decimal places') < 0 && retryCount < maxRetries) {
-      fireRetryOperation(func);
-      retryCount++;
-      document.getElementById(`error-panel`).innerHTML = `Retrying ${retryCount} of ${maxRetries}`;
-    } else {
-      retryCount = 0;
-      showError(error);
-    }
-  }
-
-  function shouldRetry(funcName) {
-    return funcName !== 'setForwardDate' ? true : false;
-  }
-
-  function fireRetryOperation(funcName) {
-    if (funcName === 'calculateRealizedResults') {
-      calculateRealizedResults();
-    }
-    if (funcName === 'resetRealizedResults') {
-      resetRealizedResults();
-    }
-    if (funcName === 'fullResetRealizedResults') {
-      fullResetRealizedResults();
-    }
   }
 
   function showAccountsWaiting() {
