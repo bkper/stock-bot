@@ -46,7 +46,7 @@ class Summary {
 
     lockError(): this {
         this.error = true;
-        this.result = 'Please review books lock/closing dates in the collection';
+        this.result = 'Cannot proceed: collection has locked/closed book(s)';
         return this;
     }
 

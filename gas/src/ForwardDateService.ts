@@ -31,10 +31,12 @@ namespace ForwardDateService {
         // Forward fix: allow only if the conditions are met
         if (forwardedDateValue && dateValue < forwardedDateValue) {
             if (!isUserBookOwner(stockBook)) {
-                throw `Cannot lower forward date: user must be book owner`;
+                const errorMsg = `Cannot lower forward date: user must be book owner`;
+                return summary.forwardError(errorMsg);
             }
             if (!isCollectionUnlocked(stockBook)) {
-                throw `Cannot lower forward date: collection has locked/closed book(s)`;
+                const errorMsg = `Cannot lower forward date: collection has locked/closed book(s)`;
+                return summary.forwardError(errorMsg);
             }
             return fixAndForwardDateForAccount(stockBook, stockAccount, date);
         }
