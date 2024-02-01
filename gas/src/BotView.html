@@ -162,30 +162,66 @@
 
   async function calculateRealizedResults() {
     disableButtons(true);
-    showAccountsWaiting();
-    await fireCalculateForAll().catch(showError);
-    disableButtons(false);
+    google.script.run
+      .withSuccessHandler(async () => {
+        showAccountsWaiting();
+        await fireCalculateForAll().catch(showError);
+        disableButtons(false);
+      })
+      .withFailureHandler((error) => {
+        showError(error);
+        disableButtons(false);
+      })
+      .validate('<?!= book.id ?>')
+    ;
   }
 
   async function resetRealizedResults() {
     disableButtons(true);
-    showAccountsWaiting();
-    await fireResetForAll().catch(showError);
-    disableButtons(false);
+    google.script.run
+      .withSuccessHandler(async () => {
+        showAccountsWaiting();
+        await fireResetForAll().catch(showError);
+        disableButtons(false);
+      })
+      .withFailureHandler((error) => {
+        showError(error);
+        disableButtons(false);
+      })
+      .validate('<?!= book.id ?>')
+    ;
   }
 
   async function fullResetRealizedResults() {
     disableButtons(true);
-    showAccountsWaiting();
-    await fireFullResetForAll().catch(showError);
-    disableButtons(false);
+    google.script.run
+      .withSuccessHandler(async () => {
+        showAccountsWaiting();
+        await fireFullResetForAll().catch(showError);
+        disableButtons(false);
+      })
+      .withFailureHandler((error) => {
+        showError(error);
+        disableButtons(false);
+      })
+      .validate('<?!= book.id ?>')
+    ;
   }
 
   async function setForwardDate() {
     disableButtons(true);
-    showAccountsWaiting();
-    await fireForwardForAll().catch(showError);
-    disableButtons(false);
+    google.script.run
+      .withSuccessHandler(async () => {
+        showAccountsWaiting();
+        await fireForwardForAll().catch(showError);
+        disableButtons(false);
+      })
+      .withFailureHandler((error) => {
+        showError(error);
+        disableButtons(false);
+      })
+      .validate('<?!= book.id ?>')
+    ;
   }
 
   async function fireCalculateForAll() {

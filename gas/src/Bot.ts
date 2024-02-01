@@ -79,6 +79,15 @@ function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
   return BotViewService.getBotViewTemplate(bookId, accountId, groupId);
 }
 
+function validate(bookId: string): void {
+  // Check if Stock Book has pending tasks
+  const book = BkperApp.getBook(bookId);
+  const stockBook = BotService.getStockBook(book);
+  if (BotService.hasPendingTasks(stockBook)) {
+    throw `Cannot start operation: Stock Book has pending tasks`;
+  }
+}
+
 function calculateRealizedResults(bookId: string, accountId: string, autoMtM: boolean, toDate: string): Summary {
 
   // Log user inputs
