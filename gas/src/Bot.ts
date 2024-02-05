@@ -66,6 +66,9 @@ const FWD_TX_REMOTE_IDS_PROP = 'fwd_tx_remote_ids';
 const FWD_LIQUIDATION_PROP = 'fwd_liquidation';
 const FWD_LOG_PROP = 'fwd_log';
 
+// Max supported decimal places
+const MAX_DECIMAL_PLACES = 8;
+
 
 function doGet(e: GoogleAppsScript.Events.AppsScriptHttpRequestEvent) {
 

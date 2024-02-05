@@ -572,7 +572,7 @@ namespace RealizedResultsService {
         const gainDate = transaction.getProperty(DATE_PROP) || transaction.getDate();
         const isBaseBook = baseBook.getId() == financialBook.getId();
 
-        if (gain.round(financialBook.getFractionDigits()).gt(0)) {
+        if (gain.round(MAX_DECIMAL_PLACES).gt(0)) {
 
             const realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
             let realizedGainAccount = financialBook.getAccount(realizedGainAccountName);
@@ -608,7 +608,7 @@ namespace RealizedResultsService {
             // Store transaction to be created
             processor.setFinancialBookTransactionToCreate(rrTransaction);
 
-        } else if (gain.round(financialBook.getFractionDigits()).lt(0)) {
+        } else if (gain.round(MAX_DECIMAL_PLACES).lt(0)) {
 
             const realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
             let realizedLossAccount = financialBook.getAccount(realizedLossAccountName);
@@ -688,7 +688,7 @@ namespace RealizedResultsService {
         const newBalance = totalQuantity.times(price);
         const amount = newBalance.minus(balance.plus(processor.getMtmBalance(isoDate)));
 
-        if (amount.round(financialBook.getFractionDigits()).gt(0)) {
+        if (amount.round(MAX_DECIMAL_PLACES).gt(0)) {
             const mtmTx = financialBook.newTransaction()
                 .setDate(date)
                 .setAmount(amount)
@@ -701,7 +701,7 @@ namespace RealizedResultsService {
                 .setChecked(true)
             ;
             processor.setFinancialBookTransactionToCreate(mtmTx);
-        } else if (amount.round(financialBook.getFractionDigits()).lt(0)) {
+        } else if (amount.round(MAX_DECIMAL_PLACES).lt(0)) {
             const mtmTx = financialBook.newTransaction()
                 .setDate(date)
                 .setAmount(amount)
@@ -823,7 +823,7 @@ namespace RealizedResultsService {
         const fxGain = gainBaseWithFx.minus(gainBaseNoFx);
         const remoteId = transaction.getId() || processor.getTemporaryId(transaction);
 
-        if (fxGain.round(baseBook.getFractionDigits()).gt(0)) {
+        if (fxGain.round(MAX_DECIMAL_PLACES).gt(0)) {
 
             const fxTransaction = baseBook.newTransaction()
                 .addRemoteId(`fx_` + remoteId)
@@ -839,7 +839,7 @@ namespace RealizedResultsService {
             // Store transaction to be created
             processor.setBaseBookTransactionToCreate(fxTransaction);
 
-        } else if (fxGain.round(baseBook.getFractionDigits()).lt(0)) {
+        } else if (fxGain.round(MAX_DECIMAL_PLACES).lt(0)) {
 
             const fxTransaction = baseBook.newTransaction()
                 .addRemoteId(`fx_` + remoteId)
