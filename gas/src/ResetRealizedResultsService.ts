@@ -43,8 +43,23 @@ namespace RealizedResultsService {
 
             if (tx.getAgentId() == 'stock-bot') {
 
-                // Trash fwd log & fwd liquidation
-                if (tx.getProperty(FWD_TX_PROP) || tx.getProperty(FWD_LIQUIDATION_PROP)) {
+                // Trash fwd log
+                if (tx.getProperty(FWD_TX_PROP)) {
+                    tx.trash();
+                    continue;
+                }
+
+                // Trash fwd liquidation
+                if (tx.getProperty(FWD_LIQUIDATION_PROP)) {
+                    // Trash forwarded result
+                    let i = financialBook.getTransactions(`remoteId:fwd_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let fwdTx = i.next();
+                        if (fwdTx.isChecked()) {
+                            fwdTx = fwdTx.uncheck();
+                        }
+                        fwdTx.trash();
+                    }
                     tx.trash();
                     continue;
                 }
@@ -236,8 +251,25 @@ namespace RealizedResultsService {
 
             if (tx.getAgentId() == 'stock-bot') {
 
-                // Trash fwd log & fwd liquidation
-                if (tx.getProperty(FWD_TX_PROP) || tx.getProperty(FWD_LIQUIDATION_PROP)) {
+                // Trash fwd log
+                if (tx.getProperty(FWD_TX_PROP)) {
+                    // Store transaction to be trashed
+                    processor.setStockBookTransactionToTrash(tx);
+                    continue;
+                }
+
+                // Trash fwd liquidation
+                if (tx.getProperty(FWD_LIQUIDATION_PROP)) {
+                    // Trash forwarded result
+                    let i = financialBook.getTransactions(`remoteId:fwd_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let fwdTx = i.next();
+                        if (fwdTx.isChecked()) {
+                            fwdTx.setChecked(false);
+                        }
+                        // Store transaction to be trashed
+                        processor.setFinancialBookTransactionToTrash(fwdTx);
+                    }
                     // Store transaction to be trashed
                     processor.setStockBookTransactionToTrash(tx);
                     continue;
