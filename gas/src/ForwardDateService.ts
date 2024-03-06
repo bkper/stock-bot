@@ -175,28 +175,33 @@ namespace ForwardDateService {
         }
 
         // Record new transaction liquidating the logs
+        let liquidationgTransactionId = '';
         if (needToRecordLiquidationTx && !openQuantity.eq(0)) {
             let liquidationTransaction = buildLiquidationTransaction(stockBook, stockAccount, openQuantity, closingDate, forwardDate);
             liquidationTransaction
                 .setProperty(FWD_LIQUIDATION_PROP, JSON.stringify(logTransactionsIds))
                 .post()
             ;
+            liquidationgTransactionId = liquidationTransaction.getId();
             transactionsToCheck.push(liquidationTransaction);
         }
 
         // Check logs and liquidation transaction
         stockBook.batchCheckTransactions(transactionsToCheck);
 
-        // const urFinancialBookBalancesReport = financialBook.getBalancesReport(`account:'${stockAccount.getName()} ${UNREALIZED_SUFFIX}' after:${stockAccount.getForwardedDate()} before:${forwardDate}`);
-        // const urBaseBookBalancesReport = baseBook.getBalancesReport(`account:'${stockAccount.getName()} ${UNREALIZED_SUFFIX}' after:${stockAccount.getForwardedDate()} before:${forwardDate}`);
+        const urFinancialBookBalancesReport = financialBook.getBalancesReport(`account:'${stockAccount.getName()} ${UNREALIZED_SUFFIX}' after:${stockAccount.getForwardedDate()} before:${forwardDate}`);
+        const urBaseBookBalancesReport = baseBook.getBalancesReport(`account:'${stockAccount.getName()} ${UNREALIZED_SUFFIX}' after:${stockAccount.getForwardedDate()} before:${forwardDate}`);
 
-        // // Unrealized account balances
-        // const urBalanceLocal = getAccountBalance(urFinancialBookBalancesReport, `${stockAccount.getName()} ${UNREALIZED_SUFFIX}`);
-        // const urBalanceBase = getAccountBalance(urBaseBookBalancesReport, `${stockAccount.getName()} ${UNREALIZED_SUFFIX}`);
+        // Unrealized account balances
+        const urBalanceLocal = getAccountBalance(urFinancialBookBalancesReport, `${stockAccount.getName()} ${UNREALIZED_SUFFIX}`);
+        const urBalanceBase = getAccountBalance(urBaseBookBalancesReport, `${stockAccount.getName()} ${UNREALIZED_SUFFIX}`);
 
-        // // Record "Forwarded Results" - Unrealized account gap
-        // const forwardedResultTransaction = buildForwardedResultTransaction(financialBook, stockAccount, closingDate, urBalanceLocal, urBalanceBase, baseExcCode);
-        // forwardedResultTransaction.setChecked(true).create();
+        // Record "Forwarded Results" - Unrealized account gap
+        const forwardedResultTransaction = buildForwardedResultTransaction(financialBook, stockAccount, closingDate, urBalanceLocal, urBalanceBase, baseExcCode);
+        if (liquidationgTransactionId) {
+            forwardedResultTransaction.addRemoteId(`fwd_${liquidationgTransactionId}`);
+        }
+        forwardedResultTransaction.setChecked(true).create();
 
         // Update stock account
         updateStockAccount(stockAccount, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, forwardDate);
@@ -360,6 +365,7 @@ namespace ForwardDateService {
     function buildForwardedResultTransaction(financialBook: Bkper.Book, stockAccount: StockAccount, closingDate: Date, localAmount: Bkper.Amount, baseAmount: Bkper.Amount, baseExcCode: string): Bkper.Transaction {
         // Unrealized account
         const unrealizedAccount = getSupportAccount(financialBook, stockAccount, UNREALIZED_SUFFIX, BkperApp.AccountType.INCOMING);
+        // Forwarded account
         const forwardedAccount = getSupportAccount(financialBook, stockAccount, FORWARDED_SUFFIX, BkperApp.AccountType.LIABILITY);
         const fromAccount = localAmount.gt(0) ? forwardedAccount : unrealizedAccount;
         const toAccount = localAmount.gt(0) ? unrealizedAccount : forwardedAccount;
