@@ -187,6 +187,17 @@ namespace ForwardDateService {
         // Check logs and liquidation transaction
         stockBook.batchCheckTransactions(transactionsToCheck);
 
+        // const urFinancialBookBalancesReport = financialBook.getBalancesReport(`account:'${stockAccount.getName()} ${UNREALIZED_SUFFIX}' after:${stockAccount.getForwardedDate()} before:${forwardDate}`);
+        // const urBaseBookBalancesReport = baseBook.getBalancesReport(`account:'${stockAccount.getName()} ${UNREALIZED_SUFFIX}' after:${stockAccount.getForwardedDate()} before:${forwardDate}`);
+
+        // // Unrealized account balances
+        // const urBalanceLocal = getAccountBalance(urFinancialBookBalancesReport, `${stockAccount.getName()} ${UNREALIZED_SUFFIX}`);
+        // const urBalanceBase = getAccountBalance(urBaseBookBalancesReport, `${stockAccount.getName()} ${UNREALIZED_SUFFIX}`);
+
+        // // Record "Forwarded Results" - Unrealized account gap
+        // const forwardedResultTransaction = buildForwardedResultTransaction(financialBook, stockAccount, closingDate, urBalanceLocal, urBalanceBase, baseExcCode);
+        // forwardedResultTransaction.setChecked(true).create();
+
         // Update stock account
         updateStockAccount(stockAccount, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, forwardDate);
 
@@ -334,6 +345,65 @@ namespace ForwardDateService {
             }
         }
         return BkperApp.newAmount(0);
+    }
+
+    function getAccountBalance(report: Bkper.BalancesReport, accountName: string): Bkper.Amount {
+        let balance = BkperApp.newAmount(0);
+        try {
+            balance = report.getBalancesContainer(accountName).getCumulativeBalance();
+        } catch (error) {
+            // console.log(error);
+        }
+        return balance;
+    }
+
+    function buildForwardedResultTransaction(financialBook: Bkper.Book, stockAccount: StockAccount, closingDate: Date, localAmount: Bkper.Amount, baseAmount: Bkper.Amount, baseExcCode: string): Bkper.Transaction {
+        // Unrealized account
+        const unrealizedAccount = getSupportAccount(financialBook, stockAccount, UNREALIZED_SUFFIX, BkperApp.AccountType.INCOMING);
+        const forwardedAccount = getSupportAccount(financialBook, stockAccount, FORWARDED_SUFFIX, BkperApp.AccountType.LIABILITY);
+        const fromAccount = localAmount.gt(0) ? forwardedAccount : unrealizedAccount;
+        const toAccount = localAmount.gt(0) ? unrealizedAccount : forwardedAccount;
+        const description = localAmount.gt(0) ? '#stock_gain_fwd' : '#stock_loss_fwd';
+        return financialBook.newTransaction()
+            .from(fromAccount)
+            .to(toAccount)
+            .setAmount(localAmount.abs())
+            .setDate(closingDate)
+            .setDescription(description)
+            .setProperty(EXC_AMOUNT_PROP, baseAmount.abs().toString())
+            .setProperty(EXC_CODE_PROP, baseExcCode)
+        ;
+    }
+
+    function getSupportAccount(book: Bkper.Book, stockAccount: StockAccount, suffix: string, type: Bkper.AccountType): Bkper.Account {
+        const supportAccountName = `${stockAccount.getName()} ${suffix}`;
+        let supportAccount = book.getAccount(supportAccountName);
+        if (!supportAccount) {
+            supportAccount = book.newAccount()
+                .setName(supportAccountName)
+                .setType(type);
+            const groups = getAccountGroups(book, suffix);
+            groups.forEach(group => supportAccount.addGroup(group));
+            supportAccount.create();
+        }
+        return supportAccount;
+    }
+
+    function getAccountGroups(book: Bkper.Book, suffix: string): Set<Bkper.Group> {
+        let accountNames = new Set<string>();
+        book.getAccounts().forEach(account => {
+            if (account.getName().endsWith(` ${suffix}`)) {
+                accountNames.add(account.getName());
+            }
+        });
+        let groups = new Set<Bkper.Group>();
+        accountNames.forEach(accountName => {
+            let account = book.getAccount(accountName);
+            if (account && account.getGroups()) {
+                account.getGroups().forEach(group => { groups.add(group) });
+            }
+        });
+        return groups;
     }
 
 }

@@ -53,6 +53,7 @@ const STOCK_SELL_ACCOUNT_NAME = 'Sell';
 const STOCK_BUY_ACCOUNT_NAME = 'Buy';
 const REALIZED_SUFFIX = 'Realized';
 const UNREALIZED_SUFFIX = 'Unrealized';
+const FORWARDED_SUFFIX = 'Forwarded';
 
 const QUANTITY_PROP = 'quantity';
 const SELL_ACCOUNT_NAME = 'Sell'
