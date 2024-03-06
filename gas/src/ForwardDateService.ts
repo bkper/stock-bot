@@ -197,11 +197,13 @@ namespace ForwardDateService {
         const urBalanceBase = getAccountBalance(urBaseBookBalancesReport, `${stockAccount.getName()} ${UNREALIZED_SUFFIX}`);
 
         // Record "Forwarded Results" - Unrealized account gap
-        const forwardedResultTransaction = buildForwardedResultTransaction(financialBook, stockAccount, closingDate, urBalanceLocal, urBalanceBase, baseExcCode);
-        if (liquidationgTransactionId) {
-            forwardedResultTransaction.addRemoteId(`fwd_${liquidationgTransactionId}`);
+        if (!urBalanceLocal.eq(0)) {
+            const forwardedResultTransaction = buildForwardedResultTransaction(financialBook, stockAccount, closingDate, urBalanceLocal, urBalanceBase, baseExcCode);
+            if (liquidationgTransactionId) {
+                forwardedResultTransaction.addRemoteId(`fwd_${liquidationgTransactionId}`);
+            }
+            forwardedResultTransaction.setChecked(true).create();
         }
-        forwardedResultTransaction.setChecked(true).create();
 
         // Update stock account
         updateStockAccount(stockAccount, stockExcCode, baseExcCode, fwdPrice, fwdExcRate, forwardDate);
