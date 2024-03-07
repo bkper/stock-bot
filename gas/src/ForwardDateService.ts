@@ -80,7 +80,7 @@ namespace ForwardDateService {
                 .deleteProperty(FWD_TX_PROP)
                 .deleteProperty(FWD_TX_REMOTE_IDS_PROP)
                 .update()
-                ;
+            ;
             stockAccount.pushTrash(previousStateTx);
         }
         // Delete unnecessary transactions
@@ -181,7 +181,7 @@ namespace ForwardDateService {
             liquidationTransaction
                 .setProperty(FWD_LIQUIDATION_PROP, JSON.stringify(logTransactionsIds))
                 .post()
-                ;
+            ;
             liquidationTxId = liquidationTransaction.getId();
             transactionsToCheck.push(liquidationTransaction);
         }
@@ -251,7 +251,7 @@ namespace ForwardDateService {
             .setProperty(FWD_LOG_PROP, logTransaction.getId())
             .setDate(forwardDate)
             .update()
-            ;
+        ;
     }
 
     function updateStockAccount(stockAccount: StockAccount, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, forwardDate: string): void {
@@ -259,7 +259,7 @@ namespace ForwardDateService {
             .setRealizedDate(forwardDate)
             .setForwardedDate(forwardDate)
             .setForwardedPrice(fwdPrice)
-            ;
+        ;
         if (stockExcCode !== baseExcCode) {
             stockAccount.setForwardedExcRate(fwdExcRate);
         }
@@ -289,7 +289,7 @@ namespace ForwardDateService {
             .setProperties(transaction.getProperties())
             .setProperty(FWD_TX_PROP, transaction.getId())
             .setProperty(FWD_TX_REMOTE_IDS_PROP, JSON.stringify(remoteIds))
-            ;
+        ;
     }
 
     function buildLiquidationTransaction(stockBook: Bkper.Book, stockAccount: StockAccount, quantity: Bkper.Amount, closingDate: Date, forwardDate: string): Bkper.Transaction {
@@ -301,7 +301,7 @@ namespace ForwardDateService {
             .to(toAccount)
             .setDate(closingDate)
             .setDescription(`${quantity.times(-1)} units forwarded to ${forwardDate}`)
-            ;
+        ;
     }
 
     function isUserBookOwner(stockBook: Bkper.Book): boolean {
@@ -367,9 +367,9 @@ namespace ForwardDateService {
 
     function buildForwardedResultTransaction(financialBook: Bkper.Book, stockAccount: StockAccount, closingDate: Date, localAmount: Bkper.Amount, baseAmount: Bkper.Amount, baseExcCode: string): Bkper.Transaction {
         // Unrealized account
-        const unrealizedAccount = getSupportAccount(financialBook, stockAccount, UNREALIZED_SUFFIX, BkperApp.AccountType.INCOMING);
+        const unrealizedAccount = BotService.getSupportAccount(financialBook, stockAccount, UNREALIZED_SUFFIX, BkperApp.AccountType.LIABILITY, BotService.getUnrealizedAccountType);
         // Forwarded account
-        const forwardedAccount = getSupportAccount(financialBook, stockAccount, FORWARDED_SUFFIX, BkperApp.AccountType.LIABILITY);
+        const forwardedAccount = BotService.getSupportAccount(financialBook, stockAccount, FORWARDED_SUFFIX, BkperApp.AccountType.LIABILITY);
         const fromAccount = localAmount.gt(0) ? forwardedAccount : unrealizedAccount;
         const toAccount = localAmount.gt(0) ? unrealizedAccount : forwardedAccount;
         const description = localAmount.gt(0) ? '#stock_gain_fwd' : '#stock_loss_fwd';
@@ -381,38 +381,7 @@ namespace ForwardDateService {
             .setDescription(description)
             .setProperty(EXC_AMOUNT_PROP, baseAmount.abs().toString())
             .setProperty(EXC_CODE_PROP, baseExcCode)
-            ;
-    }
-
-    function getSupportAccount(book: Bkper.Book, stockAccount: StockAccount, suffix: string, type: Bkper.AccountType): Bkper.Account {
-        const supportAccountName = `${stockAccount.getName()} ${suffix}`;
-        let supportAccount = book.getAccount(supportAccountName);
-        if (!supportAccount) {
-            supportAccount = book.newAccount()
-                .setName(supportAccountName)
-                .setType(type);
-            const groups = getAccountGroups(book, suffix);
-            groups.forEach(group => supportAccount.addGroup(group));
-            supportAccount.create();
-        }
-        return supportAccount;
-    }
-
-    function getAccountGroups(book: Bkper.Book, suffix: string): Set<Bkper.Group> {
-        let accountNames = new Set<string>();
-        book.getAccounts().forEach(account => {
-            if (account.getName().endsWith(` ${suffix}`)) {
-                accountNames.add(account.getName());
-            }
-        });
-        let groups = new Set<Bkper.Group>();
-        accountNames.forEach(accountName => {
-            let account = book.getAccount(accountName);
-            if (account && account.getGroups()) {
-                account.getGroups().forEach(group => { groups.add(group) });
-            }
-        });
-        return groups;
+        ;
     }
 
 }
