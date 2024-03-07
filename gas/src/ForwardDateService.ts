@@ -80,7 +80,7 @@ namespace ForwardDateService {
                 .deleteProperty(FWD_TX_PROP)
                 .deleteProperty(FWD_TX_REMOTE_IDS_PROP)
                 .update()
-            ;
+                ;
             stockAccount.pushTrash(previousStateTx);
         }
         // Delete unnecessary transactions
@@ -108,7 +108,7 @@ namespace ForwardDateService {
 
         const baseBook = BotService.getBaseBook(stockBook);
         const baseExcCode = BotService.getExcCode(baseBook);
-        
+
         const stockExcCode = stockAccount.getExchangeCode();
         const financialBook = BotService.getFinancialBook(stockBook, stockExcCode);
 
@@ -153,7 +153,7 @@ namespace ForwardDateService {
         }
 
         transactions = transactions.sort(BotService.compareToFIFO);
-        
+
         let logTransactionsIds: string[] = [];
         let transactionsToCheck: Bkper.Transaction[] = [];
         let order = -transactions.length;
@@ -175,14 +175,14 @@ namespace ForwardDateService {
         }
 
         // Record new transaction liquidating the logs
-        let liquidationgTransactionId = '';
+        let liquidationTxId = '';
         if (needToRecordLiquidationTx && !openQuantity.eq(0)) {
             let liquidationTransaction = buildLiquidationTransaction(stockBook, stockAccount, openQuantity, closingDate, forwardDate);
             liquidationTransaction
                 .setProperty(FWD_LIQUIDATION_PROP, JSON.stringify(logTransactionsIds))
                 .post()
-            ;
-            liquidationgTransactionId = liquidationTransaction.getId();
+                ;
+            liquidationTxId = liquidationTransaction.getId();
             transactionsToCheck.push(liquidationTransaction);
         }
 
@@ -197,12 +197,13 @@ namespace ForwardDateService {
         const urBalanceBase = getAccountBalance(urBaseBookBalancesReport, `${stockAccount.getName()} ${UNREALIZED_SUFFIX}`);
 
         // Record "Forwarded Results" - Unrealized account gap
-        if (!urBalanceLocal.eq(0)) {
+        if (liquidationTxId && !urBalanceLocal.eq(0)) {
             const forwardedResultTransaction = buildForwardedResultTransaction(financialBook, stockAccount, closingDate, urBalanceLocal, urBalanceBase, baseExcCode);
-            if (liquidationgTransactionId) {
-                forwardedResultTransaction.addRemoteId(`fwd_${liquidationgTransactionId}`);
-            }
-            forwardedResultTransaction.setChecked(true).create();
+            forwardedResultTransaction
+                .addRemoteId(`fwd_${liquidationTxId}`)
+                .setChecked(true)
+                .create()
+            ;
         }
 
         // Update stock account
@@ -250,7 +251,7 @@ namespace ForwardDateService {
             .setProperty(FWD_LOG_PROP, logTransaction.getId())
             .setDate(forwardDate)
             .update()
-        ;
+            ;
     }
 
     function updateStockAccount(stockAccount: StockAccount, stockExcCode: string, baseExcCode: string, fwdPrice: Bkper.Amount, fwdExcRate: Bkper.Amount, forwardDate: string): void {
@@ -258,7 +259,7 @@ namespace ForwardDateService {
             .setRealizedDate(forwardDate)
             .setForwardedDate(forwardDate)
             .setForwardedPrice(fwdPrice)
-        ;
+            ;
         if (stockExcCode !== baseExcCode) {
             stockAccount.setForwardedExcRate(fwdExcRate);
         }
@@ -288,7 +289,7 @@ namespace ForwardDateService {
             .setProperties(transaction.getProperties())
             .setProperty(FWD_TX_PROP, transaction.getId())
             .setProperty(FWD_TX_REMOTE_IDS_PROP, JSON.stringify(remoteIds))
-        ;
+            ;
     }
 
     function buildLiquidationTransaction(stockBook: Bkper.Book, stockAccount: StockAccount, quantity: Bkper.Amount, closingDate: Date, forwardDate: string): Bkper.Transaction {
@@ -300,7 +301,7 @@ namespace ForwardDateService {
             .to(toAccount)
             .setDate(closingDate)
             .setDescription(`${quantity.times(-1)} units forwarded to ${forwardDate}`)
-        ;
+            ;
     }
 
     function isUserBookOwner(stockBook: Bkper.Book): boolean {
@@ -380,7 +381,7 @@ namespace ForwardDateService {
             .setDescription(description)
             .setProperty(EXC_AMOUNT_PROP, baseAmount.abs().toString())
             .setProperty(EXC_CODE_PROP, baseExcCode)
-        ;
+            ;
     }
 
     function getSupportAccount(book: Bkper.Book, stockAccount: StockAccount, suffix: string, type: Bkper.AccountType): Bkper.Account {
