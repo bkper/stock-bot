@@ -190,6 +190,11 @@ namespace RealizedResultsService {
         let purchaseTotal = BkperApp.newAmount(0);
         let saleTotal = BkperApp.newAmount(0);
 
+        // Historical gain
+        let histGainTotal = BkperApp.newAmount(0);
+        let histGainBaseNoFxTotal = BkperApp.newAmount(0);
+        let histGainBaseWithFxTotal = BkperApp.newAmount(0);
+        // Fair gain
         let gainTotal = BkperApp.newAmount(0);
         let gainBaseNoFxTotal = BkperApp.newAmount(0);
         let gainBaseWithFxTotal = BkperApp.newAmount(0);
@@ -197,10 +202,12 @@ namespace RealizedResultsService {
         let fwdPurchaseTotal = BkperApp.newAmount(0);
         let fwdSaleTotal = BkperApp.newAmount(0);
 
-        // Unrealized accounts
         const excAggregateProp = baseBook.getProperty(EXC_AGGREGATE_PROP);
+        // Unrealized accounts
         const unrealizedAccount = getUnrealizedAccount(stockAccount, financialBook, summary, stockExcCode);
         const unrealizedFxBaseAccount = excAggregateProp ? getUnrealizedAccount(stockAccount, baseBook, summary, stockExcCode) : getUnrealizedFxAccount(stockAccount, baseBook, summary, stockExcCode);
+        const histUnrealizedAccount = BotService.getSupportAccount(financialBook, stockAccount, UNREALIZED_HIST_SUFFIX, BkperApp.AccountType.LIABILITY);
+        const histUnrealizedFxBaseAccount = excAggregateProp ? BotService.getSupportAccount(baseBook, stockAccount, UNREALIZED_HIST_SUFFIX, BkperApp.AccountType.LIABILITY) : BotService.getSupportAccount(baseBook, stockAccount, `${UNREALIZED_HIST_SUFFIX} EXC`, BkperApp.AccountType.LIABILITY);
 
         let purchaseLogEntries: PurchaseLogEntry[] = [];
         let fwdPurchaseLogEntries: PurchaseLogEntry[] = [];
@@ -242,25 +249,31 @@ namespace RealizedResultsService {
                 const fwdSaleAmount = fwdSalePrice.times(purchaseQuantity);
                 const fwdPurchaseAmount = fwdPurchasePrice.times(purchaseQuantity);
 
-                let gain = saleAmount.minus(purchaseAmount);
-                let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
-                let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
+                // Historical gain
+                let histGain = saleAmount.minus(purchaseAmount);
+                let histGainBaseNoFx = BotService.calculateGainBaseNoFX(histGain, purchaseExcRate, saleExcRate, shortSale);
+                let histGainBaseWithFx = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
 
-                if (!historical) {
-                    // Override if not historical
-                    gain = fwdSaleAmount.minus(fwdPurchaseAmount);
-                    gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, fwdPurchaseExcRate, fwdSaleExcRate, shortSale);
-                    gainBaseWithFX = BotService.calculateGainBaseWithFX(fwdPurchaseAmount, fwdPurchaseExcRate, fwdSaleAmount, fwdSaleExcRate);
-                }
+                // Fair gain
+                let gain = fwdSaleAmount.minus(fwdPurchaseAmount);
+                let gainBaseNoFx = BotService.calculateGainBaseNoFX(gain, fwdPurchaseExcRate, fwdSaleExcRate, shortSale);
+                let gainBaseWithFx = BotService.calculateGainBaseWithFX(fwdPurchaseAmount, fwdPurchaseExcRate, fwdSaleAmount, fwdSaleExcRate);
 
                 if (!shortSale) {
                     purchaseTotal = purchaseTotal.plus(purchaseAmount);
                     saleTotal = saleTotal.plus(saleAmount);
                     fwdPurchaseTotal = fwdPurchaseTotal.plus(fwdPurchaseAmount);
                     fwdSaleTotal = fwdSaleTotal.plus(fwdSaleAmount);
+
+                    // Historical
+                    histGainTotal = histGainTotal.plus(histGain);
+                    histGainBaseNoFxTotal = histGainBaseNoFxTotal.plus(histGainBaseNoFx);
+                    histGainBaseWithFxTotal = histGainBaseWithFxTotal.plus(histGainBaseWithFx);
+                    // Fair
                     gainTotal = gainTotal.plus(gain);
-                    gainBaseNoFxTotal = gainBaseNoFxTotal.plus(gainBaseNoFX);
-                    gainBaseWithFxTotal = gainBaseWithFxTotal.plus(gainBaseWithFX);
+                    gainBaseNoFxTotal = gainBaseNoFxTotal.plus(gainBaseNoFx);
+                    gainBaseWithFxTotal = gainBaseWithFxTotal.plus(gainBaseWithFx);
+
                     purchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, purchasePrice, purchaseTransaction, purchaseExcRate));
                     if (fwdPurchasePrice) {
                         fwdPurchaseLogEntries.push(logPurchase(stockBook, purchaseQuantity, fwdPurchasePrice, purchaseTransaction, fwdPurchaseExcRate));
@@ -285,9 +298,18 @@ namespace RealizedResultsService {
                         .setProperty(FWD_SALE_PRICE_PROP, fwdSalePrice?.toString())
                         .setProperty(FWD_SALE_AMOUNT_PROP, fwdSaleAmount?.toString())
                         .setProperty(SALE_DATE_PROP, saleTransaction.getProperty(DATE_PROP) || saleTransaction.getDate())
-                        .setProperty(GAIN_AMOUNT_PROP, gain.toString())
                         .setProperty(SHORT_SALE_PROP, 'true')
                     ;
+                    if (historical) {
+                        // Record Historical gain (using the same prop key as before)
+                        purchaseTransaction.setProperty(GAIN_AMOUNT_PROP, histGain.toString());
+                    } else {
+                        // Record both Historical & Fair gains
+                        purchaseTransaction
+                            .setProperty(GAIN_AMOUNT_HIST_PROP, histGain.toString())
+                            .setProperty(GAIN_AMOUNT_PROP, gain.toString())
+                        ;
+                    }
                 } else {
                     longSaleLiquidationLogEntries.push(logLiquidation(saleTransaction, salePrice, saleExcRate));
                     purchaseTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(longSaleLiquidationLogEntries));
@@ -298,10 +320,17 @@ namespace RealizedResultsService {
                 processor.setStockBookTransactionToUpdate(purchaseTransaction);
 
                 if (shortSale) {
-                    // RR
-                    addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, gainBaseNoFX, summary, processor);
-                    // FX
-                    addFxResult(stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, gainBaseWithFX, gainBaseNoFX, summary, processor);
+                    if (historical) {
+                        // Record Historical results (using the same accounts and remoteIds as before)
+                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, histGain, histGainBaseNoFx, summary, false, processor);
+                        addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, false, processor);
+                    } else {
+                        // Record both Historical & Fair results
+                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, histUnrealizedAccount, purchaseTransaction, histGain, histGainBaseNoFx, summary, true, processor);
+                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, gainBaseNoFx, summary, false, processor);
+                        addFxResult(stockAccount, stockExcCode, baseBook, histUnrealizedFxBaseAccount, purchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, true, processor);
+                        addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, gainBaseWithFx, gainBaseNoFx, summary, false, processor);
+                    }
                     // MTM
                     if (autoMtM) {
                         addMarkToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, processor);
@@ -321,16 +350,14 @@ namespace RealizedResultsService {
                 const fwdSaleAmount = fwdSalePrice.times(partialBuyQuantity);
                 const fwdPurchaseAmount = fwdPurchasePrice.times(partialBuyQuantity);
 
-                let gain = saleAmount.minus(purchaseAmount);
-                let gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, purchaseExcRate, saleExcRate, shortSale);
-                let gainBaseWithFX = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
-
-                if (!historical) {
-                    // Override if not historical
-                    gain = fwdSaleAmount.minus(fwdPurchaseAmount);
-                    gainBaseNoFX = BotService.calculateGainBaseNoFX(gain, fwdPurchaseExcRate, fwdSaleExcRate, shortSale);
-                    gainBaseWithFX = BotService.calculateGainBaseWithFX(fwdPurchaseAmount, fwdPurchaseExcRate, fwdSaleAmount, fwdSaleExcRate);
-                }
+                // Historical
+                let histGain = saleAmount.minus(purchaseAmount);
+                let histGainBaseNoFx = BotService.calculateGainBaseNoFX(histGain, purchaseExcRate, saleExcRate, shortSale);
+                let histGainBaseWithFx = BotService.calculateGainBaseWithFX(purchaseAmount, purchaseExcRate, saleAmount, saleExcRate);
+                // Fair
+                let gain = fwdSaleAmount.minus(fwdPurchaseAmount);
+                let gainBaseNoFx = BotService.calculateGainBaseNoFX(gain, fwdPurchaseExcRate, fwdSaleExcRate, shortSale);
+                let gainBaseWithFx = BotService.calculateGainBaseWithFX(fwdPurchaseAmount, fwdPurchaseExcRate, fwdSaleAmount, fwdSaleExcRate);
 
                 purchaseTransaction
                     .setAmount(remainingBuyQuantity)
@@ -365,9 +392,18 @@ namespace RealizedResultsService {
                         .setProperty(FWD_SALE_PRICE_PROP, fwdSalePrice?.toString())
                         .setProperty(FWD_SALE_AMOUNT_PROP, fwdSaleAmount?.toString())
                         .setProperty(SALE_DATE_PROP, saleTransaction.getProperty(DATE_PROP) || saleTransaction.getDate())
-                        .setProperty(GAIN_AMOUNT_PROP, gain.toString())
                         .setProperty(SHORT_SALE_PROP, 'true')
                     ;
+                    if (historical) {
+                        // Record Historical gain (using the same prop key as before)
+                        splittedPurchaseTransaction.setProperty(GAIN_AMOUNT_PROP, histGain.toString());
+                    } else {
+                        // Record both Historical & Fair gains
+                        splittedPurchaseTransaction
+                            .setProperty(GAIN_AMOUNT_HIST_PROP, histGain.toString())
+                            .setProperty(GAIN_AMOUNT_PROP, gain.toString())
+                        ;
+                    }
                 } else {
                     longSaleLiquidationLogEntries.push(logLiquidation(saleTransaction, salePrice, saleExcRate));
                     splittedPurchaseTransaction.setProperty(LIQUIDATION_LOG_PROP, JSON.stringify(longSaleLiquidationLogEntries));
@@ -381,10 +417,17 @@ namespace RealizedResultsService {
                 processor.setStockBookTransactionToCreate(splittedPurchaseTransaction);
 
                 if (shortSale) {
-                    // RR
-                    addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, gainBaseNoFX, summary, processor);
-                    // FX
-                    addFxResult(stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, gainBaseWithFX, gainBaseNoFX, summary, processor);
+                    if (historical) {
+                        // Record Historical results (using the same accounts and remoteIds as before)
+                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, histGain, histGainBaseNoFx, summary, false, processor);
+                        addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, false, processor);
+                    } else {
+                        // Record both Historical & Fair results
+                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, histUnrealizedAccount, splittedPurchaseTransaction, histGain, histGainBaseNoFx, summary, true, processor);
+                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, gainBaseNoFx, summary, false, processor);
+                        addFxResult(stockAccount, stockExcCode, baseBook, histUnrealizedFxBaseAccount, splittedPurchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, true, processor);
+                        addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, gainBaseWithFx, gainBaseNoFx, summary, false, processor);
+                    }
                     // MTM
                     if (autoMtM) {
                         addMarkToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, processor);
@@ -399,9 +442,16 @@ namespace RealizedResultsService {
                     saleTotal = saleTotal.plus(saleAmount);
                     fwdSaleTotal = fwdSaleTotal.plus(fwdSaleAmount);
                     fwdPurchaseTotal = fwdPurchaseTotal.plus(fwdPurchaseAmount);
+
+                    // Historical
+                    histGainTotal = histGainTotal.plus(histGain);
+                    histGainBaseNoFxTotal = histGainBaseNoFxTotal.plus(histGainBaseNoFx);
+                    histGainBaseWithFxTotal = histGainBaseWithFxTotal.plus(histGainBaseWithFx);
+                    // Fair
                     gainTotal = gainTotal.plus(gain);
-                    gainBaseNoFxTotal = gainBaseNoFxTotal.plus(gainBaseNoFX);
-                    gainBaseWithFxTotal = gainBaseWithFxTotal.plus(gainBaseWithFX);
+                    gainBaseNoFxTotal = gainBaseNoFxTotal.plus(gainBaseNoFx);
+                    gainBaseWithFxTotal = gainBaseWithFxTotal.plus(gainBaseWithFx);
+
                     purchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, purchasePrice, purchaseTransaction, purchaseExcRate));
                     if (fwdPurchasePrice) {
                         fwdPurchaseLogEntries.push(logPurchase(stockBook, partialBuyQuantity, fwdPurchasePrice, purchaseTransaction, fwdPurchaseExcRate));
@@ -435,10 +485,19 @@ namespace RealizedResultsService {
                 saleTransaction
                     .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString())
                     .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
-                    .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
                     .setProperty(PURCHASE_LOG_PROP, JSON.stringify(purchaseLogEntries))
                     .setProperty(SALE_EXC_RATE_PROP, saleExcRate?.toString())
                 ;
+                if (historical) {
+                    // Record Historical gain (using the same prop key as before)
+                    saleTransaction.setProperty(GAIN_AMOUNT_PROP, histGainTotal.toString());
+                } else {
+                    // Record both Historical & Fair gains
+                    saleTransaction
+                        .setProperty(GAIN_AMOUNT_HIST_PROP, histGainTotal.toString())
+                        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
+                    ;
+                }
                 if (fwdPurchaseLogEntries.length > 0) {
                     saleTransaction
                         .setProperty(FWD_PURCHASE_AMOUNT_PROP, !fwdPurchaseTotal.eq(0) ? fwdPurchaseTotal?.toString() : null)
@@ -490,9 +549,18 @@ namespace RealizedResultsService {
                     splittedSaleTransaction
                         .setProperty(PURCHASE_AMOUNT_PROP, purchaseTotal.toString())
                         .setProperty(SALE_AMOUNT_PROP, saleTotal.toString())
-                        .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
                         .setProperty(PURCHASE_LOG_PROP, JSON.stringify(purchaseLogEntries))
                     ;
+                    if (historical) {
+                        // Record Historical gain (using the same prop key as before)
+                        splittedSaleTransaction.setProperty(GAIN_AMOUNT_PROP, histGainTotal.toString());
+                    } else {
+                        // Record both Historical & Fair gains
+                        splittedSaleTransaction
+                            .setProperty(GAIN_AMOUNT_HIST_PROP, histGainTotal.toString())
+                            .setProperty(GAIN_AMOUNT_PROP, gainTotal.toString())
+                        ;
+                    }
                     if (fwdPurchaseLogEntries.length > 0) {
                         splittedSaleTransaction
                             .setProperty(FWD_PURCHASE_AMOUNT_PROP, !fwdPurchaseTotal.eq(0) ? fwdPurchaseTotal?.toString() : null)
@@ -515,10 +583,18 @@ namespace RealizedResultsService {
 
         }
 
-        // RR
-        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, gainBaseNoFxTotal, summary, processor);
-        // FX
-        addFxResult(stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, summary, processor);
+        if (historical) {
+            // Record Historical results (using the same accounts and remoteIds as before)
+            addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, histGainTotal, histGainBaseNoFxTotal, summary, false, processor);
+            addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, histGainBaseWithFxTotal, histGainBaseNoFxTotal, summary, false, processor);
+        } else {
+            // Record both Historical & Fair results
+            addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, histUnrealizedAccount, saleTransaction, histGainTotal, histGainBaseNoFxTotal, summary, true, processor);
+            addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, gainBaseNoFxTotal, summary, false, processor);
+            addFxResult(stockAccount, stockExcCode, baseBook, histUnrealizedFxBaseAccount, saleTransaction, histGainBaseWithFxTotal, histGainBaseNoFxTotal, summary, true, processor);
+            addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, summary, false, processor);
+        }
+
         // MTM
         if (autoMtM && purchaseProcessed && !saleTransaction.getProperty(LIQUIDATION_LOG_PROP)) {
             addMarkToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, salePrice, processor);
@@ -533,7 +609,7 @@ namespace RealizedResultsService {
             unrealizedAccount = book.newAccount()
                 .setName(unrealizedAccountName)
                 .setType(BkperApp.AccountType.LIABILITY);
-            let groups = getAccountGroups(book, UNREALIZED_SUFFIX);
+            const groups = BotService.getAccountGroups(book, UNREALIZED_SUFFIX);
             groups.forEach(group => unrealizedAccount.addGroup(group));
             unrealizedAccount.create();
             trackAccountCreated(summary, stockExcCode, unrealizedAccount);
@@ -548,7 +624,7 @@ namespace RealizedResultsService {
             unrealizedFxAccount = book.newAccount()
                 .setName(unrealizedFxAccountName)
                 .setType(BkperApp.AccountType.LIABILITY);
-            let groups = getAccountGroups(book, `${UNREALIZED_SUFFIX} EXC`);
+            const groups = BotService.getAccountGroups(book, `${UNREALIZED_SUFFIX} EXC`);
             groups.forEach(group => unrealizedFxAccount.addGroup(group));
             unrealizedFxAccount.create();
             trackAccountCreated(summary, stockExcCode, unrealizedFxAccount);
@@ -566,6 +642,7 @@ namespace RealizedResultsService {
         gain: Bkper.Amount,
         gainBaseNoFX: Bkper.Amount,
         summary: Summary,
+        shouldRecordAsHistResult: boolean,
         processor: CalculateRealizedResultsProcessor
     ) {
 
@@ -574,33 +651,35 @@ namespace RealizedResultsService {
 
         if (gain.round(MAX_DECIMAL_PLACES).gt(0)) {
 
-            const realizedGainAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
-            let realizedGainAccount = financialBook.getAccount(realizedGainAccountName);
-
+            const realizedAccountSuffix = shouldRecordAsHistResult ? REALIZED_HIST_SUFFIX : REALIZED_SUFFIX;
+            const realizedAccountName = `${stockAccount.getName()} ${realizedAccountSuffix}`;
+            let realizedAccount = financialBook.getAccount(realizedAccountName);
             // Fallback to old XXX Realized Gain account
-            if (realizedGainAccount == null) {
-                realizedGainAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Gain`);
+            if (realizedAccount == null && !shouldRecordAsHistResult) {
+                realizedAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Gain`);
             }
-
             // Create new XXX Realized account
-            if (realizedGainAccount == null) {
-                realizedGainAccount = financialBook.newAccount().setName(realizedGainAccountName).setType(BkperApp.AccountType.INCOMING);
-                let groups = getAccountGroups(financialBook, REALIZED_SUFFIX);
-                groups.forEach(group => realizedGainAccount.addGroup(group));
-                realizedGainAccount.create();
-                trackAccountCreated(summary, stockExcCode, realizedGainAccount);
+            if (realizedAccount == null) {
+                realizedAccount = financialBook.newAccount().setName(realizedAccountName).setType(BkperApp.AccountType.INCOMING);
+                const groups = BotService.getAccountGroups(financialBook, realizedAccountSuffix);
+                groups.forEach(group => realizedAccount.addGroup(group));
+                realizedAccount.create();
+                trackAccountCreated(summary, stockExcCode, realizedAccount);
             }
 
-            const remoteId = transaction.getId() || processor.getTemporaryId(transaction);
+            const baseRemoteId = transaction.getId() || processor.getTemporaryId(transaction);
+            const remoteId = shouldRecordAsHistResult ? `hist_${baseRemoteId}` : `${baseRemoteId}`;
+
+            const description = shouldRecordAsHistResult ? '#stock_gain_hist' : '#stock_gain';
 
             const rrTransaction = financialBook.newTransaction()
                 .addRemoteId(remoteId)
                 .setDate(gainDate)
                 .setAmount(gain)
-                .setDescription(`#stock_gain`)
+                .setDescription(description)
                 .setProperty(EXC_AMOUNT_PROP, getStockGainLossTransactionExcAmountProp(financialBook, isBaseBook, gainBaseNoFX))
                 .setProperty(EXC_CODE_PROP, getStockGainLossTransactionExcCodeProp(financialBook, isBaseBook, baseBook))
-                .from(realizedGainAccount)
+                .from(realizedAccount)
                 .to(unrealizedAccount)
                 .setChecked(true)
             ;
@@ -610,34 +689,36 @@ namespace RealizedResultsService {
 
         } else if (gain.round(MAX_DECIMAL_PLACES).lt(0)) {
 
-            const realizedLossAccountName = `${stockAccount.getName()} ${REALIZED_SUFFIX}`;
-            let realizedLossAccount = financialBook.getAccount(realizedLossAccountName);
-
+            const realizedAccountSuffix = shouldRecordAsHistResult ? REALIZED_HIST_SUFFIX : REALIZED_SUFFIX;
+            const realizedAccountName = `${stockAccount.getName()} ${realizedAccountSuffix}`;
+            let realizedAccount = financialBook.getAccount(realizedAccountName);
             // Fallback to old XXX Realized Loss account
-            if (realizedLossAccount == null) {
-                realizedLossAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Loss`);
+            if (realizedAccount == null && !shouldRecordAsHistResult) {
+                realizedAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Loss`);
             }
-
             // Create new XXX Realized account
-            if (realizedLossAccount == null) {
-                realizedLossAccount = financialBook.newAccount().setName(realizedLossAccountName).setType(BkperApp.AccountType.OUTGOING);
-                let groups = getAccountGroups(financialBook, REALIZED_SUFFIX);
-                groups.forEach(group => realizedLossAccount.addGroup(group));
-                realizedLossAccount.create();
-                trackAccountCreated(summary, stockExcCode, realizedLossAccount);
+            if (realizedAccount == null) {
+                realizedAccount = financialBook.newAccount().setName(realizedAccountName).setType(BkperApp.AccountType.INCOMING);
+                const groups = BotService.getAccountGroups(financialBook, realizedAccountSuffix);
+                groups.forEach(group => realizedAccount.addGroup(group));
+                realizedAccount.create();
+                trackAccountCreated(summary, stockExcCode, realizedAccount);
             }
 
-            const remoteId = transaction.getId() || processor.getTemporaryId(transaction);
+            const baseRemoteId = transaction.getId() || processor.getTemporaryId(transaction);
+            const remoteId = shouldRecordAsHistResult ? `hist_${baseRemoteId}` : `${baseRemoteId}`;
+
+            const description = shouldRecordAsHistResult ? '#stock_loss_hist' : '#stock_loss';
 
             const rrTransaction = financialBook.newTransaction()
                 .addRemoteId(remoteId)
                 .setDate(gainDate)
                 .setAmount(gain)
-                .setDescription(`#stock_loss`)
+                .setDescription(description)
                 .setProperty(EXC_AMOUNT_PROP, getStockGainLossTransactionExcAmountProp(financialBook, isBaseBook, gainBaseNoFX))
                 .setProperty(EXC_CODE_PROP, getStockGainLossTransactionExcCodeProp(financialBook, isBaseBook, baseBook))
                 .from(unrealizedAccount)
-                .to(realizedLossAccount)
+                .to(realizedAccount)
                 .setChecked(true)
             ;
 
@@ -763,28 +844,8 @@ namespace RealizedResultsService {
         return containers[0].getCumulativeBalance();
     }
 
-    function getAccountGroups(book: Bkper.Book, gainLossSuffix: string): Set<Bkper.Group> {
-        let accountNames = new Set<string>();
-
-        book.getAccounts().forEach(account => {
-            if (account.getName().endsWith(` ${gainLossSuffix}`)) {
-                accountNames.add(account.getName());
-            }
-        });
-
-        let groups = new Set<Bkper.Group>();
-
-        accountNames.forEach(accountName => {
-            let account = book.getAccount(accountName);
-            if (account && account.getGroups()) {
-                account.getGroups().forEach(group => { groups.add(group) })
-            }
-        })
-
-        return groups;
-    }
-
     function addFxResult(
+        stockAccount: StockAccount,
         stockExcCode: string,
         baseBook: Bkper.Book,
         unrealizedFxAccount: Bkper.Account,
@@ -792,6 +853,7 @@ namespace RealizedResultsService {
         gainBaseWithFx: Bkper.Amount,
         gainBaseNoFx: Bkper.Amount,
         summary: Summary,
+        shouldRecordAsHistResult: boolean,
         processor: CalculateRealizedResultsProcessor
     ): void {
 
@@ -806,32 +868,48 @@ namespace RealizedResultsService {
             return;
         }
 
-        const excAccountName = getExcAccountName(baseBook, unrealizedFxAccount, stockExcCode);
+        let realizedFxAccountName = getExcAccountName(baseBook, unrealizedFxAccount, stockExcCode);
+        if (shouldRecordAsHistResult) {
+            if (realizedFxAccountName.startsWith('Exchange_')) {
+                // Ok, record using same account
+            } else if (realizedFxAccountName.endsWith(` ${REALIZED_SUFFIX} EXC`)) {
+                // Recording using XXX Realized EXC Hist account
+                realizedFxAccountName = `${realizedFxAccountName} Hist`;
+            } else {
+                // Custom account: use new custom account with 'Hist' suffix
+                realizedFxAccountName = `${realizedFxAccountName} Hist`;
+            }
+        }
 
         // Verify Exchange account created
-        let excAccount = baseBook.getAccount(excAccountName);
-        if (excAccount == null) {
-            excAccount = baseBook.newAccount().setName(excAccountName);
-            let groups = getExcAccountGroups(baseBook);
-            groups.forEach(group => excAccount.addGroup(group));
-            let type = getExcAccountType(baseBook);
-            excAccount.setType(type);
-            excAccount.create();
-            trackAccountCreated(summary, stockExcCode, excAccount);
+        let realizedFxAccount = baseBook.getAccount(realizedFxAccountName);
+        if (realizedFxAccount == null) {
+            realizedFxAccount = baseBook.newAccount().setName(realizedFxAccountName);
+            const realizedFxAccountSuffix = realizedFxAccountName.replace(stockAccount.getName(), '').trim();
+            const groups = shouldRecordAsHistResult ? BotService.getAccountGroups(baseBook, realizedFxAccountSuffix) : getExcAccountGroups(baseBook);
+            groups.forEach(group => realizedFxAccount.addGroup(group));
+            const type = shouldRecordAsHistResult ? BkperApp.AccountType.INCOMING : getExcAccountType(baseBook);
+            realizedFxAccount.setType(type);
+            realizedFxAccount.create();
+            trackAccountCreated(summary, stockExcCode, realizedFxAccount);
         }
 
         const fxGain = gainBaseWithFx.minus(gainBaseNoFx);
-        const remoteId = transaction.getId() || processor.getTemporaryId(transaction);
+
+        const baseRemoteId = transaction.getId() || processor.getTemporaryId(transaction);
+        const remoteId = shouldRecordAsHistResult ? `fx_hist_${baseRemoteId}` : `fx_${baseRemoteId}`;
 
         if (fxGain.round(MAX_DECIMAL_PLACES).gt(0)) {
 
+            const description = shouldRecordAsHistResult ? '#exchange_gain_hist' : '#exchange_gain';
+
             const fxTransaction = baseBook.newTransaction()
-                .addRemoteId(`fx_` + remoteId)
+                .addRemoteId(remoteId)
                 .setDate(gainDate)
                 .setAmount(fxGain)
-                .setDescription(`#exchange_gain`)
+                .setDescription(description)
                 .setProperty(EXC_AMOUNT_PROP, '0')
-                .from(excAccount)
+                .from(realizedFxAccount)
                 .to(unrealizedFxAccount)
                 .setChecked(true)
             ;
@@ -841,14 +919,16 @@ namespace RealizedResultsService {
 
         } else if (fxGain.round(MAX_DECIMAL_PLACES).lt(0)) {
 
+            const description = shouldRecordAsHistResult ? '#exchange_loss_hist' : '#exchange_loss';
+
             const fxTransaction = baseBook.newTransaction()
-                .addRemoteId(`fx_` + remoteId)
+                .addRemoteId(remoteId)
                 .setDate(gainDate)
                 .setAmount(fxGain)
-                .setDescription(`#exchange_loss`)
+                .setDescription(description)
                 .setProperty(EXC_AMOUNT_PROP, '0')
                 .from(unrealizedFxAccount)
-                .to(excAccount)
+                .to(realizedFxAccount)
                 .setChecked(true)
             ;
 

@@ -19,6 +19,7 @@ const FWD_PURCHASE_AMOUNT_PROP = 'fwd_purchase_amount';
 const PURCHASE_QUANTITY_PROP = 'purchase_quantity';
 const PARENT_ID = 'parent_id'
 const SHORT_SALE_PROP = 'short_sale';
+const GAIN_AMOUNT_HIST_PROP = 'gain_amount_hist';
 const GAIN_AMOUNT_PROP = 'gain_amount';
 const PURCHASE_LOG_PROP = 'purchase_log';
 const FWD_PURCHASE_LOG_PROP = 'fwd_purchase_log';
@@ -52,7 +53,9 @@ const FORWARDED_EXC_RATE_PROP = 'forwarded_exc_rate';
 const STOCK_SELL_ACCOUNT_NAME = 'Sell';
 const STOCK_BUY_ACCOUNT_NAME = 'Buy';
 const REALIZED_SUFFIX = 'Realized';
+const REALIZED_HIST_SUFFIX = 'Realized Hist';
 const UNREALIZED_SUFFIX = 'Unrealized';
+const UNREALIZED_HIST_SUFFIX = 'Unrealized Hist';
 const FORWARDED_SUFFIX = 'Forwarded';
 
 const QUANTITY_PROP = 'quantity';

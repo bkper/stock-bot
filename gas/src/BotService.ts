@@ -356,7 +356,7 @@ namespace BotService {
         return supportAccount;
     }
 
-    function getAccountGroups(book: Bkper.Book, suffix: string): Set<Bkper.Group> {
+    export function getAccountGroups(book: Bkper.Book, suffix: string): Set<Bkper.Group> {
         let accountNames = new Set<string>();
         book.getAccounts().forEach(account => {
             if (account.getName().endsWith(` ${suffix}`)) {
