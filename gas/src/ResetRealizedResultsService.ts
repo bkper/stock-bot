@@ -64,38 +64,66 @@ namespace RealizedResultsService {
                     continue;
                 }
 
-                // Trash RRs, MTMs and FXs
-                let i = financialBook.getTransactions(`remoteId:${tx.getId()}`);
-                while (i.hasNext()) {
-                    let financialTx = i.next();
-                    if (financialTx.isChecked()) {
-                        financialTx = financialTx.uncheck();
+                // Trash transactions connected to liquidations
+                if (isLiquidationTransaction(tx)) {
+
+                    // Trash RRs, MTMs and FXs
+                    let i = financialBook.getTransactions(`remoteId:${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let rrTx = i.next();
+                        if (rrTx.isChecked()) {
+                            rrTx = rrTx.uncheck();
+                        }
+                        rrTx.trash();
                     }
-                    financialTx.trash();
+                    i = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let mtmTx = i.next();
+                        if (mtmTx.isChecked()) {
+                            mtmTx = mtmTx.uncheck();
+                        }
+                        mtmTx.trash();
+                    }
+                    i = financialBook.getTransactions(`remoteId:interestmtm_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let interestMtmTx = i.next();
+                        if (interestMtmTx.isChecked()) {
+                            interestMtmTx = interestMtmTx.uncheck();
+                        }
+                        interestMtmTx.trash();
+                    }
+                    i = baseBook.getTransactions(`remoteId:fx_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let fxTx = i.next();
+                        if (fxTx.isChecked()) {
+                            fxTx = fxTx.uncheck();
+                        }
+                        fxTx.trash();
+                    }
+
                 }
-                i = financialBook.getTransactions(`remoteId:mtm_${tx.getId()}`);
-                while (i.hasNext()) {
-                    let mtmTx = i.next();
-                    if (mtmTx.isChecked()) {
-                        mtmTx = mtmTx.uncheck();
+
+                // Trash transactions connected to historical liquidations
+                if (isHistLiquidationTransaction(tx)) {
+
+                    // Trash RRs, MTMs and FXs
+                    let i = financialBook.getTransactions(`remoteId:hist_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let rrTx = i.next();
+                        if (rrTx.isChecked()) {
+                            rrTx = rrTx.uncheck();
+                        }
+                        rrTx.trash();
                     }
-                    mtmTx.trash();
-                }
-                i = financialBook.getTransactions(`remoteId:interestmtm_${tx.getId()}`);
-                while (i.hasNext()) {
-                    let interestMtmTx = i.next();
-                    if (interestMtmTx.isChecked()) {
-                        interestMtmTx = interestMtmTx.uncheck();
+                    i = baseBook.getTransactions(`remoteId:fx_hist_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let fxTx = i.next();
+                        if (fxTx.isChecked()) {
+                            fxTx = fxTx.uncheck();
+                        }
+                        fxTx.trash();
                     }
-                    interestMtmTx.trash();
-                }
-                i = baseBook.getTransactions(`remoteId:fx_${tx.getId()}`);
-                while (i.hasNext()) {
-                    let fxTx = i.next();
-                    if (fxTx.isChecked()) {
-                        fxTx = fxTx.uncheck();
-                    }
-                    fxTx.trash();
+
                 }
 
                 let originalAmountProp = tx.getProperty(ORIGINAL_AMOUNT_PROP);
@@ -324,6 +352,33 @@ namespace RealizedResultsService {
 
                 }
 
+                // Trash transactions connected to historical liquidations
+                if (isHistLiquidationTransaction(tx)) {
+
+                    // RRs
+                    let i = financialBook.getTransactions(`remoteId:hist_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let rrTx = i.next();
+                        if (rrTx.isChecked()) {
+                            rrTx.setChecked(false);
+                        }
+                        // Store transaction to be trashed
+                        processor.setFinancialBookTransactionToTrash(rrTx);
+                    }
+
+                    // FXs
+                    i = baseBook.getTransactions(`remoteId:fx_hist_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let fxTx = i.next();
+                        if (fxTx.isChecked()) {
+                            fxTx.setChecked(false);
+                        }
+                        // Store transaction to be trashed
+                        processor.setBaseBookTransactionToTrash(fxTx);
+                    }
+
+                }
+
                 // Reset properties
                 let originalAmountProp = tx.getProperty(ORIGINAL_AMOUNT_PROP);
                 let originalQuantityProp = tx.getProperty(ORIGINAL_QUANTITY_PROP);
@@ -453,6 +508,10 @@ namespace RealizedResultsService {
 
     function isLiquidationTransaction(transaction: Bkper.Transaction): boolean {
         return transaction.getProperty(GAIN_AMOUNT_PROP) ? true : false;
+    }
+
+    function isHistLiquidationTransaction(transaction: Bkper.Transaction): boolean {
+        return transaction.getProperty(GAIN_AMOUNT_HIST_PROP) ? true : false;
     }
 
 }
