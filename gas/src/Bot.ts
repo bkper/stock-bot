@@ -52,17 +52,22 @@ const FORWARDED_PRICE_PROP = 'forwarded_price';
 const FORWARDED_EXC_RATE_PROP = 'forwarded_exc_rate';
 const STOCK_SELL_ACCOUNT_NAME = 'Sell';
 const STOCK_BUY_ACCOUNT_NAME = 'Buy';
-const REALIZED_SUFFIX = 'Realized';
-const REALIZED_HIST_SUFFIX = 'Realized Hist';
-const UNREALIZED_SUFFIX = 'Unrealized';
-const UNREALIZED_HIST_SUFFIX = 'Unrealized Hist';
-const FORWARDED_SUFFIX = 'Forwarded';
-
 const QUANTITY_PROP = 'quantity';
 const SELL_ACCOUNT_NAME = 'Sell'
 const BUY_ACCOUNT_NAME = 'Buy'
 const ORIGINAL_PURCHASE_PRICE = 'orig_purchase_price'
 const ORIGINAL_SALE_PRICE = 'orig_sale_price'
+
+// Account suffixes
+const UNREALIZED_SUFFIX = 'Unrealized';
+const UNREALIZED_HIST_SUFFIX = 'Unrealized Hist';
+const UNREALIZED_EXC_SUFFIX = 'Unrealized EXC';
+const UNREALIZED_HIST_EXC_SUFFIX = 'Unrealized Hist EXC';
+
+const REALIZED_SUFFIX = 'Realized';
+const REALIZED_HIST_SUFFIX = 'Realized Hist';
+
+const FORWARDED_SUFFIX = 'Forwarded';
 
 // Forward fix new props
 const FWD_TX_PROP = 'fwd_tx';

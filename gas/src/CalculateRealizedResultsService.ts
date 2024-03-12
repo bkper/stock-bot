@@ -116,7 +116,6 @@ namespace RealizedResultsService {
         }
         // Update transaction if necessary
         if (!excRateProp || !fwdExcRateProp) {
-            // transaction.update();
             // Store transaction to be updated
             processor.setStockBookTransactionToUpdate(transaction);
         }
@@ -130,7 +129,7 @@ namespace RealizedResultsService {
             const interestBalance = getAccountBalance(financialBook, financialInterestAccount, financialBook.parseDate(onDateIso));
             if (!interestBalance.eq(0)) {
                 // Record interest account MTM on financial book
-                const financialUnrealizedAccount = getUnrealizedAccount(financialInterestAccount, financialBook, summary, principalStockAccount.getExchangeCode());
+                const financialUnrealizedAccount = getUnrealizedAccount(financialBook, financialInterestAccount);
                 recordInterestAccountMtm(financialBook, financialInterestAccount, financialUnrealizedAccount, interestBalance, onDateIso, lastTransactionId, processor);
             }
         }
@@ -204,10 +203,10 @@ namespace RealizedResultsService {
 
         const excAggregateProp = baseBook.getProperty(EXC_AGGREGATE_PROP);
         // Unrealized accounts
-        const unrealizedAccount = getUnrealizedAccount(stockAccount, financialBook, summary, stockExcCode);
-        const unrealizedFxBaseAccount = excAggregateProp ? getUnrealizedAccount(stockAccount, baseBook, summary, stockExcCode) : getUnrealizedFxAccount(stockAccount, baseBook, summary, stockExcCode);
-        const histUnrealizedAccount = BotService.getSupportAccount(financialBook, stockAccount, UNREALIZED_HIST_SUFFIX, BkperApp.AccountType.LIABILITY);
-        const histUnrealizedFxBaseAccount = excAggregateProp ? BotService.getSupportAccount(baseBook, stockAccount, UNREALIZED_HIST_SUFFIX, BkperApp.AccountType.LIABILITY) : BotService.getSupportAccount(baseBook, stockAccount, `${UNREALIZED_HIST_SUFFIX} EXC`, BkperApp.AccountType.LIABILITY);
+        const unrealizedAccount = getUnrealizedAccount(financialBook, stockAccount);
+        const unrealizedFxBaseAccount = getUnrealizedFxBaseAccount(baseBook, stockAccount, excAggregateProp);
+        const unrealizedHistAccount = getUnrealizedHistAccount(financialBook, stockAccount);
+        const unrealizedFxHistBaseAccount = getUnrealizedFxHistBaseAccount(baseBook, stockAccount, excAggregateProp);
 
         let purchaseLogEntries: PurchaseLogEntry[] = [];
         let fwdPurchaseLogEntries: PurchaseLogEntry[] = [];
@@ -326,9 +325,9 @@ namespace RealizedResultsService {
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, false, processor);
                     } else {
                         // Record both Historical & Fair results
-                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, histUnrealizedAccount, purchaseTransaction, histGain, histGainBaseNoFx, summary, true, processor);
+                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedHistAccount, purchaseTransaction, histGain, histGainBaseNoFx, summary, true, processor);
                         addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, gainBaseNoFx, summary, false, processor);
-                        addFxResult(stockAccount, stockExcCode, baseBook, histUnrealizedFxBaseAccount, purchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, true, processor);
+                        addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxHistBaseAccount, purchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, true, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, gainBaseWithFx, gainBaseNoFx, summary, false, processor);
                     }
                     // MTM
@@ -423,9 +422,9 @@ namespace RealizedResultsService {
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, false, processor);
                     } else {
                         // Record both Historical & Fair results
-                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, histUnrealizedAccount, splittedPurchaseTransaction, histGain, histGainBaseNoFx, summary, true, processor);
+                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedHistAccount, splittedPurchaseTransaction, histGain, histGainBaseNoFx, summary, true, processor);
                         addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, gainBaseNoFx, summary, false, processor);
-                        addFxResult(stockAccount, stockExcCode, baseBook, histUnrealizedFxBaseAccount, splittedPurchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, true, processor);
+                        addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxHistBaseAccount, splittedPurchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, true, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, gainBaseWithFx, gainBaseNoFx, summary, false, processor);
                     }
                     // MTM
@@ -589,9 +588,9 @@ namespace RealizedResultsService {
             addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, histGainBaseWithFxTotal, histGainBaseNoFxTotal, summary, false, processor);
         } else {
             // Record both Historical & Fair results
-            addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, histUnrealizedAccount, saleTransaction, histGainTotal, histGainBaseNoFxTotal, summary, true, processor);
+            addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedHistAccount, saleTransaction, histGainTotal, histGainBaseNoFxTotal, summary, true, processor);
             addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, gainBaseNoFxTotal, summary, false, processor);
-            addFxResult(stockAccount, stockExcCode, baseBook, histUnrealizedFxBaseAccount, saleTransaction, histGainBaseWithFxTotal, histGainBaseNoFxTotal, summary, true, processor);
+            addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxHistBaseAccount, saleTransaction, histGainBaseWithFxTotal, histGainBaseNoFxTotal, summary, true, processor);
             addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, summary, false, processor);
         }
 
@@ -600,36 +599,6 @@ namespace RealizedResultsService {
             addMarkToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, salePrice, processor);
         }
 
-    }
-
-    function getUnrealizedAccount(stockAccount: StockAccount | Bkper.Account, book: Bkper.Book, summary: Summary, stockExcCode: string) {
-        let unrealizedAccountName = `${stockAccount.getName()} ${UNREALIZED_SUFFIX}`;
-        let unrealizedAccount = book.getAccount(unrealizedAccountName);
-        if (unrealizedAccount == null) {
-            unrealizedAccount = book.newAccount()
-                .setName(unrealizedAccountName)
-                .setType(BkperApp.AccountType.LIABILITY);
-            const groups = BotService.getGroupsByAccountSuffix(book, UNREALIZED_SUFFIX);
-            groups.forEach(group => unrealizedAccount.addGroup(group));
-            unrealizedAccount.create();
-            // trackAccountCreated(summary, stockExcCode, unrealizedAccount);
-        }
-        return unrealizedAccount;
-    }
-
-    function getUnrealizedFxAccount(stockAccount: StockAccount, book: Bkper.Book, summary: Summary, stockExcCode: string) {
-        let unrealizedFxAccountName = `${stockAccount.getName()} ${UNREALIZED_SUFFIX} EXC`;
-        let unrealizedFxAccount = book.getAccount(unrealizedFxAccountName);
-        if (unrealizedFxAccount == null) {
-            unrealizedFxAccount = book.newAccount()
-                .setName(unrealizedFxAccountName)
-                .setType(BkperApp.AccountType.LIABILITY);
-            const groups = BotService.getGroupsByAccountSuffix(book, `${UNREALIZED_SUFFIX} EXC`);
-            groups.forEach(group => unrealizedFxAccount.addGroup(group));
-            unrealizedFxAccount.create();
-            // trackAccountCreated(summary, stockExcCode, unrealizedFxAccount);
-        }
-        return unrealizedFxAccount;
     }
 
     function addRealizedResult(
@@ -937,6 +906,28 @@ namespace RealizedResultsService {
 
         }
 
+    }
+
+    function getUnrealizedAccount(financialBook: Bkper.Book, stockAccount: StockAccount | Bkper.Account): Bkper.Account {
+        return BotService.getSupportAccount(financialBook, stockAccount, UNREALIZED_SUFFIX, BotService.getTypeByAccountSuffix(financialBook, UNREALIZED_SUFFIX));
+    }
+
+    function getUnrealizedHistAccount(financialBook: Bkper.Book, stockAccount: StockAccount): Bkper.Account {
+        return BotService.getSupportAccount(financialBook, stockAccount, UNREALIZED_HIST_SUFFIX, BotService.getTypeByAccountSuffix(financialBook, UNREALIZED_HIST_SUFFIX));
+    }
+
+    function getUnrealizedFxBaseAccount(baseBook: Bkper.Book, stockAccount: StockAccount, excAggregateProp: string): Bkper.Account {
+        if (excAggregateProp) {
+            return BotService.getSupportAccount(baseBook, stockAccount, UNREALIZED_SUFFIX, BotService.getTypeByAccountSuffix(baseBook, UNREALIZED_SUFFIX));
+        }
+        return BotService.getSupportAccount(baseBook, stockAccount, UNREALIZED_EXC_SUFFIX, BotService.getTypeByAccountSuffix(baseBook, UNREALIZED_EXC_SUFFIX));
+    }
+
+    function getUnrealizedFxHistBaseAccount(baseBook: Bkper.Book, stockAccount: StockAccount, excAggregateProp: string): Bkper.Account {
+        if (excAggregateProp) {
+            return BotService.getSupportAccount(baseBook, stockAccount, UNREALIZED_HIST_SUFFIX, BotService.getTypeByAccountSuffix(baseBook, UNREALIZED_HIST_SUFFIX));
+        }
+        return BotService.getSupportAccount(baseBook, stockAccount, UNREALIZED_HIST_EXC_SUFFIX, BotService.getTypeByAccountSuffix(baseBook, UNREALIZED_HIST_EXC_SUFFIX));
     }
 
     function getExcAccountName(baseBook: Bkper.Book, connectedAccount: Bkper.Account, connectedCode: string): string {

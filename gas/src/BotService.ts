@@ -343,12 +343,11 @@ namespace BotService {
         return (book.getBacklog().getCount() > 0) ? true : false;
     }
 
-    export function getSupportAccount(book: Bkper.Book, stockAccount: StockAccount, suffix: string, accountType: Bkper.AccountType, accountTypeFinder?: (book: Bkper.Book) => Bkper.AccountType): Bkper.Account {
+    export function getSupportAccount(book: Bkper.Book, stockAccount: StockAccount | Bkper.Account, suffix: string, accountType: Bkper.AccountType): Bkper.Account {
         const supportAccountName = `${stockAccount.getName()} ${suffix}`;
         let supportAccount = book.getAccount(supportAccountName);
         if (!supportAccount) {
-            const type = accountTypeFinder ? accountTypeFinder(book) : accountType;
-            supportAccount = book.newAccount().setName(supportAccountName).setType(type);
+            supportAccount = book.newAccount().setName(supportAccountName).setType(accountType);
             const groups = getGroupsByAccountSuffix(book, suffix);
             groups.forEach(group => supportAccount.addGroup(group));
             supportAccount.create();
@@ -388,23 +387,23 @@ namespace BotService {
         return groups;
     }
 
-    export function getUnrealizedAccountType(book: Bkper.Book): Bkper.AccountType {
-        // Map unrealized accounts by type
-        let unrealizedAccountTypes = new Map<Bkper.AccountType, Bkper.Account[]>();
+    export function getTypeByAccountSuffix(book: Bkper.Book, suffix: string): Bkper.AccountType {
+        // Map accounts by type
+        let accountTypes = new Map<Bkper.AccountType, Bkper.Account[]>();
         for (const account of book.getAccounts()) {
-            if (account.getName().endsWith(` ${UNREALIZED_SUFFIX}`)) {
-                let mappedAccounts = unrealizedAccountTypes.get(account.getType());
+            if (account.getName().endsWith(` ${suffix}`)) {
+                let mappedAccounts = accountTypes.get(account.getType());
                 if (mappedAccounts) {
                     mappedAccounts.push(account);
                 } else {
-                    unrealizedAccountTypes.set(account.getType(), [account]);
+                    accountTypes.set(account.getType(), [account]);
                 }
             }
         }
         // Return most common type
         let maxOccurrencesType = BkperApp.AccountType.LIABILITY;
         let maxOccurrences = 1;
-        for (const [accountType, accounts] of unrealizedAccountTypes.entries()) {
+        for (const [accountType, accounts] of accountTypes.entries()) {
             if (accounts.length > maxOccurrences) {
                 maxOccurrences = accounts.length;
                 maxOccurrencesType = accountType;

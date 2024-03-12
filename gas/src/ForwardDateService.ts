@@ -367,7 +367,7 @@ namespace ForwardDateService {
 
     function buildForwardedResultTransaction(financialBook: Bkper.Book, stockAccount: StockAccount, closingDate: Date, localAmount: Bkper.Amount, baseAmount: Bkper.Amount, baseExcCode: string): Bkper.Transaction {
         // Unrealized account
-        const unrealizedAccount = BotService.getSupportAccount(financialBook, stockAccount, UNREALIZED_SUFFIX, BkperApp.AccountType.LIABILITY, BotService.getUnrealizedAccountType);
+        const unrealizedAccount = BotService.getSupportAccount(financialBook, stockAccount, UNREALIZED_SUFFIX, BotService.getTypeByAccountSuffix(financialBook, UNREALIZED_SUFFIX));
         // Forwarded account
         const forwardedAccount = BotService.getSupportAccount(financialBook, stockAccount, FORWARDED_SUFFIX, BkperApp.AccountType.LIABILITY);
         const fromAccount = localAmount.gt(0) ? forwardedAccount : unrealizedAccount;
