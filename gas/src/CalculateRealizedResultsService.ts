@@ -321,12 +321,12 @@ namespace RealizedResultsService {
                 if (shortSale) {
                     if (historical) {
                         // Record Historical results (using the same accounts and remoteIds as before)
-                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, histGain, histGainBaseNoFx, summary, false, processor);
+                        addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, purchaseTransaction, histGain, histGainBaseNoFx, false, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, false, processor);
                     } else {
                         // Record both Historical & Fair results
-                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedHistAccount, purchaseTransaction, histGain, histGainBaseNoFx, summary, true, processor);
-                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, purchaseTransaction, gain, gainBaseNoFx, summary, false, processor);
+                        addRealizedResult(baseBook, stockAccount, financialBook, unrealizedHistAccount, purchaseTransaction, histGain, histGainBaseNoFx, true, processor);
+                        addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, purchaseTransaction, gain, gainBaseNoFx, false, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxHistBaseAccount, purchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, true, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, gainBaseWithFx, gainBaseNoFx, summary, false, processor);
                     }
@@ -418,12 +418,12 @@ namespace RealizedResultsService {
                 if (shortSale) {
                     if (historical) {
                         // Record Historical results (using the same accounts and remoteIds as before)
-                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, histGain, histGainBaseNoFx, summary, false, processor);
+                        addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, splittedPurchaseTransaction, histGain, histGainBaseNoFx, false, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, false, processor);
                     } else {
                         // Record both Historical & Fair results
-                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedHistAccount, splittedPurchaseTransaction, histGain, histGainBaseNoFx, summary, true, processor);
-                        addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, gainBaseNoFx, summary, false, processor);
+                        addRealizedResult(baseBook, stockAccount, financialBook, unrealizedHistAccount, splittedPurchaseTransaction, histGain, histGainBaseNoFx, true, processor);
+                        addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, gainBaseNoFx, false, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxHistBaseAccount, splittedPurchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, true, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, gainBaseWithFx, gainBaseNoFx, summary, false, processor);
                     }
@@ -584,12 +584,12 @@ namespace RealizedResultsService {
 
         if (historical) {
             // Record Historical results (using the same accounts and remoteIds as before)
-            addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, histGainTotal, histGainBaseNoFxTotal, summary, false, processor);
+            addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, saleTransaction, histGainTotal, histGainBaseNoFxTotal, false, processor);
             addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, histGainBaseWithFxTotal, histGainBaseNoFxTotal, summary, false, processor);
         } else {
             // Record both Historical & Fair results
-            addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedHistAccount, saleTransaction, histGainTotal, histGainBaseNoFxTotal, summary, true, processor);
-            addRealizedResult(baseBook, stockAccount, stockExcCode, financialBook, unrealizedAccount, saleTransaction, gainTotal, gainBaseNoFxTotal, summary, false, processor);
+            addRealizedResult(baseBook, stockAccount, financialBook, unrealizedHistAccount, saleTransaction, histGainTotal, histGainBaseNoFxTotal, true, processor);
+            addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, saleTransaction, gainTotal, gainBaseNoFxTotal, false, processor);
             addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxHistBaseAccount, saleTransaction, histGainBaseWithFxTotal, histGainBaseNoFxTotal, summary, true, processor);
             addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, summary, false, processor);
         }
@@ -604,13 +604,11 @@ namespace RealizedResultsService {
     function addRealizedResult(
         baseBook: Bkper.Book,
         stockAccount: StockAccount,
-        stockExcCode: string,
         financialBook: Bkper.Book,
         unrealizedAccount: Bkper.Account,
         transaction: Bkper.Transaction,
         gain: Bkper.Amount,
         gainBaseNoFX: Bkper.Amount,
-        summary: Summary,
         shouldRecordAsHistResult: boolean,
         processor: CalculateRealizedResultsProcessor
     ) {
@@ -620,20 +618,16 @@ namespace RealizedResultsService {
 
         if (gain.round(MAX_DECIMAL_PLACES).gt(0)) {
 
-            const realizedAccountSuffix = shouldRecordAsHistResult ? REALIZED_HIST_SUFFIX : REALIZED_SUFFIX;
-            const realizedAccountName = `${stockAccount.getName()} ${realizedAccountSuffix}`;
-            let realizedAccount = financialBook.getAccount(realizedAccountName);
-            // Fallback to old XXX Realized Gain account
-            if (realizedAccount == null && !shouldRecordAsHistResult) {
+            // Realized account
+            let realizedAccount: Bkper.Account | null = null;
+
+            // Try old XXX Realized Gain account
+            if (!shouldRecordAsHistResult) {
                 realizedAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Gain`);
             }
-            // Create new XXX Realized account
-            if (realizedAccount == null) {
-                realizedAccount = financialBook.newAccount().setName(realizedAccountName).setType(BkperApp.AccountType.INCOMING);
-                const groups = BotService.getGroupsByAccountSuffix(financialBook, realizedAccountSuffix);
-                groups.forEach(group => realizedAccount.addGroup(group));
-                realizedAccount.create();
-                // trackAccountCreated(summary, stockExcCode, realizedAccount);
+            // XXX Realized OR XXX Realized Hist
+            if (!realizedAccount) {
+                realizedAccount = getRealizedAccount(financialBook, stockAccount, shouldRecordAsHistResult);
             }
 
             const baseRemoteId = transaction.getId() || processor.getTemporaryId(transaction);
@@ -658,20 +652,16 @@ namespace RealizedResultsService {
 
         } else if (gain.round(MAX_DECIMAL_PLACES).lt(0)) {
 
-            const realizedAccountSuffix = shouldRecordAsHistResult ? REALIZED_HIST_SUFFIX : REALIZED_SUFFIX;
-            const realizedAccountName = `${stockAccount.getName()} ${realizedAccountSuffix}`;
-            let realizedAccount = financialBook.getAccount(realizedAccountName);
-            // Fallback to old XXX Realized Loss account
-            if (realizedAccount == null && !shouldRecordAsHistResult) {
+            // Realized account
+            let realizedAccount: Bkper.Account | null = null;
+
+            // Try old XXX Realized Loss account
+            if (!shouldRecordAsHistResult) {
                 realizedAccount = financialBook.getAccount(`${stockAccount.getName()} Realized Loss`);
             }
-            // Create new XXX Realized account
-            if (realizedAccount == null) {
-                realizedAccount = financialBook.newAccount().setName(realizedAccountName).setType(BkperApp.AccountType.INCOMING);
-                const groups = BotService.getGroupsByAccountSuffix(financialBook, realizedAccountSuffix);
-                groups.forEach(group => realizedAccount.addGroup(group));
-                realizedAccount.create();
-                // trackAccountCreated(summary, stockExcCode, realizedAccount);
+            // XXX Realized OR XXX Realized Hist
+            if (!realizedAccount) {
+                realizedAccount = getRealizedAccount(financialBook, stockAccount, shouldRecordAsHistResult);
             }
 
             const baseRemoteId = transaction.getId() || processor.getTemporaryId(transaction);
@@ -928,6 +918,11 @@ namespace RealizedResultsService {
             return BotService.getSupportAccount(baseBook, stockAccount, UNREALIZED_HIST_SUFFIX, BotService.getTypeByAccountSuffix(baseBook, UNREALIZED_HIST_SUFFIX));
         }
         return BotService.getSupportAccount(baseBook, stockAccount, UNREALIZED_HIST_EXC_SUFFIX, BotService.getTypeByAccountSuffix(baseBook, UNREALIZED_HIST_EXC_SUFFIX));
+    }
+
+    function getRealizedAccount(financialBook: Bkper.Book, stockAccount: StockAccount, historical: boolean): Bkper.Account {
+        const suffix = historical ? REALIZED_HIST_SUFFIX : REALIZED_SUFFIX;
+        return BotService.getSupportAccount(financialBook, stockAccount, suffix, BkperApp.AccountType.INCOMING);
     }
 
     function getExcAccountName(baseBook: Bkper.Book, connectedAccount: Bkper.Account, connectedCode: string): string {
