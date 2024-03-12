@@ -612,7 +612,7 @@ namespace RealizedResultsService {
             const groups = BotService.getAccountGroups(book, UNREALIZED_SUFFIX);
             groups.forEach(group => unrealizedAccount.addGroup(group));
             unrealizedAccount.create();
-            trackAccountCreated(summary, stockExcCode, unrealizedAccount);
+            // trackAccountCreated(summary, stockExcCode, unrealizedAccount);
         }
         return unrealizedAccount;
     }
@@ -627,7 +627,7 @@ namespace RealizedResultsService {
             const groups = BotService.getAccountGroups(book, `${UNREALIZED_SUFFIX} EXC`);
             groups.forEach(group => unrealizedFxAccount.addGroup(group));
             unrealizedFxAccount.create();
-            trackAccountCreated(summary, stockExcCode, unrealizedFxAccount);
+            // trackAccountCreated(summary, stockExcCode, unrealizedFxAccount);
         }
         return unrealizedFxAccount;
     }
@@ -664,7 +664,7 @@ namespace RealizedResultsService {
                 const groups = BotService.getAccountGroups(financialBook, realizedAccountSuffix);
                 groups.forEach(group => realizedAccount.addGroup(group));
                 realizedAccount.create();
-                trackAccountCreated(summary, stockExcCode, realizedAccount);
+                // trackAccountCreated(summary, stockExcCode, realizedAccount);
             }
 
             const baseRemoteId = transaction.getId() || processor.getTemporaryId(transaction);
@@ -702,7 +702,7 @@ namespace RealizedResultsService {
                 const groups = BotService.getAccountGroups(financialBook, realizedAccountSuffix);
                 groups.forEach(group => realizedAccount.addGroup(group));
                 realizedAccount.create();
-                trackAccountCreated(summary, stockExcCode, realizedAccount);
+                // trackAccountCreated(summary, stockExcCode, realizedAccount);
             }
 
             const baseRemoteId = transaction.getId() || processor.getTemporaryId(transaction);
@@ -742,9 +742,9 @@ namespace RealizedResultsService {
         return isBaseBook ? null : BotService.getExcCode(baseBook);
     }
 
-    function trackAccountCreated(summary: Summary, stockExcCode: string, account: Bkper.Account) {
-        summary.pushAccount(stockExcCode, account.getName());
-    }
+    // function trackAccountCreated(summary: Summary, stockExcCode: string, account: Bkper.Account) {
+    //     summary.addCreatedAccount(stockExcCode, account.getName());
+    // }
 
     function addMarkToMarket(
         stockBook: Bkper.Book,
@@ -891,7 +891,7 @@ namespace RealizedResultsService {
             const type = shouldRecordAsHistResult ? BkperApp.AccountType.INCOMING : getExcAccountType(baseBook);
             realizedFxAccount.setType(type);
             realizedFxAccount.create();
-            trackAccountCreated(summary, stockExcCode, realizedFxAccount);
+            // trackAccountCreated(summary, stockExcCode, realizedFxAccount);
         }
 
         const fxGain = gainBaseWithFx.minus(gainBaseNoFx);

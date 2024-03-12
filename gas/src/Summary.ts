@@ -12,13 +12,13 @@ class Summary {
         return JSON.stringify(this.result);
     }
 
-    pushAccount(stockExcCode: string, accountName: string): this {
-        if (!this.result[stockExcCode]) {
-            this.result[stockExcCode] = [];
-        }
-        this.result[stockExcCode].push(accountName);
-        return this;
-    }
+    // addCreatedAccount(stockExcCode: string, accountName: string): this {
+    //     if (!this.result[stockExcCode]) {
+    //         this.result[stockExcCode] = [];
+    //     }
+    //     this.result[stockExcCode].push(accountName);
+    //     return this;
+    // }
 
     done(msg?: string): this {
         if (msg) {
