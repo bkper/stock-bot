@@ -66,6 +66,8 @@ const UNREALIZED_HIST_EXC_SUFFIX = 'Unrealized Hist EXC';
 
 const REALIZED_SUFFIX = 'Realized';
 const REALIZED_HIST_SUFFIX = 'Realized Hist';
+const REALIZED_EXC_SUFFIX = 'Realized EXC';
+const REALIZED_HIST_EXC_SUFFIX = 'Realized Hist EXC';
 
 const FORWARDED_SUFFIX = 'Forwarded';
 

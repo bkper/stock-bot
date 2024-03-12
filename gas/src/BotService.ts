@@ -365,6 +365,9 @@ namespace BotService {
         });
         // Map accounts by group
         let groups = new Set<Bkper.Group>();
+        if (accountNames.size === 0) {
+            return groups;
+        }
         for (const group of book.getGroups()) {
             const groupAccounts = group.getAccounts();
             if (groupAccounts && groupAccounts.length > 0) {
