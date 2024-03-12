@@ -609,7 +609,7 @@ namespace RealizedResultsService {
             unrealizedAccount = book.newAccount()
                 .setName(unrealizedAccountName)
                 .setType(BkperApp.AccountType.LIABILITY);
-            const groups = BotService.getAccountGroups(book, UNREALIZED_SUFFIX);
+            const groups = BotService.getGroupsByAccountSuffix(book, UNREALIZED_SUFFIX);
             groups.forEach(group => unrealizedAccount.addGroup(group));
             unrealizedAccount.create();
             // trackAccountCreated(summary, stockExcCode, unrealizedAccount);
@@ -624,7 +624,7 @@ namespace RealizedResultsService {
             unrealizedFxAccount = book.newAccount()
                 .setName(unrealizedFxAccountName)
                 .setType(BkperApp.AccountType.LIABILITY);
-            const groups = BotService.getAccountGroups(book, `${UNREALIZED_SUFFIX} EXC`);
+            const groups = BotService.getGroupsByAccountSuffix(book, `${UNREALIZED_SUFFIX} EXC`);
             groups.forEach(group => unrealizedFxAccount.addGroup(group));
             unrealizedFxAccount.create();
             // trackAccountCreated(summary, stockExcCode, unrealizedFxAccount);
@@ -661,7 +661,7 @@ namespace RealizedResultsService {
             // Create new XXX Realized account
             if (realizedAccount == null) {
                 realizedAccount = financialBook.newAccount().setName(realizedAccountName).setType(BkperApp.AccountType.INCOMING);
-                const groups = BotService.getAccountGroups(financialBook, realizedAccountSuffix);
+                const groups = BotService.getGroupsByAccountSuffix(financialBook, realizedAccountSuffix);
                 groups.forEach(group => realizedAccount.addGroup(group));
                 realizedAccount.create();
                 // trackAccountCreated(summary, stockExcCode, realizedAccount);
@@ -699,7 +699,7 @@ namespace RealizedResultsService {
             // Create new XXX Realized account
             if (realizedAccount == null) {
                 realizedAccount = financialBook.newAccount().setName(realizedAccountName).setType(BkperApp.AccountType.INCOMING);
-                const groups = BotService.getAccountGroups(financialBook, realizedAccountSuffix);
+                const groups = BotService.getGroupsByAccountSuffix(financialBook, realizedAccountSuffix);
                 groups.forEach(group => realizedAccount.addGroup(group));
                 realizedAccount.create();
                 // trackAccountCreated(summary, stockExcCode, realizedAccount);
@@ -886,7 +886,7 @@ namespace RealizedResultsService {
         if (realizedFxAccount == null) {
             realizedFxAccount = baseBook.newAccount().setName(realizedFxAccountName);
             const realizedFxAccountSuffix = realizedFxAccountName.replace(stockAccount.getName(), '').trim();
-            const groups = shouldRecordAsHistResult ? BotService.getAccountGroups(baseBook, realizedFxAccountSuffix) : getExcAccountGroups(baseBook);
+            const groups = shouldRecordAsHistResult ? BotService.getGroupsByAccountSuffix(baseBook, realizedFxAccountSuffix) : getExcAccountGroups(baseBook);
             groups.forEach(group => realizedFxAccount.addGroup(group));
             const type = shouldRecordAsHistResult ? BkperApp.AccountType.INCOMING : getExcAccountType(baseBook);
             realizedFxAccount.setType(type);

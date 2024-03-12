@@ -349,27 +349,42 @@ namespace BotService {
         if (!supportAccount) {
             const type = accountTypeFinder ? accountTypeFinder(book) : accountType;
             supportAccount = book.newAccount().setName(supportAccountName).setType(type);
-            const groups = getAccountGroups(book, suffix);
+            const groups = getGroupsByAccountSuffix(book, suffix);
             groups.forEach(group => supportAccount.addGroup(group));
             supportAccount.create();
         }
         return supportAccount;
     }
 
-    export function getAccountGroups(book: Bkper.Book, suffix: string): Set<Bkper.Group> {
+    export function getGroupsByAccountSuffix(book: Bkper.Book, suffix: string): Set<Bkper.Group> {
+        // Map account names
         let accountNames = new Set<string>();
         book.getAccounts().forEach(account => {
             if (account.getName().endsWith(` ${suffix}`)) {
                 accountNames.add(account.getName());
             }
         });
+        // Map accounts by group
         let groups = new Set<Bkper.Group>();
-        accountNames.forEach(accountName => {
-            let account = book.getAccount(accountName);
-            if (account && account.getGroups()) {
-                account.getGroups().forEach(group => { groups.add(group) });
+        for (const group of book.getGroups()) {
+            const groupAccounts = group.getAccounts();
+            if (groupAccounts && groupAccounts.length > 0) {
+                let shouldAddGroup = true;
+                for (const accountName of accountNames) {
+                    const account = book.getAccount(accountName);
+                    if (!account) {
+                        continue;
+                    }
+                    if (!account.isInGroup(group)) {
+                        shouldAddGroup = false;
+                        break;
+                    }
+                }
+                if (shouldAddGroup) {
+                    groups.add(group);
+                }
             }
-        });
+        }
         return groups;
     }
 
