@@ -413,4 +413,44 @@ namespace BotService {
         return maxOccurrencesType;
     }
 
+    export function getRealizedExcAccountType(book: Bkper.Book): Bkper.AccountType {
+        // Map exchange account names
+        let excAccountNames = new Set<string>();
+        book.getAccounts().forEach(account => {
+            const excAccountProp = account.getProperty(EXC_ACCOUNT_PROP);
+            if (excAccountProp) {
+                excAccountNames.add(excAccountProp);
+            }
+            if (account.getName().startsWith('Exchange_')) {
+                excAccountNames.add(account.getName());
+            }
+            if (account.getName().endsWith(` EXC`)) {
+                excAccountNames.add(account.getName());
+            }
+        });
+        // Map exchange accounts by type
+        let excAccountTypes = new Map<Bkper.AccountType, Bkper.Account[]>();
+        for (const accountName of excAccountNames) {
+            const account = book.getAccount(accountName);
+            if (account) {
+                let mappedAccounts = excAccountTypes.get(account.getType());
+                if (mappedAccounts) {
+                    mappedAccounts.push(account);
+                } else {
+                    excAccountTypes.set(account.getType(), [account]);
+                }
+            }
+        }
+        // Return most common type
+        let maxOccurrencesType = BkperApp.AccountType.LIABILITY;
+        let maxOccurrences = 1;
+        for (const [accountType, accounts] of excAccountTypes.entries()) {
+            if (accounts.length > maxOccurrences) {
+                maxOccurrences = accounts.length;
+                maxOccurrencesType = accountType;
+            }
+        }
+        return maxOccurrencesType;
+    }
+
 }

@@ -888,7 +888,7 @@ namespace RealizedResultsService {
             const realizedFxAccountSuffix = realizedFxAccountName.replace(stockAccount.getName(), '').trim();
             const groups = shouldRecordAsHistResult ? BotService.getGroupsByAccountSuffix(baseBook, realizedFxAccountSuffix) : getExcAccountGroups(baseBook);
             groups.forEach(group => realizedFxAccount.addGroup(group));
-            const type = shouldRecordAsHistResult ? BkperApp.AccountType.INCOMING : getExcAccountType(baseBook);
+            const type = shouldRecordAsHistResult ? BkperApp.AccountType.INCOMING : BotService.getRealizedExcAccountType(baseBook);
             realizedFxAccount.setType(type);
             realizedFxAccount.create();
             // trackAccountCreated(summary, stockExcCode, realizedFxAccount);
@@ -986,35 +986,6 @@ namespace RealizedResultsService {
         })
 
         return groups;
-    }
-
-    function getExcAccountType(book: Bkper.Book): Bkper.AccountType {
-        let accountNames = new Set<string>();
-
-        book.getAccounts().forEach(account => {
-            let accountName = account.getProperty(EXC_ACCOUNT_PROP);
-            if (accountName) {
-                console.log(`Adding: ${accountName}`)
-                accountNames.add(accountName);
-            }
-            if (account.getName().startsWith('Exchange_')) {
-                console.log(`Adding: ${account.getName()}`)
-                accountNames.add(account.getName());
-            }
-            if (account.getName().endsWith(` EXC`)) {
-                console.log(`Adding: ${account.getName()}`)
-                accountNames.add(account.getName());
-            }
-        });
-
-        for (const accountName of accountNames) {
-            let account = book.getAccount(accountName);
-            if (account) {
-                return account.getType();
-            }
-        }
-
-        return BkperApp.AccountType.LIABILITY;
     }
 
 }
