@@ -113,15 +113,27 @@ class CalculateRealizedResultsProcessor {
             if (connectedRrTx) {
                 connectedRrTx.addRemoteId(`${newId}`);
             }
-            // FX
-            const connectedMtmTx = this.financialBookTransactionsToCreateMap.get(`mtm_${oldId}`);
-            if (connectedMtmTx) {
-                connectedMtmTx.addRemoteId(`mtm_${newId}`);
+            // RR Hist
+            const connectedHistRrTx = this.financialBookTransactionsToCreateMap.get(`hist_${oldId}`);
+            if (connectedHistRrTx) {
+                connectedHistRrTx.addRemoteId(`hist_${newId}`);
             }
-            // MTM
+
+            // FX
             const connectedFxTx = this.baseBookTransactionsToCreateMap.get(`fx_${oldId}`);
             if (connectedFxTx) {
                 connectedFxTx.addRemoteId(`fx_${newId}`);
+            }
+            // FX Hist
+            const connectedHistFxTx = this.baseBookTransactionsToCreateMap.get(`fx_hist_${oldId}`);
+            if (connectedHistFxTx) {
+                connectedHistFxTx.addRemoteId(`fx_hist_${newId}`);
+            }
+
+            // MTM
+            const connectedMtmTx = this.financialBookTransactionsToCreateMap.get(`mtm_${oldId}`);
+            if (connectedMtmTx) {
+                connectedMtmTx.addRemoteId(`mtm_${newId}`);
             }
 
         }
