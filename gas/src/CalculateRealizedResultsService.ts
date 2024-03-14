@@ -828,8 +828,8 @@ namespace RealizedResultsService {
         }
 
         // Realized FX account
-        const realizedFxAccountName = getRealizedFxAccountName(baseBook, unrealizedFxAccount, stockExcCode);
-        const realizedFxAccount = getRealizedFxAccount(baseBook, stockAccount, realizedFxAccountName);
+        const realizedFxAccountName = getRealizedFxAccountName(baseBook, unrealizedFxAccount, stockExcCode, shouldRecordAsHistResult);
+        const realizedFxAccount = getRealizedFxAccount(baseBook, realizedFxAccountName);
 
         const fxGain = gainBaseWithFx.minus(gainBaseNoFx);
 
@@ -903,7 +903,7 @@ namespace RealizedResultsService {
         return BotService.getSupportAccount(financialBook, stockAccount, suffix, BkperApp.AccountType.INCOMING);
     }
 
-    function getRealizedFxAccountName(baseBook: Bkper.Book, unrealizedFxAccount: Bkper.Account, stockExcCode: string): string {
+    function getRealizedFxAccountName(baseBook: Bkper.Book, unrealizedFxAccount: Bkper.Account, stockExcCode: string, historical: boolean): string {
         let excAccountProp = unrealizedFxAccount.getProperty(EXC_ACCOUNT_PROP);
         if (excAccountProp) {
             return excAccountProp;
@@ -919,16 +919,16 @@ namespace RealizedResultsService {
         }
         const excAggregateProp = baseBook.getProperty(EXC_AGGREGATE_PROP);
         if (excAggregateProp) {
-            return `Exchange_${stockExcCode}`;
+            return historical ? `Exchange_${stockExcCode} Hist` : `Exchange_${stockExcCode}`;
         }
         return `${unrealizedFxAccount.getName().replace(UNREALIZED_SUFFIX, REALIZED_SUFFIX)}`;
     }
 
-    function getRealizedFxAccount(baseBook: Bkper.Book, stockAccount: StockAccount, realizedFxAccountName: string): Bkper.Account {
+    function getRealizedFxAccount(baseBook: Bkper.Book, realizedFxAccountName: string): Bkper.Account {
         let account = baseBook.getAccount(realizedFxAccountName);
         if (!account) {
             account = baseBook.newAccount().setName(realizedFxAccountName);
-            const groups = getRealizedFxAccountGroups(baseBook, stockAccount, realizedFxAccountName);
+            const groups = getRealizedFxAccountGroups(baseBook, realizedFxAccountName);
             groups.forEach(group => account.addGroup(group));
             account.setType(BotService.getRealizedExcAccountType(baseBook));
             account.create();
@@ -936,25 +936,36 @@ namespace RealizedResultsService {
         return account;
     }
 
-    function getRealizedFxAccountGroups(baseBook: Bkper.Book, stockAccount: StockAccount, realizedFxAccountName: string): Set<Bkper.Group> {
+    function getRealizedFxAccountGroups(baseBook: Bkper.Book, realizedFxAccountName: string): Set<Bkper.Group> {
         if (realizedFxAccountName.startsWith('Exchange_')) {
-            // Exchange_XXX account
-            return getExcAccountGroups(baseBook);
+            // Exchange_XXX Hist
+            if (realizedFxAccountName.endsWith(' Hist')) {
+                return getExcAccountGroups(baseBook, true);
+            }
+            // Exchange_XXX
+            return getExcAccountGroups(baseBook, false);
         } else if (realizedFxAccountName.endsWith(` ${REALIZED_EXC_SUFFIX}`)) {
-            // XXX Realized EXC account
+            // XXX Realized EXC
             return BotService.getGroupsByAccountSuffix(baseBook, REALIZED_EXC_SUFFIX);
         } else if (realizedFxAccountName.endsWith(` ${REALIZED_HIST_EXC_SUFFIX}`)) {
-            // XXX Realized Hist EXC account
+            // XXX Realized Hist EXC
             return BotService.getGroupsByAccountSuffix(baseBook, REALIZED_HIST_EXC_SUFFIX);
         }
         return new Set<Bkper.Group>();
     }
 
-    function getExcAccountGroups(baseBook: Bkper.Book): Set<Bkper.Group> {
+    function getExcAccountGroups(baseBook: Bkper.Book, historical: boolean): Set<Bkper.Group> {
         let accountNames = new Set<string>();
         baseBook.getAccounts().forEach(account => {
-            if (account.getName().startsWith('Exchange_')) {
-                accountNames.add(account.getName());
+            const accountName = account.getName();
+            if (historical) {
+                if (accountName.startsWith('Exchange_') && accountName.endsWith(' Hist')) {
+                    accountNames.add(accountName);
+                }
+            } else {
+                if (accountName.startsWith('Exchange_')) {
+                    accountNames.add(accountName);
+                }
             }
         });
         let groups = new Set<Bkper.Group>();
