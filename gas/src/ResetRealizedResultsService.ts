@@ -165,6 +165,7 @@ namespace RealizedResultsService {
 
                     tx
                         .deleteProperty(GAIN_AMOUNT_PROP)
+                        .deleteProperty(GAIN_AMOUNT_HIST_PROP)
                         .deleteProperty(PURCHASE_AMOUNT_PROP)
                         .deleteProperty('gain_log')
                         .deleteProperty(SALE_AMOUNT_PROP)
@@ -423,6 +424,7 @@ namespace RealizedResultsService {
                     }
                     tx
                         .deleteProperty(GAIN_AMOUNT_PROP)
+                        .deleteProperty(GAIN_AMOUNT_HIST_PROP)
                         .deleteProperty(PURCHASE_AMOUNT_PROP)
                         .deleteProperty('gain_log')
                         .deleteProperty(SALE_AMOUNT_PROP)
