@@ -115,6 +115,14 @@ namespace RealizedResultsService {
                         }
                         rrTx.trash();
                     }
+                    i = financialBook.getTransactions(`remoteId:mtm_hist_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let mtmTx = i.next();
+                        if (mtmTx.isChecked()) {
+                            mtmTx = mtmTx.uncheck();
+                        }
+                        mtmTx.trash();
+                    }
                     i = baseBook.getTransactions(`remoteId:fx_hist_${tx.getId()}`);
                     while (i.hasNext()) {
                         let fxTx = i.next();
@@ -365,6 +373,17 @@ namespace RealizedResultsService {
                         }
                         // Store transaction to be trashed
                         processor.setFinancialBookTransactionToTrash(rrTx);
+                    }
+
+                    // MTMs
+                    i = financialBook.getTransactions(`remoteId:mtm_hist_${tx.getId()}`);
+                    while (i.hasNext()) {
+                        let mtmTx = i.next();
+                        if (mtmTx.isChecked()) {
+                            mtmTx.setChecked(false);
+                        }
+                        // Store transaction to be trashed
+                        processor.setFinancialBookTransactionToTrash(mtmTx);
                     }
 
                     // FXs
