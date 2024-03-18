@@ -71,6 +71,8 @@ const REALIZED_HIST_EXC_SUFFIX = 'Realized Hist EXC';
 
 const FORWARDED_SUFFIX = 'Forwarded';
 
+const MTM_SUFFIX = 'MTM';
+
 // Forward fix new props
 const FWD_TX_PROP = 'fwd_tx';
 const FWD_TX_REMOTE_IDS_PROP = 'fwd_tx_remote_ids';

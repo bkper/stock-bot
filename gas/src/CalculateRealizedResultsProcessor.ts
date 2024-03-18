@@ -10,6 +10,7 @@ class CalculateRealizedResultsProcessor {
     private baseBookTransactionsToCreateMap = new Map<string, Bkper.Transaction>();
 
     private mtmTransactionsSet = new Set<Bkper.Transaction>();
+    private mtmHistTransactionsSet = new Set<Bkper.Transaction>();
 
     private isAnyTransactionLocked = false;
 
@@ -39,7 +40,15 @@ class CalculateRealizedResultsProcessor {
 
     private isMtmTransaction(transaction: Bkper.Transaction): boolean {
         const remoteId = this.getRemoteId(transaction);
-        if (remoteId && remoteId.startsWith('mtm_')) {
+        if (remoteId && remoteId.startsWith('mtm_') && !remoteId.startsWith('mtm_hist_')) {
+            return true;
+        }
+        return false;
+    }
+
+    private isMtmHistTransaction(transaction: Bkper.Transaction): boolean {
+        const remoteId = this.getRemoteId(transaction);
+        if (remoteId && remoteId.startsWith('mtm_hist_')) {
             return true;
         }
         return false;
@@ -72,7 +81,11 @@ class CalculateRealizedResultsProcessor {
         this.financialBookTransactionsToCreateMap.set(this.getRemoteId(transaction), transaction);
         // Store MTM transaction
         if (this.isMtmTransaction(transaction)) {
-            this.mtmTransactionsSet = this.mtmTransactionsSet.add(transaction);
+            this.mtmTransactionsSet.add(transaction);
+        }
+        // Store MTM Hist transaction
+        if (this.isMtmHistTransaction(transaction)) {
+            this.mtmHistTransactionsSet.add(transaction);
         }
     }
 
@@ -90,7 +103,18 @@ class CalculateRealizedResultsProcessor {
         let balance = BkperApp.newAmount(0);
         for (const mtmTransaction of Array.from(this.mtmTransactionsSet.values())) {
             if (this.getDateValue(mtmTransaction.getDate()) <= this.getDateValue(onIsoDate)) {
-                const amount = mtmTransaction.getCreditAccount().isPermanent() ? mtmTransaction.getAmount().times(-1) : mtmTransaction.getAmount();
+                const amount = mtmTransaction.getDebitAccountName().endsWith(` ${UNREALIZED_SUFFIX}`) ? mtmTransaction.getAmount().times(-1) : mtmTransaction.getAmount();
+                balance = balance.plus(amount);
+            }
+        }
+        return balance;
+    }
+
+    getHistMtmBalance(onIsoDate: string): Bkper.Amount {
+        let balance = BkperApp.newAmount(0);
+        for (const mtmHistTransaction of Array.from(this.mtmHistTransactionsSet.values())) {
+            if (this.getDateValue(mtmHistTransaction.getDate()) <= this.getDateValue(onIsoDate)) {
+                const amount = mtmHistTransaction.getDebitAccountName().endsWith(` ${UNREALIZED_HIST_SUFFIX}`) ? mtmHistTransaction.getAmount().times(-1) : mtmHistTransaction.getAmount();
                 balance = balance.plus(amount);
             }
         }
@@ -134,6 +158,11 @@ class CalculateRealizedResultsProcessor {
             const connectedMtmTx = this.financialBookTransactionsToCreateMap.get(`mtm_${oldId}`);
             if (connectedMtmTx) {
                 connectedMtmTx.addRemoteId(`mtm_${newId}`);
+            }
+            // MTM Hist
+            const connectedHistMtmTx = this.financialBookTransactionsToCreateMap.get(`mtm_hist_${oldId}`);
+            if (connectedHistMtmTx) {
+                connectedHistMtmTx.addRemoteId(`mtm_hist_${newId}`);
             }
 
         }

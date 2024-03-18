@@ -323,16 +323,21 @@ namespace RealizedResultsService {
                         // Record Historical results (using the same accounts and remoteIds as before)
                         addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, purchaseTransaction, histGain, histGainBaseNoFx, false, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, false, processor);
+                        // MTM
+                        if (autoMtM) {
+                            addMarkToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, false, processor);
+                        }
                     } else {
                         // Record both Historical & Fair results
                         addRealizedResult(baseBook, stockAccount, financialBook, unrealizedHistAccount, purchaseTransaction, histGain, histGainBaseNoFx, true, processor);
                         addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, purchaseTransaction, gain, gainBaseNoFx, false, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxHistBaseAccount, purchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, true, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, purchaseTransaction, gainBaseWithFx, gainBaseNoFx, summary, false, processor);
-                    }
-                    // MTM
-                    if (autoMtM) {
-                        addMarkToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, processor);
+                        // MTM
+                        if (autoMtM) {
+                            addMarkToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedHistAccount, purchasePrice, true, processor);
+                            addMarkToMarket(stockBook, purchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, false, processor);
+                        }
                     }
                 }
 
@@ -420,16 +425,21 @@ namespace RealizedResultsService {
                         // Record Historical results (using the same accounts and remoteIds as before)
                         addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, splittedPurchaseTransaction, histGain, histGainBaseNoFx, false, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, false, processor);
+                        // MTM
+                        if (autoMtM) {
+                            addMarkToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, false, processor);
+                        }
                     } else {
                         // Record both Historical & Fair results
                         addRealizedResult(baseBook, stockAccount, financialBook, unrealizedHistAccount, splittedPurchaseTransaction, histGain, histGainBaseNoFx, true, processor);
                         addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, splittedPurchaseTransaction, gain, gainBaseNoFx, false, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxHistBaseAccount, splittedPurchaseTransaction, histGainBaseWithFx, histGainBaseNoFx, summary, true, processor);
                         addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, splittedPurchaseTransaction, gainBaseWithFx, gainBaseNoFx, summary, false, processor);
-                    }
-                    // MTM
-                    if (autoMtM) {
-                        addMarkToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, processor);
+                        // MTM
+                        if (autoMtM) {
+                            addMarkToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedHistAccount, purchasePrice, true, processor);
+                            addMarkToMarket(stockBook, splittedPurchaseTransaction, stockAccount, financialBook, unrealizedAccount, purchasePrice, false, processor);
+                        }
                     }
                     shortSaleLiquidationLogEntries.push(logLiquidation(splittedPurchaseTransaction, purchasePrice, purchaseExcRate));
                 }
@@ -586,17 +596,21 @@ namespace RealizedResultsService {
             // Record Historical results (using the same accounts and remoteIds as before)
             addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, saleTransaction, histGainTotal, histGainBaseNoFxTotal, false, processor);
             addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, histGainBaseWithFxTotal, histGainBaseNoFxTotal, summary, false, processor);
+            // MTM
+            if (autoMtM && purchaseProcessed && !saleTransaction.getProperty(LIQUIDATION_LOG_PROP)) {
+                addMarkToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, salePrice, false, processor);
+            }
         } else {
             // Record both Historical & Fair results
             addRealizedResult(baseBook, stockAccount, financialBook, unrealizedHistAccount, saleTransaction, histGainTotal, histGainBaseNoFxTotal, true, processor);
             addRealizedResult(baseBook, stockAccount, financialBook, unrealizedAccount, saleTransaction, gainTotal, gainBaseNoFxTotal, false, processor);
             addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxHistBaseAccount, saleTransaction, histGainBaseWithFxTotal, histGainBaseNoFxTotal, summary, true, processor);
             addFxResult(stockAccount, stockExcCode, baseBook, unrealizedFxBaseAccount, saleTransaction, gainBaseWithFxTotal, gainBaseNoFxTotal, summary, false, processor);
-        }
-
-        // MTM
-        if (autoMtM && purchaseProcessed && !saleTransaction.getProperty(LIQUIDATION_LOG_PROP)) {
-            addMarkToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, salePrice, processor);
+            // MTM
+            if (autoMtM && purchaseProcessed && !saleTransaction.getProperty(LIQUIDATION_LOG_PROP)) {
+                addMarkToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedHistAccount, salePrice, true, processor);
+                addMarkToMarket(stockBook, saleTransaction, stockAccount, financialBook, unrealizedAccount, salePrice, false, processor);
+            }
         }
 
     }
@@ -712,21 +726,25 @@ namespace RealizedResultsService {
         financialBook: Bkper.Book,
         unrealizedAccount: Bkper.Account,
         price: Bkper.Amount,
+        shouldRecordAsHistResult: boolean,
         processor: CalculateRealizedResultsProcessor
     ): void {
 
         // Remote id
-        const remoteId = transaction.getId() || processor.getTemporaryId(transaction);
+        const baseRemoteId = transaction.getId() || processor.getTemporaryId(transaction);
+        const remoteId = shouldRecordAsHistResult ? `mtm_hist_${baseRemoteId}` : `mtm_${baseRemoteId}`;
         // Date
         const isoDate = transaction.getProperty(DATE_PROP) || transaction.getDate();
         const date = stockBook.parseDate(isoDate);
         // Quantity amount
         const totalQuantity = getAccountBalance(stockBook, stockAccount, date);
+        // Accounts
+        const instrumentAccount = financialBook.getAccount(stockAccount.getName());
+        const contraAccount = shouldRecordAsHistResult ? BotService.getSupportAccount(financialBook, stockAccount, MTM_SUFFIX, BotService.getTypeByAccountSuffix(financialBook, MTM_SUFFIX)) : instrumentAccount;
         // Financial amount
-        const financialInstrument = financialBook.getAccount(stockAccount.getName());
-        const balance = getAccountBalance(financialBook, financialInstrument, date);
+        const balance = getAccountBalance(financialBook, instrumentAccount, date);
         const newBalance = totalQuantity.times(price);
-        const amount = newBalance.minus(balance.plus(processor.getMtmBalance(isoDate)));
+        const amount = shouldRecordAsHistResult ? newBalance.minus(balance.plus(processor.getHistMtmBalance(isoDate))) : newBalance.minus(balance.plus(processor.getMtmBalance(isoDate)));
 
         if (amount.round(MAX_DECIMAL_PLACES).gt(0)) {
             const mtmTx = financialBook.newTransaction()
@@ -736,8 +754,8 @@ namespace RealizedResultsService {
                 .setProperty(PRICE_PROP, financialBook.formatAmount(price))
                 .setProperty(OPEN_QUANTITY_PROP, totalQuantity.toFixed(stockBook.getFractionDigits()))
                 .from(unrealizedAccount)
-                .to(financialInstrument)
-                .addRemoteId(`mtm_${remoteId}`)
+                .to(contraAccount)
+                .addRemoteId(remoteId)
                 .setChecked(true)
             ;
             processor.setFinancialBookTransactionToCreate(mtmTx);
@@ -748,9 +766,9 @@ namespace RealizedResultsService {
                 .setDescription(`#mtm`)
                 .setProperty(PRICE_PROP, financialBook.formatAmount(price))
                 .setProperty(OPEN_QUANTITY_PROP, totalQuantity.toFixed(stockBook.getFractionDigits()))
-                .from(financialInstrument)
+                .from(contraAccount)
                 .to(unrealizedAccount)
-                .addRemoteId(`mtm_${remoteId}`)
+                .addRemoteId(remoteId)
                 .setChecked(true)
             ;
             processor.setFinancialBookTransactionToCreate(mtmTx);
