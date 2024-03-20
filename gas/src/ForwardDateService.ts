@@ -198,7 +198,7 @@ namespace ForwardDateService {
 
         // Record "Forwarded Results" - Unrealized account gap
         if (liquidationTxId && !urBalanceLocal.eq(0)) {
-            const forwardedResultTransaction = buildForwardedResultTransaction(financialBook, stockAccount, closingDate, urBalanceLocal, urBalanceBase, baseExcCode);
+            const forwardedResultTransaction = buildForwardedResultTransaction(financialBook, baseBook, stockAccount, closingDate, urBalanceLocal, urBalanceBase);
             forwardedResultTransaction
                 .addRemoteId(`fwd_${liquidationTxId}`)
                 .setChecked(true)
@@ -365,23 +365,41 @@ namespace ForwardDateService {
         return balance;
     }
 
-    function buildForwardedResultTransaction(financialBook: Bkper.Book, stockAccount: StockAccount, closingDate: Date, localAmount: Bkper.Amount, baseAmount: Bkper.Amount, baseExcCode: string): Bkper.Transaction {
-        // Unrealized account
+    function buildForwardedResultTransaction(financialBook: Bkper.Book, baseBook: Bkper.Book, stockAccount: StockAccount, closingDate: Date, localAmount: Bkper.Amount, baseAmount: Bkper.Amount): Bkper.Transaction {
+
+        const isBaseBook = baseBook.getId() === financialBook.getId();
+
+        // Accounts
         const unrealizedAccount = BotService.getSupportAccount(financialBook, stockAccount, UNREALIZED_SUFFIX, BotService.getTypeByAccountSuffix(financialBook, UNREALIZED_SUFFIX));
-        // Forwarded account
         const forwardedAccount = BotService.getSupportAccount(financialBook, stockAccount, FORWARDED_SUFFIX, BkperApp.AccountType.LIABILITY);
         const fromAccount = localAmount.gt(0) ? forwardedAccount : unrealizedAccount;
         const toAccount = localAmount.gt(0) ? unrealizedAccount : forwardedAccount;
+
         const description = localAmount.gt(0) ? '#stock_gain_fwd' : '#stock_loss_fwd';
+
         return financialBook.newTransaction()
             .from(fromAccount)
             .to(toAccount)
             .setAmount(localAmount.abs())
             .setDate(closingDate)
             .setDescription(description)
-            .setProperty(EXC_AMOUNT_PROP, baseAmount.abs().toString())
-            .setProperty(EXC_CODE_PROP, baseExcCode)
+            .setProperty(EXC_AMOUNT_PROP, getForwardedResultTransactionExcAmountProp(financialBook, isBaseBook, baseAmount))
+            .setProperty(EXC_CODE_PROP, getForwardedResultTransactionExcCodeProp(financialBook, isBaseBook, baseBook))
         ;
+    }
+
+    function getForwardedResultTransactionExcAmountProp(financialBook: Bkper.Book, isBaseBook: boolean, baseAmount: Bkper.Amount): string | null {
+        if (!BotService.hasBaseBookDefined(financialBook)) {
+            return null;
+        }
+        return isBaseBook ? null : baseAmount.abs().toString();
+    }
+
+    function getForwardedResultTransactionExcCodeProp(financialBook: Bkper.Book, isBaseBook: boolean, baseBook: Bkper.Book): string | null {
+        if (!BotService.hasBaseBookDefined(financialBook)) {
+            return null;
+        }
+        return isBaseBook ? null : BotService.getExcCode(baseBook);
     }
 
 }
