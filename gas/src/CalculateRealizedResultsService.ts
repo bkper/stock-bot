@@ -205,8 +205,9 @@ namespace RealizedResultsService {
         // Unrealized accounts
         const unrealizedAccount = getUnrealizedAccount(financialBook, stockAccount);
         const unrealizedFxBaseAccount = getUnrealizedFxBaseAccount(baseBook, stockAccount, excAggregateProp);
-        const unrealizedHistAccount = getUnrealizedHistAccount(financialBook, stockAccount);
-        const unrealizedFxHistBaseAccount = getUnrealizedFxHistBaseAccount(baseBook, stockAccount, excAggregateProp);
+        // Unrealized Hist accounts - NOT NEEDED IF BOOK IS HISTORICAL
+        const unrealizedHistAccount = historical ? null : getUnrealizedHistAccount(financialBook, stockAccount);
+        const unrealizedFxHistBaseAccount = historical ? null : getUnrealizedFxHistBaseAccount(baseBook, stockAccount, excAggregateProp);
 
         let purchaseLogEntries: PurchaseLogEntry[] = [];
         let fwdPurchaseLogEntries: PurchaseLogEntry[] = [];
