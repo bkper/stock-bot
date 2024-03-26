@@ -36,6 +36,13 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
     const originalAmount = new Amount(financialTransaction.amount);
     const price = originalAmount.div(quantity);
 
+    let priceHist: Amount | null = null;
+
+    const priceHistProp = financialTransaction.properties[constants.PRICE_HIST_PROP];
+    if (priceHistProp) {
+      priceHist = new Amount(priceHistProp);
+    }
+
     let stockAccount = await this.getConnectedStockAccount(financialBook, stockBook, financialCreditAccount);
 
     if (stockAccount) {
@@ -53,6 +60,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
         .setDescription(financialTransaction.description)
         .addRemoteId(financialTransaction.id)
         .setProperty(constants.SALE_PRICE_PROP, price.toString())
+        .setProperty(constants.SALE_PRICE_HIST_PROP, priceHist?.toString())
         .setProperty(constants.ORDER_PROP, financialTransaction.properties[constants.ORDER_PROP])
         .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
         .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
@@ -83,6 +91,7 @@ export class EventHandlerTransactionChecked extends EventHandlerTransaction {
           .setDescription(financialTransaction.description)
           .addRemoteId(financialTransaction.id)
           .setProperty(constants.PURCHASE_PRICE_PROP, price.toString())
+          .setProperty(constants.PURCHASE_PRICE_HIST_PROP, priceHist?.toString())
           .setProperty(constants.ORDER_PROP, financialTransaction.properties[constants.ORDER_PROP])
           .setProperty(constants.ORIGINAL_QUANTITY_PROP, quantity.toString())
           .setProperty(constants.ORIGINAL_AMOUNT_PROP, originalAmount.toString())
