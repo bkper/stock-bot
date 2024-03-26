@@ -1,7 +1,7 @@
 import { Account, AccountType, Amount, Book } from "bkper";
 import { Result } from ".";
 import { isStockBook } from "./BotService";
-import { FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, ORDER_PROP, PRICE_PROP, QUANTITY_PROP, SETTLEMENT_DATE, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
+import { COST_HIST_PROP, FEES_PROP, INSTRUMENT_PROP, INTEREST_PROP, ORDER_PROP, PRICE_HIST_PROP, PRICE_PROP, QUANTITY_PROP, SETTLEMENT_DATE, STOCK_FEES_ACCOUNT_PROP, TRADE_DATE_PROP } from "./constants";
 
 export class InterceptorOrderProcessor {
 
@@ -259,6 +259,7 @@ export class InterceptorOrderProcessor {
         let tradeDate = this.getTradeDate(transactionPayload);
         const amount = new Amount(transactionPayload.amount).minus(interest).minus(fees);
         const price = amount.div(quantity);
+        const priceHist = this.getPurchasePriceHist(transactionPayload, interest, fees, quantity);
         let tx = await baseBook.newTransaction()
             .setAmount(amount)
             .from(exchangeAccount)
@@ -267,6 +268,7 @@ export class InterceptorOrderProcessor {
             .setDate(tradeDate)
             .setProperty(QUANTITY_PROP, quantity.toString())
             .setProperty(PRICE_PROP, price.toString())
+            .setProperty(PRICE_HIST_PROP, priceHist?.toString())
             .setProperty(ORDER_PROP, order)
             .setProperty(SETTLEMENT_DATE, transactionPayload.date)
             .setProperty(FEES_PROP, fees.toString())
@@ -274,6 +276,16 @@ export class InterceptorOrderProcessor {
             .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
             .post();
         return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
+    }
+
+    private getPurchasePriceHist(transactionPayload: bkper.Transaction, interest: Amount, fees: Amount, quantity: Amount): Amount | null {
+        const costHistProp = transactionPayload.properties[COST_HIST_PROP];
+        if (costHistProp) {
+            const costHist = new Amount(costHistProp).abs();
+            const purchaseAmountHist = costHist.minus(interest).minus(fees);
+            return purchaseAmountHist.div(quantity);
+        }
+        return null;
     }
 
     protected async postInstrumentTradeOnSale(baseBook: Book, exchangeAccount: bkper.Account, transactionPayload: bkper.Transaction): Promise<string> {
@@ -285,6 +297,7 @@ export class InterceptorOrderProcessor {
         let tradeDate = this.getTradeDate(transactionPayload);
         const amount = new Amount(transactionPayload.amount).minus(interest).plus(fees);
         const price = amount.div(quantity);
+        const priceHist = this.getSalePriceHist(transactionPayload, interest, fees, quantity);
         let tx = await baseBook.newTransaction()
             .setAmount(amount)
             .from(instrumentAccount)
@@ -293,6 +306,7 @@ export class InterceptorOrderProcessor {
             .setDate(tradeDate)
             .setProperty(QUANTITY_PROP, quantity.toString())
             .setProperty(PRICE_PROP, price.toString())
+            .setProperty(PRICE_HIST_PROP, priceHist?.toString())
             .setProperty(ORDER_PROP, order)
             .setProperty(SETTLEMENT_DATE, transactionPayload.date)
             .setProperty(FEES_PROP, fees.toString())
@@ -300,6 +314,16 @@ export class InterceptorOrderProcessor {
             .addRemoteId(`${INSTRUMENT_PROP}_${transactionPayload.id}`)
             .post();
         return `${tx.getDate()} ${tx.getAmount()} ${await tx.getCreditAccountName()} ${await tx.getDebitAccountName()} ${tx.getDescription()}`;
+    }
+
+    private getSalePriceHist(transactionPayload: bkper.Transaction, interest: Amount, fees: Amount, quantity: Amount): Amount | null {
+        const costHistProp = transactionPayload.properties[COST_HIST_PROP];
+        if (costHistProp) {
+            const costHist = new Amount(costHistProp).abs();
+            const saleAmountHist = costHist.minus(interest).plus(fees);
+            return saleAmountHist.div(quantity);
+        }
+        return null;
     }
 
 }
